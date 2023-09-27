@@ -11,6 +11,7 @@ import com.guyi.kindredspirits.model.request.UserLoginRequest;
 import com.guyi.kindredspirits.model.request.UserRegisterRequest;
 import com.guyi.kindredspirits.service.UserService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -91,6 +92,15 @@ public class UserController {
         List<User> userList = userService.list(queryWrapper);
         List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
         return ResultUtils.success(users);
+    }
+
+    @GetMapping("/search/tags")
+    public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        List<User> userList = userService.searchUsersByTags(tagNameList);
+        return ResultUtils.success(userList);
     }
 
     /**

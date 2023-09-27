@@ -18,7 +18,9 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -150,33 +152,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
-     * 根据标签搜索用户 -- SQL 查询
-     *
-     * @param tagNameList: 标签列表, 被搜索用户需要有的标签
-     * @return 符合要求的用户
-     */
-    @Override
-    public List<User> sqlSearchUsersByTags(List<String> tagNameList) {
-        if (CollectionUtils.isEmpty(tagNameList)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "没有条件");
-        }
-        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        // like '%Java%' and like '%Python%'
-        for (String tagName : tagNameList) {
-            userQueryWrapper = userQueryWrapper.like("tags", tagName);
-        }
-        List<User> userList = userMapper.selectList(userQueryWrapper);
-        return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
-    }
-
-    /**
      * 根据标签搜索用户 -- 内存查询
      *
      * @param tagNameList: 标签列表, 被搜索用户需要有的标签
      * @return 符合要求的用户
      */
     @Override
-    public List<User> memorySearchUsersByTags(List<String> tagNameList) {
+    public List<User> searchUsersByTags(List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "没有条件");
         }
@@ -190,15 +172,35 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             if (StringUtils.isBlank(tagsStr)) {
                 return false;
             }
-            Set<String> tempTagName = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {
-            }.getType());
+            Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {}.getType());
+            tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());
             for (String tagName : tagNameList) {
-                if (tempTagName.contains(tagName)) {
+                if (tempTagNameSet.contains(tagName)) {
                     return false;
                 }
             }
             return true;
         }).map(this::getSafetyUser).collect(Collectors.toList());
+    }
+
+    /**
+     * 根据标签搜索用户 -- SQL 查询
+     *
+     * @param tagNameList: 标签列表, 被搜索用户需要有的标签
+     * @return 符合要求的用户
+     */
+    @Override
+    public List<User> searchUsersByTagsBySQL(List<String> tagNameList) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "没有条件");
+        }
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        // like '%Java%' and like '%Python%'
+        for (String tagName : tagNameList) {
+            userQueryWrapper = userQueryWrapper.like("tags", tagName);
+        }
+        List<User> userList = userMapper.selectList(userQueryWrapper);
+        return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
     }
 
     /**

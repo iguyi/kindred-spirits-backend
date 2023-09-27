@@ -42,12 +42,18 @@ public interface UserService extends IService<User> {
     User getSafetyUser(User originUser);
 
     /**
+     * 根据标签搜索用户 -- 内存查询
+     *
+     * @param tagNameList: 标签列表, 被搜索用户需要有的标签
+     * @return 符合要求的用户
+     */
+    List<User> searchUsersByTags(List<String> tagNameList);
+
+    /**
      * 根据标签搜索用户 -- SQL 查询
      *
      * @param tagNameList: 标签列表, 被搜索用户需要有的标签
      * @return 符合要求的用户
      */
-    List<User> sqlSearchUsersByTags(List<String> tagNameList);
-
-    List<User> memorySearchUsersByTags(List<String> tagNameList);
+    List<User> searchUsersByTagsBySQL(List<String> tagNameList);
 }

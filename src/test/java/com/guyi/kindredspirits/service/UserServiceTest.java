@@ -29,7 +29,7 @@ class UserServiceTest {
     void testSqlSearchUsersByTags() {
         List<String> tagNameList = Arrays.asList("Java", "Python");
         long timeMillis1 = System.currentTimeMillis();
-        List<User> userList = userService.sqlSearchUsersByTags(tagNameList);
+        List<User> userList = userService.searchUsersByTagsBySQL(tagNameList);
         long timeMillis2 = System.currentTimeMillis();
         System.out.println("耗时: " + (timeMillis2 - timeMillis1));
         assertNotNull(userList);
@@ -42,7 +42,7 @@ class UserServiceTest {
     void testMemorySearchUsersByTags() {
         List<String> tagNameList = Arrays.asList("Java", "Python");
         long timeMillis1 = System.currentTimeMillis();
-        List<User> userList = userService.memorySearchUsersByTags(tagNameList);
+        List<User> userList = userService.searchUsersByTags(tagNameList);
         long timeMillis2 = System.currentTimeMillis();
         System.out.println("耗时: " + (timeMillis2 - timeMillis1));
         assertNotNull(userList);
