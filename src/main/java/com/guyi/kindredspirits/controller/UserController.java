@@ -76,13 +76,12 @@ public class UserController {
      * 查询所有用户
      *
      * @param username
-     * @param httpServletRequest
      * @return
      */
     @GetMapping("/search")
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest httpServletRequest) {
         // 仅管理员可查询
-        if (!isAdmin(httpServletRequest)) {
+        if (!userService.isAdmin(httpServletRequest)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -104,6 +103,36 @@ public class UserController {
     }
 
     /**
+     * 推荐相似用户
+     *
+     * @return 与当前用户相似的用户的集合
+     */
+    @GetMapping("/recommend")
+    public BaseResponse<List<User>> recommends(HttpServletRequest httpServletRequest) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        List<User> userList = userService.list(queryWrapper);
+        List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+        return ResultUtils.success(users);
+    }
+
+    /**
+     * todo User 需要封装 dto
+     * 更新用户信息
+     *
+     * @param user - 用户的新信息
+     * @return 更改的数据总量, 正常应该是 1
+     */
+    @PostMapping("/update")
+    public BaseResponse<Integer> updateUser(@RequestBody User user, HttpServletRequest httpServletRequest) {
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "无可修改的信息");
+        }
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        Integer result = userService.updateUser(user, loginUser);
+        return ResultUtils.success(result);
+    }
+
+    /**
      * 管理员根据 id 删除用户(逻辑删除)
      *
      * @param id 用户 id
@@ -111,7 +140,7 @@ public class UserController {
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteUser(@RequestBody long id, HttpServletRequest httpServletRequest) {
         // 仅管理员可删除
-        if (!isAdmin(httpServletRequest)) {
+        if (!userService.isAdmin(httpServletRequest)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         if (id <= 0) {
@@ -119,15 +148,5 @@ public class UserController {
         }
         boolean b = userService.removeById(id);
         return ResultUtils.success(b);
-    }
-
-    /**
-     * 是否为管理员
-     */
-    private boolean isAdmin(HttpServletRequest httpServletRequest) {
-        // 仅管理员课查询
-        Object userObject = httpServletRequest.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
-        User user = (User) userObject;
-        return user != null && user.getUserRole() == UserConstant.ADMIN_ROLE;
     }
 }

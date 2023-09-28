@@ -18,10 +18,7 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -43,7 +40,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * 盐值，混淆密码
      */
     private static final String SALT = "guyi";
-
 
     /**
      * 用户注册
@@ -172,7 +168,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             if (StringUtils.isBlank(tagsStr)) {
                 return false;
             }
-            Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {}.getType());
+            Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {
+            }.getType());
             tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());
             for (String tagName : tagNameList) {
                 if (tempTagNameSet.contains(tagName)) {
@@ -204,6 +201,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
+     * 从 Session 中获取当前登录用户信息, 并判断是否登录
+     *
+     * @return 当前登录用户
+     */
+    @Override
+    public User getLoginUser(HttpServletRequest httpServletRequest) {
+        if (httpServletRequest == null) {
+            return null;
+        }
+        Object userObj = httpServletRequest.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        if (userObj == null) {
+            throw new BusinessException(ErrorCode.NO_AUTH, "未登录");
+        }
+        return (User) userObj;
+    }
+
+    /**
+     * 更新用户信息
+     *
+     * @param user      - 用户的新信息
+     * @param loginUser - 当前登录用户
+     * @return 更改的数据总量
+     */
+    @Override
+    public int updateUser(User user, User loginUser) {
+        Long userId = user.getId();
+        if (userId == null || userId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
+        }
+        // todo 如果除了 id 外其他的字段信息全是 null, 直接抛异常
+        // 不是管理员且修改的不是自己的信息
+        if (!isAdmin(loginUser) && !userId.equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH, "您只能更新自己的信息!");
+        }
+        User oldUser = userMapper.selectById(userId);
+        if (oldUser == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "没有要更新的数据");
+        }
+        // todo 判断 user 和 oldUser 是否一致, 如果一致, 直接返回 1
+        return userMapper.updateById(user);
+    }
+
+    /**
      * 用户脱敏
      *
      * @param originUser: 原始用户
@@ -228,6 +268,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setUserStatus(originUser.getUserStatus());
         safetyUser.setCreateTime(originUser.getCreateTime());
         return safetyUser;
+    }
+
+    /**
+     * 从 Session 中获取当前登录用户并判断其是否为管理员
+     *
+     * @return 如果当前登录用户是管理员, 返回 true; 反之, 返回 false.
+     */
+    public boolean isAdmin(HttpServletRequest httpServletRequest) {
+        // 仅管理员可查询
+        Object userObject = httpServletRequest.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        User user = (User) userObject;
+        return user != null && user.getUserRole() == UserConstant.ADMIN_ROLE;
+    }
+
+    /**
+     * 判断当前登录用户是否是管理员
+     *
+     * @param loginUser - 当前登录用户
+     * @return 如果当前登录用户是管理员, 返回 true; 反之, 返回 false.
+     */
+    public boolean isAdmin(User loginUser) {
+        // 仅管理员可查询
+        return loginUser != null && loginUser.getUserRole() == UserConstant.ADMIN_ROLE;
     }
 }
 
