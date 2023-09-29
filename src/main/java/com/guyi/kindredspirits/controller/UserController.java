@@ -1,6 +1,8 @@
 package com.guyi.kindredspirits.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.ResultUtils;
@@ -10,21 +12,34 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.UserLoginRequest;
 import com.guyi.kindredspirits.model.request.UserRegisterRequest;
 import com.guyi.kindredspirits.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/user")
+@Slf4j
 @CrossOrigin(value = {"http://127.0.0.1:8081", "http://localhost:8081"})
 public class UserController {
     @Resource
     private UserService userService;
+
+    @Resource
+    RedisTemplate<String, Object> redisTemplate;
+
+    /**
+     * Redis key 的模板字符串
+     */
+    public static final String redisKeyPre = "kindredspirits:user:%s:%s";
 
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
@@ -105,14 +120,35 @@ public class UserController {
     /**
      * 推荐相似用户
      *
-     * @return 与当前用户相似的用户的集合
+     * @param pageSize: 每页的数据量, >0
+     * @param pageNum: 页码, >0
+     * @param httpServletRequest
+     * @return
      */
     @GetMapping("/recommend")
-    public BaseResponse<List<User>> recommends(HttpServletRequest httpServletRequest) {
+    public BaseResponse<Page<User>> recommends(long pageSize, long pageNum, HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        if (pageSize < 1 || pageNum < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
+        }
+        // 如果缓存有数据, 直接读缓存
+        final String redisKey = String.format(redisKeyPre, "recommend", loginUser.getId());
+        ValueOperations<String, Object> valueOperations =  redisTemplate.opsForValue();
+        Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
+        if (userPage != null) {
+            return ResultUtils.success(userPage);
+        }
+        // 无缓存, 走数据库
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        List<User> userList = userService.list(queryWrapper);
-        List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
-        return ResultUtils.success(users);
+        userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
+        // 写缓存
+        try {
+            // todo 缓存击穿、缓存雪崩的问题
+            valueOperations.set(redisKey, userPage, 120, TimeUnit.MINUTES);  // 120 分钟
+        } catch (Exception e) {
+            log.error("redis set key error: ", e);
+        }
+        return ResultUtils.success(userPage);
     }
 
     /**
