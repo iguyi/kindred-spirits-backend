@@ -6,6 +6,8 @@ import com.guyi.kindredspirits.controller.UserController;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,10 +30,15 @@ public class PreCacheJob {
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
+    @Resource
+    private RedissonClient redissonClient;
+
     /**
      * 重点用户的 ID
      */
     private List<Long> mainUserList = Arrays.asList(1L);
+
+    private static final String lockKeyPre = "kindredspirits:precachejob:%s:%s";
 
     /**
      * 预热推荐用户。
@@ -39,17 +46,29 @@ public class PreCacheJob {
      */
     @Scheduled(cron = "0 59 23 * * *")
     public void doCacheRecommendUser() {
-        for (Long mainUser : mainUserList) {
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            Page<User> userPage = userService.page(new Page<>(1, 20), queryWrapper);
-            String redisKey = String.format(UserController.redisKeyPre, "recommend", mainUser);
-            ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
-            // 写缓存
-            try {
-                // todo 缓存击穿、缓存雪崩的问题
-                valueOperations.set(redisKey, userPage, 120, TimeUnit.MINUTES);  // 120 分钟
-            } catch (Exception e) {
-                log.error("redis set key error: ", e);
+        final String lockKey = String.format(lockKeyPre, "docache", "lock");  // 获取锁对象
+        RLock lock = redissonClient.getLock(lockKey);    // 获取锁对象
+        try {
+            if (lock.tryLock(0, 30L, TimeUnit.SECONDS)) { // 尝试获取锁, 没获取到锁就不执行(等待)了
+                for (Long mainUser : mainUserList) {
+                    QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+                    Page<User> userPage = userService.page(new Page<>(1, 20), queryWrapper);
+                    String redisKey = String.format(UserController.redisKeyPre, "recommend", mainUser);
+                    ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
+                    // 写缓存
+                    try {
+                        // todo 缓存击穿、缓存雪崩的问题
+                        valueOperations.set(redisKey, userPage, 120, TimeUnit.MINUTES);  // 120 分钟
+                    } catch (Exception e) {
+                        log.error("redis set key error: ", e);
+                    }
+                }
+            }
+        } catch (InterruptedException e) {
+            log.debug("The doCacheRecommendUser method of the PreCacheJob class is error: " + e);
+        } finally {
+            if (lock.isHeldByCurrentThread()) {  // 只释放当前线程加的锁
+                lock.unlock();
             }
         }
     }
