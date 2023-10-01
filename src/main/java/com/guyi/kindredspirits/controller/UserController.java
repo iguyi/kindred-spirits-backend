@@ -1,7 +1,6 @@
 package com.guyi.kindredspirits.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
@@ -25,6 +24,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * 用户接口
+ */
 @RestController
 @RequestMapping("/user")
 @Slf4j
@@ -120,8 +122,8 @@ public class UserController {
     /**
      * 推荐相似用户
      *
-     * @param pageSize: 每页的数据量, >0
-     * @param pageNum: 页码, >0
+     * @param pageSize:          每页的数据量, >0
+     * @param pageNum:           页码, >0
      * @param httpServletRequest
      * @return
      */
@@ -133,7 +135,7 @@ public class UserController {
         }
         // 如果缓存有数据, 直接读缓存
         final String redisKey = String.format(redisKeyPre, "recommend", loginUser.getId());
-        ValueOperations<String, Object> valueOperations =  redisTemplate.opsForValue();
+        ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
         Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
         if (userPage != null) {
             return ResultUtils.success(userPage);
