@@ -4,8 +4,20 @@ package com.guyi.kindredspirits.model.enums;
  * 队伍状态枚举
  */
 public enum TeamStatusEnum {
+    /**
+     * 公开的队伍
+     */
+
     PUBLIC(0, "公开"),
+
+    /**
+     * 私有队伍
+     */
     PRIVATE(1, "私有"),
+
+    /**
+     * 加密队伍
+     */
     SECRET(2, "加密");
 
     private int value;

@@ -21,6 +21,13 @@
         <java.version>1.8</java.version>
     </properties>
 
+    <!-- 配置阿里镜像源 -->
+    <repositories>
+        <repository>
+            <id>aliyunmaven</id>
+            <url>https://maven.aliyun.com/repository/public</url>
+        </repository>
+    </repositories>
     <dependencies>
         <!-- Spring -->
         <dependency>
@@ -85,6 +92,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.12.0</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.4</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>

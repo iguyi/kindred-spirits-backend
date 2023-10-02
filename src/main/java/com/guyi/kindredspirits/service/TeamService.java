@@ -3,6 +3,12 @@ package com.guyi.kindredspirits.service;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.dto.TeamQuery;
+import com.guyi.kindredspirits.model.request.TeamJoinRequest;
+import com.guyi.kindredspirits.model.request.TeamUpdateRequest;
+import com.guyi.kindredspirits.model.vo.UserTeamVo;
+
+import java.util.List;
 
 /**
  * @author 张仕恒
@@ -20,4 +26,30 @@ public interface TeamService extends IService<Team> {
      */
     long addTeam(Team team, User loginUser);
 
+    /**
+     * 搜索队伍
+     *
+     * @param teamQuery - 用于查询队伍的参数的封装
+     * @param isAdmin   - 是否是管理员
+     * @return 用于返回给前端的用户队伍信息列表, 包括了队伍信息, 队伍成员信息
+     */
+    List<UserTeamVo> listTeams(TeamQuery teamQuery, boolean isAdmin);
+
+    /**
+     * 更新队伍信息
+     *
+     * @param teamUpdateRequest - 队伍的新信息
+     * @param loginUser         - 当前登录用户
+     * @return true - 更新成功; false - 更新失败
+     */
+    boolean updateTeam(TeamUpdateRequest teamUpdateRequest, User loginUser);
+
+    /**
+     * 用户加入队伍
+     *
+     * @param teamJoinRequest - 对用户加入队伍的请求消息的封装
+     * @param loginUser       - 当前登录用户
+     * @return true - 加入成功; false - 加入失败
+     */
+    boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser);
 }

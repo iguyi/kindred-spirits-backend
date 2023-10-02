@@ -1,24 +1,18 @@
-package com.guyi.kindredspirits.model.domain;
+package com.guyi.kindredspirits.model.vo;
 
-import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
 
-import lombok.Data;
-
 /**
- * 用户
- *
- * @TableName user
+ * 用户包装类(脱敏)
  */
-@TableName(value = "user")
 @Data
-public class User implements Serializable {
+public class UserVo implements Serializable {
     /**
      * id
      */
-    @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
@@ -40,11 +34,6 @@ public class User implements Serializable {
      * 性别
      */
     private Integer gender;
-
-    /**
-     * 密码
-     */
-    private String userPassword;
 
     /**
      * 电话
@@ -91,12 +80,5 @@ public class User implements Serializable {
      */
     private Date updateTime;
 
-    /**
-     * 是否删除
-     */
-    @TableLogic
-    private Integer isDelete;
-
-    @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }

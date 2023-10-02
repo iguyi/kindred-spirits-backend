@@ -9,6 +9,9 @@ import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.dto.TeamQuery;
 import com.guyi.kindredspirits.model.request.TeamAddRequest;
+import com.guyi.kindredspirits.model.request.TeamJoinRequest;
+import com.guyi.kindredspirits.model.request.TeamUpdateRequest;
+import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -75,17 +78,17 @@ public class TempController {
     /**
      * 更新队伍信息
      *
-     * @param team - 队伍的新信息
+     * @param teamUpdateRequest - 队伍的新信息
      * @return 队伍信息更新情况
      */
     @PostMapping("/update")
-    public BaseResponse<Boolean> updateTemp(@RequestBody Team team) {
-        if (team == null) {
+    public BaseResponse<Boolean> updateTemp(@RequestBody TeamUpdateRequest teamUpdateRequest,
+                                            HttpServletRequest httpServletRequest) {
+        if (teamUpdateRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
-        // todo 鉴权: 用户是否登录？
-        // todo 删除队伍的人是否是队长？
-        boolean updateResult = teamService.updateById(team);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        boolean updateResult = teamService.updateTeam(teamUpdateRequest, loginUser);
         if (!updateResult) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍更新失败");
         }
@@ -117,7 +120,7 @@ public class TempController {
      * @param teamQuery - 队伍查询封装对象
      * @return 符合要求的所有队伍
      */
-    @GetMapping("/list")
+    /*@GetMapping("/list")
     public BaseResponse<List<Team>> listTeams(TeamQuery teamQuery) {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
@@ -126,6 +129,23 @@ public class TempController {
         BeanUtils.copyProperties(teamQuery, team);
         QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>(team);
         List<Team> teamList = teamService.list(teamQueryWrapper);
+        return ResultUtils.success(teamList);
+    }*/
+
+    /**
+     * 根据指定信息查询队伍
+     * 筛选条件有: 队伍 id、队伍名称、队伍描述、队伍最大人数、创建人 id、队长 id、队伍状态(公开、私密、加密)
+     *
+     * @param teamQuery - 队伍查询封装对象
+     * @return 符合要求的所有队伍
+     */
+    @GetMapping("/list")
+    public BaseResponse<List<UserTeamVo>> listTeams(TeamQuery teamQuery, HttpServletRequest httpServletRequest) {
+        if (teamQuery == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
+        }
+        boolean isAdmin = userService.isAdmin(httpServletRequest);
+        List<UserTeamVo> teamList = teamService.listTeams(teamQuery, isAdmin);
         return ResultUtils.success(teamList);
     }
 
@@ -147,5 +167,22 @@ public class TempController {
         Page<Team> teamPage = new Page<>(teamQuery.getPageNum(), teamQuery.getPageSize());
         Page<Team> resultPage = teamService.page(teamPage, teamQueryWrapper);
         return ResultUtils.success(resultPage);
+    }
+
+    /**
+     * 用户加入队伍
+     *
+     * @param teamJoinRequest - 对用户加入队伍的请求消息的封装
+     * @return true - 加入成功; false - 加入失败
+     */
+    @PostMapping("/join")
+    public BaseResponse<Boolean> joinTeam(@RequestBody TeamJoinRequest teamJoinRequest,
+                                          HttpServletRequest httpServletRequest) {
+        if (teamJoinRequest == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
+        }
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        boolean result = teamService.joinTeam(teamJoinRequest, loginUser);
+        return ResultUtils.success(result);
     }
 }

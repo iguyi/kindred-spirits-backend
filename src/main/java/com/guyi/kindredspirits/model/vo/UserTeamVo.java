@@ -1,26 +1,20 @@
-package com.guyi.kindredspirits.model.dto;
+package com.guyi.kindredspirits.model.vo;
 
-import com.guyi.kindredspirits.common.PageRequest;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
 
 /**
- * 队伍查询封装类
+ * 队伍和用户信息封装类(脱敏), 用于将数据返回给前端
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
-public class TeamQuery extends PageRequest implements Serializable {
+public class UserTeamVo implements Serializable {
     /**
      * id
      */
     private Long id;
-
-    /**
-     * 搜索词, 在队伍名称和队伍描述中进行搜索
-     */
-    private String searchText;
 
     /**
      * 队伍名称
@@ -38,6 +32,11 @@ public class TeamQuery extends PageRequest implements Serializable {
     private Integer maxNum;
 
     /**
+     * 过期时间
+     */
+    private Date expireTime;
+
+    /**
      * 创建人 id
      */
     private Long userId;
@@ -51,6 +50,21 @@ public class TeamQuery extends PageRequest implements Serializable {
      * 0 - 公开，1 - 私有，2 - 加密
      */
     private Integer status;
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+
+    /**
+     * 更新时间
+     */
+    private Date updateTime;
+
+    /**
+     * 队伍成员列表
+     */
+    List<UserVo> userList;
 
     private static final long serialVersionUID = 1L;
 }
