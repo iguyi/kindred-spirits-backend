@@ -3,7 +3,6 @@ package com.guyi.kindredspirits.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
-import com.guyi.kindredspirits.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.TeamMapper;
 import com.guyi.kindredspirits.model.domain.Team;
@@ -12,6 +11,7 @@ import com.guyi.kindredspirits.model.domain.UserTeam;
 import com.guyi.kindredspirits.model.dto.TeamQuery;
 import com.guyi.kindredspirits.model.enums.TeamStatusEnum;
 import com.guyi.kindredspirits.model.request.TeamJoinRequest;
+import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
 import com.guyi.kindredspirits.model.request.TeamUpdateRequest;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
@@ -312,9 +312,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             }
         }
         // 队伍人数校验
-        userTeamQueryWrapper = new QueryWrapper<>();
-        userTeamQueryWrapper.eq("teamId", teamId);
-        long teamHasJoinNum = userTeamService.count(userTeamQueryWrapper);
+        long teamHasJoinNum = this.countTeamUserByTeamId(teamId);
         if (teamHasJoinNum >= team.getMaxNum()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍已满");
         }
@@ -324,5 +322,125 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         userTeam.setTeamId(teamId);
         userTeam.setJoinTime(new Date());
         return userTeamService.save(userTeam);
+    }
+
+    /**
+     * 用户退出队伍
+     *
+     * @param teamQuitRequest - 对用户退出队伍的请求参数的封装
+     * @param loginUser       - 当前登录用户
+     * @return true - 退出队伍成功; false - 退出队伍失败
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean quitTeam(TeamQuitOrDeleteRequest teamQuitRequest, User loginUser) {
+        if (teamQuitRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        Long teamId = teamQuitRequest.getTeamId();
+        Team team = getTeamById(teamId);
+        Long loginUserId = loginUser.getId();
+        if (loginUserId == null || loginUserId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求数据为空");
+        }
+        UserTeam userTeam = new UserTeam();
+        userTeam.setTeamId(teamId);
+        userTeam.setUserId(loginUserId);
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>(userTeam);
+        long count = userTeamService.count(userTeamQueryWrapper);
+        if (count == 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "未加入队伍");
+        }
+        // 队伍人数校验
+        long teamHasJoinNum = this.countTeamUserByTeamId(teamId);
+        if (teamHasJoinNum == 1) { // 队伍只有 1 人
+            // 删除队伍相关信息
+            boolean removeTeamResult = this.removeById(teamId);
+            if (!removeTeamResult) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
+            }
+            userTeamQueryWrapper = new QueryWrapper<>();
+            userTeamQueryWrapper.eq("teamId", teamId);
+            boolean removeUserTeamResult = userTeamService.removeById(userTeamQueryWrapper);
+            if (!removeUserTeamResult) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
+            }
+            return true;
+        } else {
+            if (loginUserId.equals(team.getLeaderId())) {  // 队长不能退出
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "队长不能退出队伍");
+            }
+            userTeamQueryWrapper = new QueryWrapper<>();
+            userTeamQueryWrapper.eq("userId", loginUserId);
+            userTeamQueryWrapper.eq("teamId", teamId);
+            return userTeamService.remove(userTeamQueryWrapper);
+        }
+    }
+
+    /**
+     * 解散队伍
+     *
+     * @param teamDeleteRequest - 对用户退出队伍的请求参数的封装
+     * @return true - 解散队伍成功; false - 解散队伍失败
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteTeam(TeamQuitOrDeleteRequest teamDeleteRequest, User loginUser) {
+        // 用户登录是否正确
+        Long loginUserId = loginUser.getId();
+        if (loginUserId == null || loginUserId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求数据为空");
+        }
+        if (teamDeleteRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        // 判断队伍是否存在
+        Long teamId = teamDeleteRequest.getTeamId();
+        Team team = getTeamById(teamId);
+        if (!loginUserId.equals(team.getLeaderId())) {  // 不是队长, 无权限
+            throw new BusinessException(ErrorCode.NO_AUTH, "只有队长可以解散队伍");
+        }
+        // 删除队伍相关信息
+        boolean removeTeamResult = this.removeById(teamId);
+        if (!removeTeamResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
+        }
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId);
+        boolean removeUserTeamResult = userTeamService.removeById(userTeamQueryWrapper);
+        if (!removeUserTeamResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
+        }
+        return true;
+    }
+
+    /**
+     * 根据队伍 id, 统计队伍成员数
+     *
+     * @param teamId - 队伍 id
+     * @return 当前队伍成员数
+     */
+    private long countTeamUserByTeamId(long teamId) {
+        // 队伍人数校验
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId);
+        return userTeamService.count(userTeamQueryWrapper);
+    }
+
+    /**
+     * 根据 id 获取队伍信息
+     *
+     * @param teamId - 队伍 id
+     * @return 队伍
+     */
+    private Team getTeamById(Long teamId) {
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "队伍不存在");
+        }
+        Team team = this.getById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "队伍不存在");
+        }
+        return team;
     }
 }

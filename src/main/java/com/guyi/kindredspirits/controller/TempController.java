@@ -10,6 +10,7 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.dto.TeamQuery;
 import com.guyi.kindredspirits.model.request.TeamAddRequest;
 import com.guyi.kindredspirits.model.request.TeamJoinRequest;
+import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
 import com.guyi.kindredspirits.model.request.TeamUpdateRequest;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import com.guyi.kindredspirits.service.TeamService;
@@ -56,26 +57,6 @@ public class TempController {
     }
 
     /**
-     * 解散队伍
-     *
-     * @param id - 被解散队伍的 id
-     * @return 队伍解散情况
-     */
-    @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteTemp(Long id) {
-        if (id == null || id <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
-        }
-        // todo 鉴权: 用户是否登录？
-        // todo 删除队伍的人是否是队长？
-        boolean removeResult = teamService.removeById(id);
-        if (!removeResult) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍解散失败");
-        }
-        return ResultUtils.success(true);
-    }
-
-    /**
      * 更新队伍信息
      *
      * @param teamUpdateRequest - 队伍的新信息
@@ -112,25 +93,6 @@ public class TempController {
         }
         return ResultUtils.success(team);
     }
-
-    /**
-     * 根据指定信息查询队伍
-     * 筛选条件有: 队伍 id、队伍名称、队伍描述、队伍最大人数、创建人 id、队长 id、队伍状态(公开、私密、加密)
-     *
-     * @param teamQuery - 队伍查询封装对象
-     * @return 符合要求的所有队伍
-     */
-    /*@GetMapping("/list")
-    public BaseResponse<List<Team>> listTeams(TeamQuery teamQuery) {
-        if (teamQuery == null) {
-            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
-        }
-        Team team = new Team();
-        BeanUtils.copyProperties(teamQuery, team);
-        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>(team);
-        List<Team> teamList = teamService.list(teamQueryWrapper);
-        return ResultUtils.success(teamList);
-    }*/
 
     /**
      * 根据指定信息查询队伍
@@ -184,5 +146,42 @@ public class TempController {
         User loginUser = userService.getLoginUser(httpServletRequest);
         boolean result = teamService.joinTeam(teamJoinRequest, loginUser);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 退出队伍
+     *
+     * @param teamQuitRequest - 对用户退出队伍的请求参数的封装
+     * @return true - 退出队伍成功; false - 退出队伍失败
+     */
+    @PostMapping("quit")
+    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitOrDeleteRequest teamQuitRequest,
+                                          HttpServletRequest httpServletRequest) {
+        if (teamQuitRequest == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
+        }
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        boolean result = teamService.quitTeam(teamQuitRequest, loginUser);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 解散队伍
+     *
+     * @param teamDeleteRequest - 对队长解散队伍的请求参数的封装
+     * @return true - 解散队伍成功; false - 解散队伍失败
+     */
+    @PostMapping("/delete")
+    public BaseResponse<Boolean> deleteTemp(@RequestBody TeamQuitOrDeleteRequest teamDeleteRequest,
+                                            HttpServletRequest httpServletRequest) {
+        if (teamDeleteRequest == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
+        }
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        boolean removeResult = teamService.deleteTeam(teamDeleteRequest, loginUser);
+        if (!removeResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍解散失败");
+        }
+        return ResultUtils.success(true);
     }
 }

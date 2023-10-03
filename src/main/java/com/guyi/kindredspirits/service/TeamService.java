@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.dto.TeamQuery;
 import com.guyi.kindredspirits.model.request.TeamJoinRequest;
+import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
 import com.guyi.kindredspirits.model.request.TeamUpdateRequest;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
 
@@ -52,4 +53,21 @@ public interface TeamService extends IService<Team> {
      * @return true - 加入成功; false - 加入失败
      */
     boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser);
+
+    /**
+     * 用户退出队伍
+     *
+     * @param teamQuitRequest - 对用户退出队伍的请求参数的封装
+     * @param loginUser       - 当前登录用户
+     * @return true - 退出队伍成功; false - 退出队伍失败
+     */
+    boolean quitTeam(TeamQuitOrDeleteRequest teamQuitRequest, User loginUser);
+
+    /**
+     * 解散队伍
+     *
+     * @param teamDeleteRequest - 对用户退出队伍的请求参数的封装
+     * @return true - 解散队伍成功; false - 解散队伍失败
+     */
+    boolean deleteTeam(TeamQuitOrDeleteRequest teamDeleteRequest, User loginUser);
 }
