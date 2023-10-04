@@ -3,6 +3,7 @@ package com.guyi.kindredspirits.service;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.dto.TeamMyQuery;
 import com.guyi.kindredspirits.model.dto.TeamQuery;
 import com.guyi.kindredspirits.model.request.TeamJoinRequest;
 import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
@@ -70,4 +71,22 @@ public interface TeamService extends IService<Team> {
      * @return true - 解散队伍成功; false - 解散队伍失败
      */
     boolean deleteTeam(TeamQuitOrDeleteRequest teamDeleteRequest, User loginUser);
+
+    /**
+     * 获取我管理的队伍
+     *
+     * @param teamMyQuery - 查询我管理的队伍请求封装对象
+     * @param loginUser - 当前登录用户
+     * @return 符合要求的所有队伍
+     */
+    List<Team> listMyLeaderTeams(TeamMyQuery teamMyQuery, User loginUser);
+
+    /**
+     * 获取我加入的队伍
+     *
+     * @param teamMyQuery - 查询我管理的队伍请求封装对象
+     * @param loginUser - 当前登录用户
+     * @return 符合要求的所有队伍
+     */
+    List<Team> listMyJoinTeams(TeamMyQuery teamMyQuery, User loginUser);
 }

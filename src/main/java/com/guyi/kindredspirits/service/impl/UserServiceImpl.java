@@ -3,13 +3,14 @@ package com.guyi.kindredspirits.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
+import com.guyi.kindredspirits.mapper.UserMapper;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.service.UserService;
-import com.guyi.kindredspirits.mapper.UserMapper;
+import com.guyi.kindredspirits.util.AlgorithmUtil;
+import com.guyi.kindredspirits.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -168,8 +169,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             if (StringUtils.isBlank(tagsStr)) {
                 return false;
             }
-            Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {
-            }.getType());
+            Set<String> tempTagNameSet = JsonUtil.tagsToSet(tagsStr);
             tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());
             for (String tagName : tagNameList) {
                 if (tempTagNameSet.contains(tagName)) {
@@ -212,7 +212,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         Object userObj = httpServletRequest.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
         if (userObj == null) {
-            throw new BusinessException(ErrorCode.NO_AUTH, "未登录");
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
         return (User) userObj;
     }
@@ -241,6 +241,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         // todo 判断 user 和 oldUser 是否一致, 如果一致, 直接返回 1
         return userMapper.updateById(user);
+    }
+
+    /**
+     * 获取最匹配的用户
+     * todo 如果自己没有标签, 那么走随机匹配; TreeMap 排序是按照 key 排序的, 但是相似度又是在 value 中
+     *
+     * @param num       - 推荐的数量
+     * @param loginUser - 当前登录用户
+     * @return 和当前登录用户最匹配的 num 个其他用户
+     */
+    @Override
+    public List<User> matchUsers(long num, User loginUser) {
+        // 查询所有用户
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.select("id", "userAccount", "username",  "avatarUrl", "gender", "tags", "profile", "phone"
+                , "email"); // 需要的字段
+        userQueryWrapper.ne("id", loginUser.getId());  // 排除自己
+        userQueryWrapper.isNotNull("tags");  // tags 不能为空
+        List<User> userList = this.list(userQueryWrapper);
+        String tags = loginUser.getTags();
+        if (StringUtils.isBlank(tags)) {
+            // todo
+            return null;
+        }
+        List<String> loginUserTagList = JsonUtil.tagsToList(tags);
+        // 用户列表的下标, 相似度
+        SortedMap<Integer, Long> indexDistanceMap = new TreeMap<>();
+        for (int i = 0; i < userList.size(); i++) {
+            User user = userList.get(i);
+            String userTags = user.getTags();
+            if (StringUtils.isBlank(userTags)) {  // 无标签
+                continue;
+            }
+            List<String> userTagList = JsonUtil.tagsToList(userTags);
+            // 计算相似度
+            long distance = AlgorithmUtil.minDistance(loginUserTagList, userTagList);
+            indexDistanceMap.put(i, distance);
+        }
+        List<Integer> maxDistanceIndexList = indexDistanceMap.keySet().stream().limit(num).collect(Collectors.toList());
+        List<User> safetyUserList = maxDistanceIndexList.stream()
+                .map(index -> this.getSafetyUser(userList.get(index)))
+                .collect(Collectors.toList());
+        return safetyUserList;
     }
 
     /**

@@ -121,6 +121,7 @@ public class UserController {
 
     /**
      * 推荐相似用户
+     * todo 推荐多个, 为实现
      *
      * @param pageSize:          每页的数据量, >0
      * @param pageNum:           页码, >0
@@ -151,6 +152,21 @@ public class UserController {
             log.error("redis set key error: ", e);
         }
         return ResultUtils.success(userPage);
+    }
+
+    /**
+     * 获取最匹配的用户
+     *
+     * @param num - 推荐的数量
+     * @return 和当前登录用户最匹配的 num 个其他用户
+     */
+    @GetMapping("/match")
+    public BaseResponse<List<User>> matchUsers(long num, HttpServletRequest httpServletRequest) {
+        if (num <= 0 || num > 20) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
+        }
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(userService.matchUsers(num, loginUser));
     }
 
     /**

@@ -1,8 +1,10 @@
 package com.guyi.kindredspirits.service;
 
+import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.contant.UserConstant;
 import com.guyi.kindredspirits.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.guyi.kindredspirits.model.vo.UserVo;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -88,4 +90,13 @@ public interface UserService extends IService<User> {
      * @return 如果当前登录用户是管理员, 返回 true; 反之, 返回 false.
      */
     boolean isAdmin(User loginUser);
+
+    /**
+     * 获取最匹配的用户
+     *
+     * @param num       - 推荐的数量
+     * @param loginUser - 当前登录用户
+     * @return 和当前登录用户最匹配的 num 个其他用户
+     */
+    List<User> matchUsers(long num, User loginUser);
 }

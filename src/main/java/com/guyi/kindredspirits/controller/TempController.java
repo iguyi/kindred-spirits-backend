@@ -7,6 +7,7 @@ import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.dto.TeamMyQuery;
 import com.guyi.kindredspirits.model.dto.TeamQuery;
 import com.guyi.kindredspirits.model.request.TeamAddRequest;
 import com.guyi.kindredspirits.model.request.TeamJoinRequest;
@@ -183,5 +184,39 @@ public class TempController {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍解散失败");
         }
         return ResultUtils.success(true);
+    }
+
+    /**
+     * 获取我管理的队伍
+     *
+     * @param teamMyQuery - 查询我管理的队伍请求封装对象
+     * @return 符合要求的所有队伍
+     */
+    @GetMapping("/list/my/leader")
+    public BaseResponse<List<Team>> listMyLeaderTeams(TeamMyQuery teamMyQuery, HttpServletRequest httpServletRequest) {
+        if (teamMyQuery == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
+        }
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        teamMyQuery.setId(loginUser.getId());
+        List<Team> teamList = teamService.listMyLeaderTeams(teamMyQuery, loginUser);
+        return ResultUtils.success(teamList);
+    }
+
+    /**
+     * 获取我管理的队伍
+     *
+     * @param teamMyQuery - 查询我所属的队伍请求封装对象
+     * @return 符合要求的所有队伍
+     */
+    @GetMapping("/list/my/join")
+    public BaseResponse<List<Team>> listMyJoinTeams(TeamMyQuery teamMyQuery, HttpServletRequest httpServletRequest) {
+        if (teamMyQuery == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
+        }
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        teamMyQuery.setId(loginUser.getId());
+        List<Team> teamList = teamService.listMyJoinTeams(teamMyQuery, loginUser);
+        return ResultUtils.success(teamList);
     }
 }

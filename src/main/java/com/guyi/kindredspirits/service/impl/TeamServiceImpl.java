@@ -8,6 +8,7 @@ import com.guyi.kindredspirits.mapper.TeamMapper;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.domain.UserTeam;
+import com.guyi.kindredspirits.model.dto.TeamMyQuery;
 import com.guyi.kindredspirits.model.dto.TeamQuery;
 import com.guyi.kindredspirits.model.enums.TeamStatusEnum;
 import com.guyi.kindredspirits.model.request.TeamJoinRequest;
@@ -25,10 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author 张仕恒
@@ -412,6 +411,71 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
         }
         return true;
+    }
+
+    /**
+     * 获取我管理的队伍
+     *
+     * @param teamMyQuery - 查询我管理的队伍请求封装对象
+     * @param loginUser - 当前登录用户
+     * @return 符合要求的所有队伍
+     */
+    @Override
+    public List<Team> listMyLeaderTeams(TeamMyQuery teamMyQuery, User loginUser) {
+        if (teamMyQuery == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
+        }
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
+        }
+        Long leaderId = teamMyQuery.getId();
+        Long loginUserId = loginUser.getId();
+        if (leaderId == null || leaderId <= 0 || loginUserId == null || loginUserId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
+        }
+        if (!leaderId.equals(loginUserId)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
+        }
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
+        teamQueryWrapper.eq("leaderId", leaderId);
+        return this.list(teamQueryWrapper);
+    }
+
+    /**
+     * 获取我加入的队伍
+     *
+     * @param teamMyQuery - 查询我管理的队伍请求封装对象
+     * @param loginUser - 当前登录用户
+     * @return 符合要求的所有队伍
+     */
+    @Override
+    public List<Team> listMyJoinTeams(TeamMyQuery teamMyQuery, User loginUser) {
+        if (teamMyQuery == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
+        }
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
+        }
+        Long userId = teamMyQuery.getId();
+        Long loginUserId = loginUser.getId();
+        if (userId == null || userId <= 0 || loginUserId == null || loginUserId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
+        }
+        if (!userId.equals(loginUserId)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
+        }
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("userId", userId);
+        List<UserTeam> list = userTeamService.list(userTeamQueryWrapper);
+        if (CollectionUtils.isEmpty(list)) {
+            return new ArrayList<>();
+        }
+        // 去重
+        Map<Long, List<UserTeam>> tempResult = list.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+        ArrayList<Long> teamIdList = new ArrayList<>(tempResult.keySet());
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
+        teamQueryWrapper.in("id", teamIdList);
+        return this.list(teamQueryWrapper);
     }
 
     /**
