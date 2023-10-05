@@ -13,6 +13,7 @@ import com.guyi.kindredspirits.util.AlgorithmUtil;
 import com.guyi.kindredspirits.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;

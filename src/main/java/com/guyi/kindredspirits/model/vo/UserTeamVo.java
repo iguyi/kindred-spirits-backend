@@ -64,7 +64,12 @@ public class UserTeamVo implements Serializable {
     /**
      * 队伍成员列表
      */
-    List<UserVo> userList;
+    private List<UserVo> userList;
+
+    /**
+     * 是否已加入队伍, 默认未加入
+     */
+    private boolean hasJoin = false;
 
     private static final long serialVersionUID = 1L;
 }

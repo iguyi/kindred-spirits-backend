@@ -14,6 +14,7 @@ import com.guyi.kindredspirits.model.request.TeamJoinRequest;
 import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
 import com.guyi.kindredspirits.model.request.TeamUpdateRequest;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
+import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -96,20 +97,36 @@ public class TempController {
     }
 
     /**
-     * 根据指定信息查询队伍
-     * 筛选条件有: 队伍 id、队伍名称、队伍描述、队伍最大人数、创建人 id、队长 id、队伍状态(公开、私密、加密)
+     * 根据指定信息查询队伍。<br/>
+     * 筛选条件有: 队伍 id、队伍名称、队伍描述、队伍最大人数、创建人 id、队长 id、队伍状态(公开、私密、加密)。<br/>
      *
-     * @param teamQuery - 队伍查询封装对象
-     * @return 符合要求的所有队伍
+     * @param teamQuery - 队伍查询封装对象。
+     * @return 符合要求的所有队伍, 返回值中有一个 hasJoin 字段, 用户判断当前用户是否已加入队伍。<br/>
+     * 注意:
+     * (1) 前端不应该将 hasJoin = true 的数据展示;<br/>
+     * (2) 如果需要展示当前已加入的队伍, 请前使用 this.listMyJoinTeams() 接口.
      */
     @GetMapping("/list")
     public BaseResponse<List<UserTeamVo>> listTeams(TeamQuery teamQuery, HttpServletRequest httpServletRequest) {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
+        // todo 获取登录用户和判断是否是管理员冗余了
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        Long loginUserId = loginUser.getId();
         boolean isAdmin = userService.isAdmin(httpServletRequest);
-        List<UserTeamVo> teamList = teamService.listTeams(teamQuery, isAdmin);
-        return ResultUtils.success(teamList);
+        List<UserTeamVo> userTeamList = teamService.listTeams(teamQuery, isAdmin);
+        userTeamList.forEach(userTeamVo -> {
+            List<UserVo> userList = userTeamVo.getUserList();
+            if (userList != null) {
+                userList.forEach(userVo -> {
+                    if (loginUserId.equals(userVo.getId())) {  // 当前用于已加入该队伍
+                        userTeamVo.setHasJoin(true);
+                    }
+                });
+            }
+        });
+        return ResultUtils.success(userTeamList);
     }
 
     /**
