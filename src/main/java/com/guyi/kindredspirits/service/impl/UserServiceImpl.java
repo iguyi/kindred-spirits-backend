@@ -11,6 +11,7 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.AlgorithmUtil;
 import com.guyi.kindredspirits.util.JsonUtil;
+import com.guyi.kindredspirits.util.LinkedUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.util.Pair;
@@ -268,23 +269,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         List<String> loginUserTagList = JsonUtil.tagsToList(tags);
         // 用户列表的下标, 相似度
-        SortedMap<Integer, Long> indexDistanceMap = new TreeMap<>();
-        for (int i = 0; i < userList.size(); i++) {
-            User user = userList.get(i);
+        LinkedUtil linkedUtil = new LinkedUtil(num);
+        for (User user : userList) {
             String userTags = user.getTags();
             if (StringUtils.isBlank(userTags)) {  // 无标签
                 continue;
             }
             List<String> userTagList = JsonUtil.tagsToList(userTags);
             // 计算相似度
-            long distance = AlgorithmUtil.minDistance(loginUserTagList, userTagList);
-            indexDistanceMap.put(i, distance);
+            int distance = AlgorithmUtil.minDistance(loginUserTagList, userTagList);
+            linkedUtil.add(user, distance);
         }
-        List<Integer> maxDistanceIndexList = indexDistanceMap.keySet().stream().limit(num).collect(Collectors.toList());
-        List<User> safetyUserList = maxDistanceIndexList.stream()
-                .map(index -> this.getSafetyUser(userList.get(index)))
-                .collect(Collectors.toList());
-        return safetyUserList;
+        List<User> userListResult = linkedUtil.getList();
+        userListResult.forEach(this::getSafetyUser);
+        return userListResult;
     }
 
     /**
