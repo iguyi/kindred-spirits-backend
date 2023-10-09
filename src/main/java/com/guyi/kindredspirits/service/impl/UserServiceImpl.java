@@ -2,7 +2,6 @@ package com.guyi.kindredspirits.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.gson.Gson;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
@@ -14,14 +13,16 @@ import com.guyi.kindredspirits.util.JsonUtil;
 import com.guyi.kindredspirits.util.LinkedUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -165,7 +166,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 查询所有用户
         List<User> userList = userMapper.selectList(userQueryWrapper);
         // 在内存中查询
-        Gson gson = new Gson();
         return userList.stream().filter(user -> {
             String tagsStr = user.getTags();
             if (StringUtils.isBlank(tagsStr)) {
@@ -175,10 +175,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());
             for (String tagName : tagNameList) {
                 if (tempTagNameSet.contains(tagName)) {
-                    return false;
+                    return true;
                 }
             }
-            return true;
+            return false;
         }).map(this::getSafetyUser).collect(Collectors.toList());
     }
 
