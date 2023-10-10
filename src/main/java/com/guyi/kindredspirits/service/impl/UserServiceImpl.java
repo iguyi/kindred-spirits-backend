@@ -9,6 +9,7 @@ import com.guyi.kindredspirits.mapper.UserMapper;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.AlgorithmUtil;
+import com.guyi.kindredspirits.util.EntityUtil;
 import com.guyi.kindredspirits.util.JsonUtil;
 import com.guyi.kindredspirits.util.LinkedUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -241,7 +242,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (oldUser == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "没有要更新的数据");
         }
-        // todo 判断 user 和 oldUser 是否一致, 如果一致, 直接返回 1
+        // 判断 user 和 oldUser 是否一致, 如果一致, 直接返回 1
+        if (EntityUtil.entityEq(user, oldUser)) {
+            return 1;
+        }
         return userMapper.updateById(user);
     }
 

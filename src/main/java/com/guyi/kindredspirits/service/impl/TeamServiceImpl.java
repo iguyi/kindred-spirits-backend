@@ -19,6 +19,7 @@ import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.service.UserTeamService;
+import com.guyi.kindredspirits.util.EntityUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -246,7 +247,10 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (!leaderId.equals(loginUserId) && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH, "无权限");
         }
-        // todo 新值与旧值一致就不操作数据库
+        // 判断新数据和旧数据是否相等
+        if (EntityUtil.entityEq(teamUpdateRequest, oldTeam)) {
+            return true;
+        }
         Integer newTeamStatus = teamUpdateRequest.getStatus();
         TeamStatusEnum newEnumTeamStatus = TeamStatusEnum.getEnumByValue(newTeamStatus);
         if (TeamStatusEnum.SECRET.equals(newEnumTeamStatus)) {  // 修改为加密队伍

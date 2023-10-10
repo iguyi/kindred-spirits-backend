@@ -18,6 +18,8 @@ spring:
   session:
     timeout: 86400  # 分钟
     store-type: redis
+  jackson:
+    time-zone: Asia/Shanghai  # 使用上海时区
   # redis 配置
   redis:
     port: 6379
