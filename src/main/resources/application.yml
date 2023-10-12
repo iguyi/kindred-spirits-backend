@@ -19,7 +19,8 @@ spring:
     timeout: 86400  # 分钟
     store-type: redis
   jackson:
-    time-zone: Asia/Shanghai  # 使用上海时区
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
   # redis 配置
   redis:
     port: 6379
