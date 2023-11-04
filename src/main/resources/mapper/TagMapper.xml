@@ -5,19 +5,21 @@
 <mapper namespace="com.guyi.kindredspirits.mapper.TagMapper">
 
     <resultMap id="BaseResultMap" type="com.guyi.kindredspirits.model.domain.Tag">
-            <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="tagName" column="tagName" jdbcType="VARCHAR"/>
-            <result property="userId" column="userId" jdbcType="BIGINT"/>
-            <result property="parentId" column="parentId" jdbcType="BIGINT"/>
-            <result property="isPatent" column="isPatent" jdbcType="TINYINT"/>
-            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
-            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
-            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="tagName" column="tagName" jdbcType="VARCHAR"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="parentId" column="parentId" jdbcType="BIGINT"/>
+        <result property="count" column="count" jdbcType="INTEGER"/>
+        <result property="level" column="level" jdbcType="INTEGER"/>
+        <result property="weights" column="weights" jdbcType="FLOAT"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         id,tagName,userId,
-        parentId,isPatent,createTime,
-        updateTime,isDelete
+        parentId,count,level,weights,
+        createTime,updateTime,isDelete
     </sql>
 </mapper>

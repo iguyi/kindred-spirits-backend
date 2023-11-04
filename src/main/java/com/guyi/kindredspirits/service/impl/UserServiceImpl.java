@@ -30,8 +30,6 @@ import java.util.stream.Collectors;
 
 /**
  * @author 张仕恒
- * @description 针对表【user(用户)】的数据库操作Service实现
- * @createDate 2023-07-22 21:03:08
  */
 @Service
 @Slf4j
@@ -261,7 +259,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public List<User> matchUsers(long num, User loginUser) {
         // 查询所有用户
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        userQueryWrapper.select("id", "userAccount", "username",  "avatarUrl", "gender", "tags", "profile", "phone"
+        userQueryWrapper.select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone"
                 , "email"); // 需要的字段
         userQueryWrapper.ne("id", loginUser.getId());  // 排除自己
         userQueryWrapper.isNotNull("tags");  // tags 不能为空
@@ -321,6 +319,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      *
      * @return 如果当前登录用户是管理员, 返回 true; 反之, 返回 false.
      */
+    @Override
     public boolean isAdmin(HttpServletRequest httpServletRequest) {
         // 仅管理员可查询
         Object userObject = httpServletRequest.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
@@ -334,6 +333,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @param loginUser - 当前登录用户
      * @return 如果当前登录用户是管理员, 返回 true; 反之, 返回 false.
      */
+    @Override
     public boolean isAdmin(User loginUser) {
         // 仅管理员可查询
         return loginUser != null && loginUser.getUserRole() == UserConstant.ADMIN_ROLE;

@@ -26,11 +26,13 @@ import java.util.stream.Collectors;
 
 /**
  * 用户接口
+ *
+ * @author 张仕恒
  */
 @RestController
 @RequestMapping("/user")
 @Slf4j
-@CrossOrigin(value = {"http://127.0.0.1:8081", "http://localhost:8081"})
+@CrossOrigin(origins = {"http://127.0.0.1:3000", "http://localhost:3000"}, allowCredentials = "true")
 public class UserController {
     @Resource
     private UserService userService;
@@ -41,7 +43,7 @@ public class UserController {
     /**
      * Redis key 的模板字符串
      */
-    public static final String redisKeyPre = "kindredspirits:user:%s:%s";
+    public static final String REDIS_KEY_PRE = "kindredspirits:user:%s:%s";
 
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
@@ -135,7 +137,7 @@ public class UserController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
         // 如果缓存有数据, 直接读缓存
-        final String redisKey = String.format(redisKeyPre, "recommend", loginUser.getId());
+        final String redisKey = String.format(REDIS_KEY_PRE, "recommend", loginUser.getId());
         ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
         Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
         if (userPage != null) {
@@ -147,7 +149,8 @@ public class UserController {
         // 写缓存
         try {
             // todo 缓存击穿、缓存雪崩的问题
-            valueOperations.set(redisKey, userPage, 120, TimeUnit.MINUTES);  // 120 分钟
+            // 120 分钟
+            valueOperations.set(redisKey, userPage, 120, TimeUnit.MINUTES);
         } catch (Exception e) {
             log.error("redis set key error: ", e);
         }

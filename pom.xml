@@ -40,6 +40,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- AOP -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.9.6</version>
+        </dependency>
+
         <!-- 数据库相关 -->
         <dependency>
             <groupId>mysql</groupId>

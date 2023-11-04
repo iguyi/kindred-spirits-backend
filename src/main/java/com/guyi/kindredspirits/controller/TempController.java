@@ -28,11 +28,13 @@ import java.util.List;
 
 /**
  * 队伍接口
+ *
+ * @author 张仕恒
  */
 @RestController
 @RequestMapping("/team")
 @Slf4j
-@CrossOrigin(value = {"http://127.0.0.1:8081", "http://localhost:8081"})
+@CrossOrigin(origins = {"http://127.0.0.1:3000", "http://localhost:3000"}, allowCredentials = "true")
 public class TempController {
     @Resource
     private UserService userService;

@@ -1,16 +1,17 @@
 package com.guyi.kindredspirits.model.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
-import lombok.Data;
 
 /**
  * 标签表
- * @TableName tag
+ *
+ * @author 张仕恒
  */
-@TableName(value ="tag")
+@TableName(value = "tag")
 @Data
 public class Tag implements Serializable {
     /**
@@ -25,7 +26,7 @@ public class Tag implements Serializable {
     private String tagName;
 
     /**
-     * 用户 id
+     * 上传标签者 id
      */
     private Long userId;
 
@@ -35,9 +36,22 @@ public class Tag implements Serializable {
     private Long parentId;
 
     /**
-     * 父标签?: 0-不是 1-是
+     * 子标签数
      */
-    private Integer isPatent;
+    private Integer count;
+
+    /**
+     * 标签层级:
+     * 0 - 一级
+     * 1 - 二级
+     * 2 - 三级
+     */
+    private Integer level;
+
+    /**
+     * 权值
+     */
+    private Double weights;
 
     /**
      * 创建时间

@@ -7,6 +7,8 @@ import java.util.Date;
 
 /**
  * 添加队伍的请求封装类
+ *
+ * @author 张仕恒
  */
 @Data
 public class TeamAddRequest implements Serializable {

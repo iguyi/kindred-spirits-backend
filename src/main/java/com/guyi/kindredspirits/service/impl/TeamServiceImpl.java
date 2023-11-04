@@ -36,8 +36,6 @@ import java.util.stream.Collectors;
 
 /**
  * @author 张仕恒
- * @description 针对表【team(队伍表)】的数据库操作Service实现
- * @createDate 2023-10-01 21:54:58
  */
 @Service
 @Slf4j
