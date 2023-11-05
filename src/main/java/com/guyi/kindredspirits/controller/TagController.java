@@ -4,7 +4,7 @@ import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
-import com.guyi.kindredspirits.model.request.TagRequest;
+import com.guyi.kindredspirits.model.request.TagAddRequest;
 import com.guyi.kindredspirits.service.TagService;
 import com.guyi.kindredspirits.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -37,13 +37,18 @@ public class TagController {
      * @return - true 表示添加成功
      */
     @PostMapping("/add/single")
-    public BaseResponse<Boolean> addSingleTag(@RequestBody TagRequest tagSingle
+    public BaseResponse<Boolean> addSingleTag(@RequestBody TagAddRequest tagSingle
             , HttpServletRequest httpServletRequest) {
+
+        //  用户是否登录
         User loginUser = userService.getLoginUser(httpServletRequest);
-        if (tagSingle == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
-        }
+
         boolean result = tagService.addSingleTag(tagSingle, loginUser);
-        return new BaseResponse<>(0, result);
+        if (!result) {
+            log.error("标签创建失败");
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "标签创建失败");
+        }
+
+        return new BaseResponse<>(0, true);
     }
 }

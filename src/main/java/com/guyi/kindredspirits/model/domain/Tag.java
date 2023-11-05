@@ -26,7 +26,7 @@ public class Tag implements Serializable {
     private String tagName;
 
     /**
-     * 上传标签者 id
+     * 标签创建者 id
      */
     private Long userId;
 
@@ -36,20 +36,12 @@ public class Tag implements Serializable {
     private Long parentId;
 
     /**
-     * 子标签数
+     * 基本权值
      */
-    private Integer count;
+    private Double baseWeight;
 
     /**
-     * 标签层级:
-     * 0 - 一级
-     * 1 - 二级
-     * 2 - 三级
-     */
-    private Integer level;
-
-    /**
-     * 权值
+     * 父标签权值+自己的基本权值
      */
     private Double weights;
 

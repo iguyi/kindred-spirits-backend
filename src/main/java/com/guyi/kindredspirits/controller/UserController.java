@@ -1,10 +1,12 @@
 package com.guyi.kindredspirits.controller;
 
+import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.ResultUtils;
+import com.guyi.kindredspirits.contant.RedisConstant;
 import com.guyi.kindredspirits.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
@@ -39,11 +41,6 @@ public class UserController {
 
     @Resource
     RedisTemplate<String, Object> redisTemplate;
-
-    /**
-     * Redis key 的模板字符串
-     */
-    public static final String REDIS_KEY_PRE = "kindredspirits:user:%s:%s";
 
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
@@ -92,10 +89,11 @@ public class UserController {
     }
 
     /**
-     * 查询所有用户
+     * 如果没有指定 username, 则查询所有的用户
+     * 如果指定了 username, 就查询对应昵称的用户
      *
-     * @param username
-     * @return
+     * @param username - 用户昵称
+     * @return 符合要求的用户列表
      */
     @GetMapping("/search")
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest httpServletRequest) {
@@ -123,12 +121,12 @@ public class UserController {
 
     /**
      * 推荐相似用户
-     * todo 推荐多个, 为实现
+     * todo 推荐多个, 未实现
      *
-     * @param pageSize:          每页的数据量, >0
-     * @param pageNum:           页码, >0
-     * @param httpServletRequest
-     * @return
+     * @param pageSize           - 每页的数据量, >0
+     * @param pageNum            - 页码, >0
+     * @param httpServletRequest - httpServletRequest
+     * @return 和当前用户相似的用户
      */
     @GetMapping("/recommend")
     public BaseResponse<Page<User>> recommends(long pageSize, long pageNum, HttpServletRequest httpServletRequest) {
@@ -137,7 +135,7 @@ public class UserController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
         // 如果缓存有数据, 直接读缓存
-        final String redisKey = String.format(REDIS_KEY_PRE, "recommend", loginUser.getId());
+        final String redisKey = String.format(RedisConstant.KEY_PRE, "user", "recommend", loginUser.getId());
         ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
         Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
         if (userPage != null) {
@@ -148,9 +146,10 @@ public class UserController {
         userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
         // 写缓存
         try {
-            // todo 缓存击穿、缓存雪崩的问题
-            // 120 分钟
-            valueOperations.set(redisKey, userPage, 120, TimeUnit.MINUTES);
+            // todo 缓存问题
+            // 15 小时 + 随机时间
+            long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
+            valueOperations.set(redisKey, userPage, timeout, TimeUnit.MINUTES);
         } catch (Exception e) {
             log.error("redis set key error: ", e);
         }
@@ -165,7 +164,7 @@ public class UserController {
      */
     @GetMapping("/match")
     public BaseResponse<List<User>> matchUsers(long num, HttpServletRequest httpServletRequest) {
-        if (num <= 0 || num > 20) {
+        if (num <= 0 || num > UserConstant.MATCH_NUM) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
         User loginUser = userService.getLoginUser(httpServletRequest);

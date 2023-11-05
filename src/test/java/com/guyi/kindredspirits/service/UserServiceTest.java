@@ -1,8 +1,6 @@
 package com.guyi.kindredspirits.service;
 
 import com.guyi.kindredspirits.model.domain.User;
-import org.junit.Assert;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -29,7 +27,7 @@ class UserServiceTest {
     void testSqlSearchUsersByTags() {
         List<String> tagNameList = Arrays.asList("Java", "Python");
         long timeMillis1 = System.currentTimeMillis();
-        List<User> userList = userService.searchUsersByTagsBySQL(tagNameList);
+        List<User> userList = userService.searchUsersByTagsBySql(tagNameList);
         long timeMillis2 = System.currentTimeMillis();
         System.out.println("耗时: " + (timeMillis2 - timeMillis1));
         assertNotNull(userList);

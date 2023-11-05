@@ -5,12 +5,14 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 添加队伍的请求封装类
+ * 创建标签请求封装类
  *
  * @author 张仕恒
  */
 @Data
-public class TagRequest implements Serializable {
+public class TagAddRequest implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * 标签名称
@@ -18,7 +20,7 @@ public class TagRequest implements Serializable {
     private String tagName;
 
     /**
-     * 上传者 id
+     * 标签创建者 id
      */
     private Long userId;
 
@@ -28,17 +30,13 @@ public class TagRequest implements Serializable {
     private Long parentId;
 
     /**
-     * 标签层级:
-     * 0 - 一级
-     * 1 - 二级
-     * 2 - 三级
+     * 基本权值
      */
-    private Integer level;
+    private Double baseWeight;
 
     /**
-     * 权值
+     * 父标签权值+自己的基本权值
      */
     private Double weights;
 
-    private static final long serialVersionUID = 1L;
 }

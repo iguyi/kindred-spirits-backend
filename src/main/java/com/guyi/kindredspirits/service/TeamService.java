@@ -14,8 +14,6 @@ import java.util.List;
 
 /**
  * @author 张仕恒
- * @description 针对表【team(队伍表)】的数据库操作Service
- * @createDate 2023-10-01 21:54:58
  */
 public interface TeamService extends IService<Team> {
 
@@ -68,6 +66,7 @@ public interface TeamService extends IService<Team> {
      * 解散队伍
      *
      * @param teamDeleteRequest - 对用户退出队伍的请求参数的封装
+     * @param loginUser         - 当前登录用户
      * @return true - 解散队伍成功; false - 解散队伍失败
      */
     boolean deleteTeam(TeamQuitOrDeleteRequest teamDeleteRequest, User loginUser);
@@ -76,7 +75,7 @@ public interface TeamService extends IService<Team> {
      * 获取我管理的队伍
      *
      * @param teamMyQuery - 查询我管理的队伍请求封装对象
-     * @param loginUser - 当前登录用户
+     * @param loginUser   - 当前登录用户
      * @return 符合要求的所有队伍
      */
     List<Team> listMyLeaderTeams(TeamMyQuery teamMyQuery, User loginUser);
@@ -85,7 +84,7 @@ public interface TeamService extends IService<Team> {
      * 获取我加入的队伍
      *
      * @param teamMyQuery - 查询我管理的队伍请求封装对象
-     * @param loginUser - 当前登录用户
+     * @param loginUser   - 当前登录用户
      * @return 符合要求的所有队伍
      */
     List<Team> listMyJoinTeams(TeamMyQuery teamMyQuery, User loginUser);

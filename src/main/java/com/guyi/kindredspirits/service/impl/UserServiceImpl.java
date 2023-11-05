@@ -3,6 +3,7 @@ package com.guyi.kindredspirits.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
+import com.guyi.kindredspirits.contant.BaseConstant;
 import com.guyi.kindredspirits.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.UserMapper;
@@ -59,16 +60,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         // 用户账号长度验证
-        if (userAccount.length() < 4) {
+        if (userAccount.length() < UserConstant.USER_ACCOUNT_MIN) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号长度小于4位");
         }
         // 密码长度验证
-        if (userPassword.length() < 8 || checkPassword.length() < 8) {
+        if (userPassword.length() < UserConstant.USER_PASSWORD_MIN
+                || checkPassword.length() < UserConstant.USER_PASSWORD_MIN) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度小于8位");
         }
         // 账户不能包含特殊字符
-        String validPatter = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？\\s]";
-        Matcher matcher = Pattern.compile(validPatter).matcher(userAccount);
+        Matcher matcher = Pattern.compile(BaseConstant.VALID_PATTER).matcher(userAccount);
         if (matcher.find()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号包含特殊字符");
         }
@@ -111,18 +112,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         // 用户名长度验证
-        if (userAccount.length() < 4) {
+        if (userAccount.length() < UserConstant.USER_ACCOUNT_MIN) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号小于4位");
         }
 
         // 密码长度验证
-        if (userPassword.length() < 8) {
+        if (userPassword.length() < UserConstant.USER_PASSWORD_MIN) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度小于8位");
         }
 
         // 账户不能包含特殊字符
-        String validPatter = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？\\s]";
-        Matcher matcher = Pattern.compile(validPatter).matcher(userAccount);
+        Matcher matcher = Pattern.compile(BaseConstant.VALID_PATTER).matcher(userAccount);
         if (matcher.find()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号不能含有特殊字符");
         }
@@ -188,7 +188,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return 符合要求的用户
      */
     @Override
-    public List<User> searchUsersByTagsBySQL(List<String> tagNameList) {
+    public List<User> searchUsersByTagsBySql(List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "没有条件");
         }
@@ -260,9 +260,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 查询所有用户
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone"
-                , "email"); // 需要的字段
-        userQueryWrapper.ne("id", loginUser.getId());  // 排除自己
-        userQueryWrapper.isNotNull("tags");  // tags 不能为空
+                , "email");
+        // 排除自己
+        userQueryWrapper.ne("id", loginUser.getId());
+        // tags 不能为空
+        userQueryWrapper.isNotNull("tags");
         List<User> userList = this.list(userQueryWrapper);
         String tags = loginUser.getTags();
         if (StringUtils.isBlank(tags)) {
@@ -274,7 +276,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         LinkedUtil linkedUtil = new LinkedUtil(num);
         for (User user : userList) {
             String userTags = user.getTags();
-            if (StringUtils.isBlank(userTags)) {  // 无标签
+            // 无标签
+            if (StringUtils.isBlank(userTags)) {
                 continue;
             }
             List<String> userTagList = JsonUtil.tagsToList(userTags);
