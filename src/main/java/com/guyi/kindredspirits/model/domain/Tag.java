@@ -38,12 +38,12 @@ public class Tag implements Serializable {
     /**
      * 基本权值
      */
-    private Double baseWeight;
+    private Integer baseWeight;
 
     /**
      * 父标签权值+自己的基本权值
      */
-    private Double weights;
+    private Integer weights;
 
     /**
      * 创建时间

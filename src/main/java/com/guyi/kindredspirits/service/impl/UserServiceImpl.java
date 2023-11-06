@@ -9,10 +9,7 @@ import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.UserMapper;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.service.UserService;
-import com.guyi.kindredspirits.util.AlgorithmUtil;
-import com.guyi.kindredspirits.util.EntityUtil;
-import com.guyi.kindredspirits.util.JsonUtil;
-import com.guyi.kindredspirits.util.LinkedUtil;
+import com.guyi.kindredspirits.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -159,21 +156,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public List<User> searchUsersByTags(List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "没有条件");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         // 查询所有用户
         List<User> userList = userMapper.selectList(userQueryWrapper);
+
         // 在内存中查询
         return userList.stream().filter(user -> {
             String tagsStr = user.getTags();
             if (StringUtils.isBlank(tagsStr)) {
                 return false;
             }
-            Set<String> tempTagNameSet = JsonUtil.tagsToSet(tagsStr);
-            tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());
+            Set<TagPair> tagPairsSet = JsonUtil.jsonToTagPairSet(tagsStr);
+            tagPairsSet = Optional.ofNullable(tagPairsSet).orElse(new HashSet<>());
+            List<String> tagSet = tagPairsSet.stream().map(TagPair::getTag).collect(Collectors.toList());
             for (String tagName : tagNameList) {
-                if (tempTagNameSet.contains(tagName)) {
+                if (tagSet.contains(tagName)) {
                     return true;
                 }
             }

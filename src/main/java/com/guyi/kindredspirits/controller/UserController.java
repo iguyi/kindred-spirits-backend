@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @CrossOrigin(origins = {"http://127.0.0.1:3000", "http://localhost:3000"}, allowCredentials = "true")
 public class UserController {
+
     @Resource
     private UserService userService;
 
@@ -89,31 +90,63 @@ public class UserController {
     }
 
     /**
-     * 如果没有指定 username, 则查询所有的用户
-     * 如果指定了 username, 就查询对应昵称的用户
+     * todo 考虑分页查询
+     * 查询所有用户, 仅管理员可用
      *
-     * @param username - 用户昵称
-     * @return 符合要求的用户列表
+     * @param httpServletRequest - httpServletRequest
+     * @return 所有用户
      */
-    @GetMapping("/search")
-    public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest httpServletRequest) {
-        // 仅管理员可查询
+    @GetMapping("/search/all")
+    public BaseResponse<List<User>> searchUserAll(HttpServletRequest httpServletRequest) {
+        // 当前登录用户是否是管理员
         if (!userService.isAdmin(httpServletRequest)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        if (!StringUtils.isAnyBlank(username)) {
-            queryWrapper.like("username", username);
-        }
-        List<User> userList = userService.list(queryWrapper);
+        // 查询并脱敏
+        List<User> userList = userService.list(new QueryWrapper<>());
         List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
         return ResultUtils.success(users);
     }
 
+    /**
+     * todo 考虑分页查询
+     * 根据 username 查询用户
+     *
+     * @param username - 用户昵称
+     * @return 符合要求的用户列表
+     */
+    @GetMapping("/search/username")
+    public BaseResponse<List<User>> searchUsersByUsername(String username, HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NO_AUTH, "未登录");
+        }
+
+        // 用户昵称校验
+        if (StringUtils.isAnyBlank(username) || username.length() > UserConstant.USERNAME_MAX) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
+        }
+
+        // 查询并脱敏
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.like("username", username);
+        List<User> userList = userService.list(queryWrapper);
+        List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+
+        return ResultUtils.success(users);
+    }
+
+    /**
+     * 根据标签查询用户
+     *
+     * @param tagNameList - 用户标签列表
+     * @return 符合要求的用户
+     */
     @GetMapping("/search/tags")
     public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
         List<User> userList = userService.searchUsersByTags(tagNameList);
         return ResultUtils.success(userList);
@@ -205,4 +238,5 @@ public class UserController {
         boolean b = userService.removeById(id);
         return ResultUtils.success(b);
     }
+
 }

@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.Tag;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.TagAddRequest;
+import com.guyi.kindredspirits.model.vo.TagDeleteVo;
+
+import java.util.List;
 
 /**
  * @author 张仕恒
@@ -18,5 +21,4 @@ public interface TagService extends IService<Tag> {
      * @return 返回 true 表示创建成功
      */
     boolean addSingleTag(TagAddRequest tagSingle, User loginUser);
-
 }

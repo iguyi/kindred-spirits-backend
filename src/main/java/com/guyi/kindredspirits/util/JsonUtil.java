@@ -1,17 +1,22 @@
 package com.guyi.kindredspirits.util;
 
 import com.google.gson.Gson;
+import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 /**
  * JSON 工具类
+ *
+ * @author 张仕恒
  */
 public class JsonUtil {
 
-    final static Gson gson = new Gson();
+    private final static Gson G = new Gson();
 
     private JsonUtil() {
     }
@@ -23,7 +28,7 @@ public class JsonUtil {
      * @return tags 对应的集合
      */
     public static Set<String> tagsToSet(String tags) {
-        return gson.fromJson(tags, new TypeToken<Set<String>>() {
+        return G.fromJson(tags, new TypeToken<Set<String>>() {
         }.getType());
     }
 
@@ -34,7 +39,17 @@ public class JsonUtil {
      * @return tags 对应的集合
      */
     public static List<String> tagsToList(String tags) {
-        return gson.fromJson(tags, new TypeToken<List<String>>() {
+        return G.fromJson(tags, new TypeToken<List<String>>() {
+        }.getType());
+    }
+
+    public static Set<TagPair> jsonToTagPairSet(String jsonStr) {
+        return G.fromJson(jsonStr, new TypeToken<Set<TagPair>>() {
+        }.getType());
+    }
+
+    public static List<TagPair> jsonToTagPairList(String jsonStr) {
+        return G.fromJson(jsonStr, new TypeToken<List<TagPair>>() {
         }.getType());
     }
 }

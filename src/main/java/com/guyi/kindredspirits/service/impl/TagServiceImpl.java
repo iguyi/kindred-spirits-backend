@@ -10,6 +10,7 @@ import com.guyi.kindredspirits.model.domain.Tag;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.TagAddRequest;
 import com.guyi.kindredspirits.service.TagService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import javax.annotation.Resource;
  * @author 张仕恒
  */
 @Service
+@Slf4j
 public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
         implements TagService {
 
@@ -28,6 +30,10 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
 
     @Override
     public boolean addSingleTag(TagAddRequest tagSingle, User loginUser) {
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NO_AUTH, "未登录");
+        }
+
         //  用户 id 是否正确
         Long loginUserId = loginUser.getId();
         if (loginUserId == null || loginUserId < 1) {
@@ -45,7 +51,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
         }
         //  被创建标签信息校验
         String tagName = tagSingle.getTagName();
-        Double baseWeight = tagSingle.getBaseWeight();
+        Integer baseWeight = tagSingle.getBaseWeight();
         if (StringUtils.isBlank(tagName) || baseWeight == null || baseWeight < 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }

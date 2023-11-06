@@ -5,6 +5,7 @@ import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.TagAddRequest;
+import com.guyi.kindredspirits.model.vo.TagDeleteVo;
 import com.guyi.kindredspirits.service.TagService;
 import com.guyi.kindredspirits.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * 标签接口
@@ -51,4 +54,5 @@ public class TagController {
 
         return new BaseResponse<>(0, true);
     }
+
 }
