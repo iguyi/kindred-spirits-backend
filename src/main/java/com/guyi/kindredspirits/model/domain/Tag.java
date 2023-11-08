@@ -31,6 +31,11 @@ public class Tag implements Serializable {
     private Long userId;
 
     /**
+     * 顶层父标签 id
+     */
+    private Long superParentId;
+
+    /**
      * 父标签 id
      */
     private Long parentId;

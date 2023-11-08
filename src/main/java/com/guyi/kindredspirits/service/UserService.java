@@ -97,4 +97,18 @@ public interface UserService extends IService<User> {
      * @return 和当前登录用户最匹配的 num 个其他用户
      */
     List<User> matchUsers(long num, User loginUser);
+
+    /**
+     * user 中原始的 tags 数据转换为 ["tag-1", "tag-2"] 的格式。
+     * 原始的 tag 数据格式如下:
+     *  {
+     *      "1": [
+     *          {"tag": "Java", "weights": 1}
+     *      ]
+     *  }
+     *
+     * @param user - 用户对象
+     * @return tags 经过转换的 user
+     */
+    String getTagListJson(User user);
 }

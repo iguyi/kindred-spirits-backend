@@ -43,6 +43,12 @@ public class UserController {
     @Resource
     RedisTemplate<String, Object> redisTemplate;
 
+    /**
+     * 注册用户
+     *
+     * @param userRegisterRequest - 用户注册请求封装类对象
+     * @return 新用户 id
+     */
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         if (userRegisterRequest == null) {
@@ -58,6 +64,13 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    /**
+     * 用户登录
+     *
+     * @param userLoginRequest   - 用户登录请求封装类对象
+     * @param httpServletRequest - httpServletRequest
+     * @return 脱敏后的登录用户信息
+     */
     @PostMapping("/login")
     public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest httpServletRequest) {
         if (userLoginRequest == null) {
@@ -73,7 +86,10 @@ public class UserController {
     }
 
     /**
-     * 登录态
+     * 获取用户登录态
+     *
+     * @param httpServletRequest - httpServletRequest
+     * @return 用户登录态
      */
     @GetMapping("/current")
     public BaseResponse<User> getCurrent(HttpServletRequest httpServletRequest) {
@@ -104,6 +120,11 @@ public class UserController {
         }
         // 查询并脱敏
         List<User> userList = userService.list(new QueryWrapper<>());
+        userList.forEach(user -> {
+            String tagListJson = userService.getTagListJson(user);
+            user.setTags(tagListJson);
+        });
+
         List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
         return ResultUtils.success(users);
     }
@@ -132,7 +153,12 @@ public class UserController {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.like("username", username);
         List<User> userList = userService.list(queryWrapper);
-        List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+        List<User> users = userList.stream().map(user -> {
+            user = userService.getSafetyUser(user);
+            String tagListJson = userService.getTagListJson(user);
+            user.setTags(tagListJson);
+            return user;
+        }).collect(Collectors.toList());
 
         return ResultUtils.success(users);
     }
@@ -154,7 +180,7 @@ public class UserController {
 
     /**
      * 推荐相似用户
-     * todo 推荐多个, 未实现
+     * todo 没必要传递 Page 对象, 可以获取 Page 对象的 records 属性值进行返回
      *
      * @param pageSize           - 每页的数据量, >0
      * @param pageNum            - 页码, >0

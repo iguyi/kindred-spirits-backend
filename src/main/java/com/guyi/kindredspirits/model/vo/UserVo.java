@@ -7,6 +7,8 @@ import java.util.Date;
 
 /**
  * 用户包装类(脱敏)
+ *
+ * @author 张仕恒
  */
 @Data
 public class UserVo implements Serializable {
@@ -51,7 +53,7 @@ public class UserVo implements Serializable {
     private Integer userRole;
 
     /**
-     * 标签列，json 格式
+     * 标签列，json 格式: ["tag-1", "tag-2", ...]
      */
     private String tags;
 
@@ -64,11 +66,6 @@ public class UserVo implements Serializable {
      * 状态 0 - 正常
      */
     private Integer userStatus;
-
-    /**
-     * 是否为热点用户 0-不是 1-是
-     */
-    private Integer isHot;
 
     /**
      * 创建时间

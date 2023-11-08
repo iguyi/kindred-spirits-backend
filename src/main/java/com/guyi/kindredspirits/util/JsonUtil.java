@@ -7,6 +7,7 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -48,8 +49,20 @@ public class JsonUtil {
         }.getType());
     }
 
-    public static List<TagPair> jsonToTagPairList(String jsonStr) {
-        return G.fromJson(jsonStr, new TypeToken<List<TagPair>>() {
+    /**
+     * 用于将 user 表的 tags 字段的 JSON 字符串转为 Map<String, List<TagPair>>
+     * tags 字段存储数据的格式如下:
+     *  {
+     *      "superParentId": {
+     *          {"tag": "name", "weights": weights
+     *      },
+     *      "superParentId": {
+     *          {"tag": "name", "weights": weights
+     *      }
+     *  }
+     */
+    public static Map<String, List<TagPair>> jsonToTagPairMap(String jsonStr) {
+        return G.fromJson(jsonStr, new TypeToken<Map<String, List<TagPair>>>() {
         }.getType());
     }
 }

@@ -18,10 +18,7 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -168,9 +165,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             if (StringUtils.isBlank(tagsStr)) {
                 return false;
             }
-            Set<TagPair> tagPairsSet = JsonUtil.jsonToTagPairSet(tagsStr);
-            tagPairsSet = Optional.ofNullable(tagPairsSet).orElse(new HashSet<>());
-            List<String> tagSet = tagPairsSet.stream().map(TagPair::getTag).collect(Collectors.toList());
+            String tagListJson = this.getTagListJson(user);
+            Set<String> tagSet = JsonUtil.tagsToSet(tagListJson);
+            tagSet = Optional.ofNullable(tagSet).orElse(new HashSet<>());
             for (String tagName : tagNameList) {
                 if (tagSet.contains(tagName)) {
                     return true;
@@ -248,7 +245,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 获取最匹配的用户
-     * todo 如果自己没有标签, 那么走随机匹配; TreeMap 排序是按照 key 排序的, 但是相似度又是在 value 中
      *
      * @param num       - 推荐的数量
      * @param loginUser - 当前登录用户
@@ -256,37 +252,48 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public List<User> matchUsers(long num, User loginUser) {
-        // 查询所有用户
+        // 获取当前登录用户的标签数据
+        String loginUserTags = loginUser.getTags();
+        if (StringUtils.isBlank(loginUserTags)) {
+            // todo 可以走随机匹配
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "当前登录用户未设置标签");
+        }
+
+        // 查询 loginUserTags 不为空且不是当前登录用户的所有其他用户
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone"
                 , "email");
-        // 排除自己
         userQueryWrapper.ne("id", loginUser.getId());
-        // tags 不能为空
         userQueryWrapper.isNotNull("tags");
         List<User> userList = this.list(userQueryWrapper);
-        String tags = loginUser.getTags();
-        if (StringUtils.isBlank(tags)) {
-            // todo
-            return null;
-        }
-        List<String> loginUserTagList = JsonUtil.tagsToList(tags);
-        // 用户列表的下标, 相似度
+
+        Map<String, List<Integer>> loginUserTagMap = getTagWeightList(loginUserTags);
         LinkedUtil linkedUtil = new LinkedUtil(num);
         for (User user : userList) {
             String userTags = user.getTags();
-            // 无标签
             if (StringUtils.isBlank(userTags)) {
                 continue;
             }
-            List<String> userTagList = JsonUtil.tagsToList(userTags);
-            // 计算相似度
-            int distance = AlgorithmUtil.minDistance(loginUserTagList, userTagList);
-            linkedUtil.add(user, distance);
+            Map<String, List<Integer>> otherUserTagMap = getTagWeightList(user.getTags());
+            double similarity = AlgorithmUtil.similarity(loginUserTagMap, otherUserTagMap);
+            linkedUtil.add(user, similarity);
         }
         List<User> userListResult = linkedUtil.getList();
         userListResult.forEach(this::getSafetyUser);
         return userListResult;
+    }
+
+    private Map<String, List<Integer>> getTagWeightList(String loginUserTags) {
+        Map<String, List<TagPair>> loginUserTagPairMap = JsonUtil.jsonToTagPairMap(loginUserTags);
+        Map<String, List<Integer>> loginUserTagMap = new HashMap<>();
+        loginUserTagPairMap.forEach((key, value) -> {
+            List<Integer> tagWeights = new ArrayList<>();
+            for (TagPair tagPair : value) {
+                tagWeights.add(tagPair.getWeights());
+            }
+            loginUserTagMap.put(key, tagWeights);
+        });
+        return loginUserTagMap;
     }
 
     /**
@@ -339,6 +346,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public boolean isAdmin(User loginUser) {
         // 仅管理员可查询
         return loginUser != null && loginUser.getUserRole() == UserConstant.ADMIN_ROLE;
+    }
+
+    @Override
+    public String getTagListJson(User user) {
+        Map<String, List<TagPair>> tagPairMap = JsonUtil.jsonToTagPairMap(user.getTags());
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        tagPairMap.forEach((key, value) -> {
+            for (TagPair tagPair : value) {
+                sb.append("\"").append(tagPair.getTag()).append("\"").append(",");
+            }
+        });
+        sb.delete(sb.length() - 1, sb.length());
+        sb.append("]");
+        return sb.toString();
     }
 }
 

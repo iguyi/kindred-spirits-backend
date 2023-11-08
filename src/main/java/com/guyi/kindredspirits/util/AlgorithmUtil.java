@@ -1,23 +1,24 @@
 package com.guyi.kindredspirits.util;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * 算法工具类
+ *
+ * @author 张仕恒
  */
 public class AlgorithmUtil {
 
     /**
      * 最短编辑距离算法 - 标签
      *
-     * @param tagList1
-     * @param tagList2
-     * @return
+     * @param current - 当前用户的标签列表
+     * @param other   - 其他用户的标签列表
+     * @return 当前用户和其他用户的相似度
      */
-    public static int minDistance(List<String> tagList1, List<String> tagList2) {
-        int n = tagList1.size();
-        int m = tagList2.size();
+    public static int minDistance(List<String> current, List<String> other) {
+        int n = current.size();
+        int m = other.size();
 
         if (n * m == 0) {
             return n + m;
@@ -36,51 +37,63 @@ public class AlgorithmUtil {
             for (int j = 1; j < m + 1; j++) {
                 int left = d[i - 1][j] + 1;
                 int down = d[i][j - 1] + 1;
-                int left_down = d[i - 1][j - 1];
-                if (!Objects.equals(tagList1.get(i - 1), tagList2.get(j - 1))) {
-                    left_down += 1;
+                int leftDown = d[i - 1][j - 1];
+                if (!Objects.equals(current.get(i - 1), other.get(j - 1))) {
+                    leftDown += 1;
                 }
-                d[i][j] = Math.min(left, Math.min(down, left_down));
+                d[i][j] = Math.min(left, Math.min(down, leftDown));
             }
         }
         return d[n][m];
     }
 
-    /**
-     * 最短编辑距离算法 - 字符串
-     *
-     * @param word1
-     * @param word2
-     * @return
-     */
-    public static int minDistance(String word1, String word2) {
-        int n = word1.length();
-        int m = word2.length();
+    public static double similarity(Map<String, List<Integer>> currentUserTag,
+                                    Map<String, List<Integer>> otherUserTag) {
+        // 当前用户权值
+        double currentUserWeight = 0.0;
 
-        if (n * m == 0) {
-            return n + m;
-        }
+        // 其他用户权值
+        double otherUserWeight = 0.0;
 
-        int[][] d = new int[n + 1][m + 1];
-        for (int i = 0; i < n + 1; i++) {
-            d[i][0] = i;
-        }
+        // 点积
+        double dotProduct = 0.0;
 
-        for (int j = 0; j < m + 1; j++) {
-            d[0][j] = j;
-        }
-
-        for (int i = 1; i < n + 1; i++) {
-            for (int j = 1; j < m + 1; j++) {
-                int left = d[i - 1][j] + 1;
-                int down = d[i][j - 1] + 1;
-                int left_down = d[i - 1][j - 1];
-                if (word1.charAt(i - 1) != word2.charAt(j - 1)) {
-                    left_down += 1;
-                }
-                d[i][j] = Math.min(left, Math.min(down, left_down));
+        Set<String> otherItemSuperTagIds = otherUserTag.keySet();
+        for (String otherItemSuperTagId: otherItemSuperTagIds) {
+            if (!currentUserTag.containsKey(otherItemSuperTagId)) {
+                continue;
             }
+
+            List<Integer> currentItemTagWeightsList = currentUserTag.get(otherItemSuperTagId);
+            List<Integer> otherItemTagWeightsList = otherUserTag.get(otherItemSuperTagId);
+
+            // 计算(顶层)父标签权值 - 点积
+            double currentUserProduct = calculateParentTagWeight(currentItemTagWeightsList);
+            double otherUserValuesProduct = calculateParentTagWeight(otherItemTagWeightsList);
+            dotProduct += currentUserProduct * otherUserValuesProduct;
+
+            // 计算用户权值
+            currentUserWeight += Math.pow(currentUserProduct, 2);
+            otherUserWeight += Math.pow(otherUserValuesProduct, 2);
         }
-        return d[n][m];
+
+        return dotProduct / Math.max(Math.sqrt(currentUserWeight) * Math.sqrt(otherUserWeight), 0.00000001);
+    }
+
+    /**
+     * 计算父标签权重
+     *
+     * @param tagWeights - 父标签下的子标签
+     * @return 父标签权重
+     */
+    private static double calculateParentTagWeight(List<Integer> tagWeights) {
+        // 初始权重
+        double weight = 0.0;
+
+        for (Integer tagWeight : tagWeights) {
+            weight += tagWeight;
+        }
+
+        return weight / tagWeights.size();
     }
 }
