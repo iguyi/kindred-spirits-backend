@@ -5,33 +5,10 @@ import com.guyi.kindredspirits.model.domain.User;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author 张仕恒
+ */
 public class LinkedUtil {
-
-    /*public static void main(String[] args) {
-        User user2 = new User();
-        user2.setId(2L);
-        User user3 = new User();
-        user3.setId(3L);
-        User user4 = new User();
-        user4.setId(4L);
-        User user5 = new User();
-        user5.setId(5L);
-        User user6 = new User();
-        user6.setId(6L);
-        User user7 = new User();
-        user7.setId(7L);
-
-        List<User> userList = Arrays.asList(user2, user3, user4, user5, user6, user7);
-        List<Integer> integerList =Arrays.asList(4, 2, 2, 0, 2, 5);
-
-        LinkedUtil linkedUtil = new LinkedUtil(6);
-        for (int i = 0; i < 6; i++) {
-            linkedUtil.add(userList.get(i), integerList.get(i));
-        }
-        for (User user : linkedUtil.getList()) {
-            System.out.println(user.getId());
-        }
-    }*/
 
     /**
      * 维护一个 size 的有序双向链表
@@ -57,8 +34,8 @@ public class LinkedUtil {
         this.size = size;
     }
 
-    public void add(User user, int distance) {
-        Node newNode = new Node(user, distance);
+    public void add(User user, double similarity) {
+        Node newNode = new Node(user, similarity);
         // 链表中没有元素
         if (counter == 0) {
             head = newNode;
@@ -68,10 +45,12 @@ public class LinkedUtil {
         }
         Node current = head;
         while (current != null) {
-            // distance 越小, 离 head 越近
-            if (current.distance > newNode.distance) {  // 插队
+            // similarity 越小, 离 head 越近
+            if (current.similarity > newNode.similarity) {
+                // 插队
                 Node currentLast = current.last;
-                if (currentLast == null) {  // 插在头节点前面
+                if (currentLast == null) {
+                    // 插在头节点前面
                     newNode.next = head;
                     head.last = newNode;
                     head = newNode;
@@ -124,7 +103,7 @@ public class LinkedUtil {
         /**
          * 相似度
          */
-        private final int distance;
+        private final double similarity;
 
         /**
          * 上一个节点
@@ -136,9 +115,9 @@ public class LinkedUtil {
          */
         private Node next;
 
-        public Node(User user, int distance) {
+        public Node(User user, double similarity) {
             this.user = user;
-            this.distance = distance;
+            this.similarity = similarity;
         }
     }
 
