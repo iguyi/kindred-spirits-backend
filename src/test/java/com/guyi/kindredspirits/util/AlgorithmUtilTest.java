@@ -26,18 +26,4 @@ public class AlgorithmUtilTest {
         System.out.println(value1 + " " + value2 + " " + value3);
     }
 
-    /**
-     * 测试最短编辑距离算法 - 字符串
-     */
-    @Test
-    public void testMinDistanceString() {
-        String testData1 = "张三是狗";
-        String testData2 = "张三不是狗";
-        String testData3 = "张三是猫不是狗";
-        int value1 = AlgorithmUtil.minDistance(testData1, testData2);  // 1
-        int value2 = AlgorithmUtil.minDistance(testData1, testData3);  // 3
-        int value3 = AlgorithmUtil.minDistance(testData2, testData3);  // 2
-        System.out.println(value1 + " " + value2 + " " + value3);
-    }
-
 }
