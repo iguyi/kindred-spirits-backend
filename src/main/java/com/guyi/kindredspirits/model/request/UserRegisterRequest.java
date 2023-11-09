@@ -9,7 +9,7 @@ import java.io.Serializable;
  *
  * @author 张仕恒
  */
-@Data  // 可以生成 set 和 get
+@Data
 public class UserRegisterRequest implements Serializable {
 
     private static final long serialVersionUID = 3046761170230231032L;
