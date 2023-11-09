@@ -1,11 +1,9 @@
 package com.guyi.kindredspirits.util;
 
 import com.google.gson.Gson;
-import com.google.gson.internal.LinkedTreeMap;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,7 +15,7 @@ import java.util.Set;
  */
 public class JsonUtil {
 
-    private final static Gson G = new Gson();
+    public final static Gson G = new Gson();
 
     private JsonUtil() {
     }
@@ -54,10 +52,10 @@ public class JsonUtil {
      * tags 字段存储数据的格式如下:
      *  {
      *      "superParentId": {
-     *          {"tag": "name", "weights": weights
+     *          {"tag": "name", "weights": weights}
      *      },
      *      "superParentId": {
-     *          {"tag": "name", "weights": weights
+     *          {"tag": "name", "weights": weights}
      *      }
      *  }
      */
@@ -65,4 +63,18 @@ public class JsonUtil {
         return G.fromJson(jsonStr, new TypeToken<Map<String, List<TagPair>>>() {
         }.getType());
     }
+
+    /**
+     * 通用 JSON 转 Java 对象
+     *
+     * @param json  - JSON 字符串
+     * @param clazz - 返回值 Class
+     * @param <R>   - 返回值类型
+     * @return R 类型对象
+     * @throws JsonSyntaxException JSON 格式不正确
+     */
+    public static <R> R fromJson(String json, Class<R> clazz) throws JsonSyntaxException {
+        return G.fromJson(json, clazz);
+    }
+
 }

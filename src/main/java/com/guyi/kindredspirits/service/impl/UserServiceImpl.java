@@ -166,6 +166,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 return false;
             }
             String tagListJson = this.getTagListJson(user);
+            user.setTags(tagListJson);
             Set<String> tagSet = JsonUtil.tagsToSet(tagListJson);
             tagSet = Optional.ofNullable(tagSet).orElse(new HashSet<>());
             for (String tagName : tagNameList) {
@@ -255,7 +256,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 获取当前登录用户的标签数据
         String loginUserTags = loginUser.getTags();
         if (StringUtils.isBlank(loginUserTags)) {
-            // todo 可以走随机匹配
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "当前登录用户未设置标签");
         }
 
@@ -283,9 +283,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return userListResult;
     }
 
-    private Map<String, List<Integer>> getTagWeightList(String loginUserTags) {
+    @Override
+    public Map<String, List<Integer>> getTagWeightList(String loginUserTags) {
         Map<String, List<TagPair>> loginUserTagPairMap = JsonUtil.jsonToTagPairMap(loginUserTags);
-        Map<String, List<Integer>> loginUserTagMap = new HashMap<>();
+        Map<String, List<Integer>> loginUserTagMap = new HashMap<>(loginUserTagPairMap.size());
         loginUserTagPairMap.forEach((key, value) -> {
             List<Integer> tagWeights = new ArrayList<>();
             for (TagPair tagPair : value) {

@@ -5,6 +5,7 @@ import com.guyi.kindredspirits.model.domain.User;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author 张仕恒
@@ -30,6 +31,8 @@ public interface UserService extends IService<User> {
      * @return 脱敏后的用户信息
      */
     User userLogin(String userAccount, String userPassword, HttpServletRequest httpServletRequest);
+
+    Map<String, List<Integer>> getTagWeightList(String loginUserTags);
 
     /**
      * 用户脱敏

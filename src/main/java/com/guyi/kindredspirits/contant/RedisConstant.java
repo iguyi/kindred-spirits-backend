@@ -12,6 +12,12 @@ public interface RedisConstant {
      */
     String KEY_PRE = "kindred-spirits:%s:%s:%s";
 
+
+    /**
+     * Redis 推荐用户的缓存数据 key 模板
+     */
+    String RECOMMEND_KEY_PRE = "kindred-spirits:user:recommend:%s";
+
     /**
      * 缓存预热存储的数据的过期时间 - 15 个小时
      */

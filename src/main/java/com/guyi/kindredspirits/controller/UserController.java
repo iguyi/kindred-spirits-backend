@@ -180,7 +180,7 @@ public class UserController {
 
     /**
      * 推荐相似用户
-     * todo 没必要传递 Page 对象, 可以获取 Page 对象的 records 属性值进行返回
+     * todo 暂时是随机返回
      *
      * @param pageSize           - 每页的数据量, >0
      * @param pageNum            - 页码, >0
@@ -188,17 +188,17 @@ public class UserController {
      * @return 和当前用户相似的用户
      */
     @GetMapping("/recommend")
-    public BaseResponse<Page<User>> recommends(long pageSize, long pageNum, HttpServletRequest httpServletRequest) {
+    public BaseResponse<List<User>> recommends(long pageSize, long pageNum, HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (pageSize < 1 || pageNum < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
         // 如果缓存有数据, 直接读缓存
-        final String redisKey = String.format(RedisConstant.KEY_PRE, "user", "recommend", loginUser.getId());
+        final String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, loginUser.getId());
         ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
         Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
         if (userPage != null) {
-            return ResultUtils.success(userPage);
+            return ResultUtils.success(userPage.getRecords());
         }
         // 无缓存, 走数据库
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -212,7 +212,7 @@ public class UserController {
         } catch (Exception e) {
             log.error("redis set key error: ", e);
         }
-        return ResultUtils.success(userPage);
+        return ResultUtils.success(userPage.getRecords());
     }
 
     /**
