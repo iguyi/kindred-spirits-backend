@@ -32,6 +32,12 @@ public interface UserService extends IService<User> {
      */
     User userLogin(String userAccount, String userPassword, HttpServletRequest httpServletRequest);
 
+    /**
+     * 将 JSON 格式的用户标签数据反序列化为 Java 对象
+     *
+     * @param loginUserTags - JSON 格式的用户标签数据
+     * @return 用户标签反序列化后得到的 Java 对象
+     */
     Map<String, List<Integer>> getTagWeightList(String loginUserTags);
 
     /**
