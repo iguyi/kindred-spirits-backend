@@ -19,6 +19,11 @@ public interface RedisConstant {
     String RECOMMEND_KEY_PRE = "kindred-spirits:user:recommend:%s";
 
     /**
+     * 缓存 "最大 ID 用户的账号" 的 key
+     */
+    String MAX_ID_USER_ACCOUNT_KEY = "kindred-spirits:user:max:id";
+
+    /**
      * 缓存预热存储的数据的过期时间 - 15 个小时
      */
     Long PRECACHE_TIMEOUT = 900L;

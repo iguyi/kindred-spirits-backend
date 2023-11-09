@@ -1,9 +1,12 @@
 package com.guyi.kindredspirits.service.impl;
 
+import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.contant.BaseConstant;
+import com.guyi.kindredspirits.contant.RedisConstant;
 import com.guyi.kindredspirits.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.UserMapper;
@@ -12,6 +15,9 @@ import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
@@ -19,6 +25,7 @@ import org.springframework.util.DigestUtils;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -34,61 +41,81 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Resource
     private UserMapper userMapper;
 
+    @Resource
+    RedisTemplate<String, String> redisTemplate;
+
+    @Resource
+    private RedissonClient redissonClient;
+
     /**
      * 盐值，混淆密码
      */
     private static final String SALT = "guyi";
 
-    /**
-     * 用户注册
-     *
-     * @param userAccount   用户名称
-     * @param userPassword  密码
-     * @param checkPassword 校验密码
-     * @return 新用户的 id
-     */
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword) {
-        // 非空验证
-        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+    public long userRegister(String userPassword, String checkPassword) {
+        // 密码校验: 空校验、长度校验、两次输入是否相等、特殊字符匹配
+        if (StringUtils.isAnyBlank(userPassword)
+                || userPassword.length() < UserConstant.USER_PASSWORD_MIN
+                || !userPassword.equals(checkPassword)
+                || Pattern.compile(BaseConstant.VALID_PATTER).matcher(userPassword).find()
+        ) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "非法密码");
         }
-        // 用户账号长度验证
-        if (userAccount.length() < UserConstant.USER_ACCOUNT_MIN) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号长度小于4位");
-        }
-        // 密码长度验证
-        if (userPassword.length() < UserConstant.USER_PASSWORD_MIN
-                || checkPassword.length() < UserConstant.USER_PASSWORD_MIN) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度小于8位");
-        }
-        // 账户不能包含特殊字符
-        Matcher matcher = Pattern.compile(BaseConstant.VALID_PATTER).matcher(userAccount);
-        if (matcher.find()) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号包含特殊字符");
-        }
-        // 密码和校验密码是否相同
-        if (!userPassword.equals(checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
-        }
-        // 账户重复性验证
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("userAccount", userAccount);
-        long count = userMapper.selectCount(queryWrapper);
-        if (count > 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
-        }
+
+        // 创建新用户
+        User newUser = new User();
+        // 为新用户生成随机昵称
+        String username = UserConstant.DEFAULT_USERNAME_PRE + RandomUtil.randomString(6);
+        newUser.setUsername(username);
+
         // 密码加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-        // 插入数据
-        User user = new User();
-        user.setUserAccount(userAccount);
-        user.setUserPassword(encryptPassword);
-        boolean saveResult = this.save(user);
-        if (!saveResult) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        newUser.setUserPassword(encryptPassword);
+
+        String lockKey = String.format(RedisConstant.KEY_PRE, "user", "register", "lock");
+        RLock lock = redissonClient.getLock(lockKey);
+        for (int i=0; i < 100; i++) {
+            try {
+                if (lock.tryLock(0, 30L, TimeUnit.SECONDS)) {
+                    // 从缓存中取账号信息最新用户的 userAccount
+                    String maxUserAccount = RedisUtil.getForValue(redisTemplate, RedisConstant.MAX_ID_USER_ACCOUNT_KEY, String.class);
+
+                    // 如果缓存中没有数据查询数据库中 id 最大的 user 的 userAccount
+                    if (maxUserAccount == null) {
+                        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+                        queryWrapper.orderByDesc("id");
+                        User user = page(new Page<>(1, 1), queryWrapper).getRecords().get(0);
+                        //  如果缓存和数据库都没有取到 userAccount，那么新用户的 userAccount 为 "100001"
+                        maxUserAccount = user == null?"100001":user.getUserAccount();
+                    }
+
+                    //  将取到的 userAccount 加 1 作为新用户的 userAccount
+                    long newUserAccount = Long.parseLong(maxUserAccount) + 1;
+                    String newUserAccountValue = String.valueOf(newUserAccount);
+                    newUser.setUserAccount(newUserAccountValue);
+
+                    //  新用户数据插入数据库
+                    this.save(newUser);
+                    if (newUser.getId() == null) {
+                        throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败");
+                    }
+
+                    //  将新用户的 userAccount 写入缓存
+                    RedisUtil.setForValue(redisTemplate, RedisConstant.MAX_ID_USER_ACCOUNT_KEY, newUserAccountValue);
+                    return newUser.getId();
+                }
+            } catch (Exception e) {
+                log.debug("The userRegister method of the PreCacheJob class is error: " + e);
+            } finally {
+                // 只释放当前线程加的锁
+                if (lock.isHeldByCurrentThread()) {
+                    lock.unlock();
+                }
+            }
         }
-        return user.getId();
+
+        throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
     }
 
     /**
@@ -352,6 +379,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public String getTagListJson(User user) {
         Map<String, List<TagPair>> tagPairMap = JsonUtil.jsonToTagPairMap(user.getTags());
+        if (tagPairMap == null) {
+            return null;
+        }
         StringBuilder sb = new StringBuilder();
         sb.append("[");
         tagPairMap.forEach((key, value) -> {

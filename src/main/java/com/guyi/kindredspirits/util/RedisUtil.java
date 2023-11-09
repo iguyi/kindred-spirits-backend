@@ -21,6 +21,15 @@ public class RedisUtil {
     }
 
     /**
+     * 写缓存 - 字符串类型数据
+     * 不设置过期时间
+     */
+    public static <D> void setForValue(RedisTemplate<String, String> redisTemplate, String key, D data) {
+        String jsonObj = JsonUtil.G.toJson(data);
+        redisTemplate.opsForValue().set(key, jsonObj);
+    }
+
+    /**
      * 读缓存 - 字符串类型数据
      */
     public static <R> R getForValue(RedisTemplate<String, String> redisTemplate, String key, Class<R> type) {

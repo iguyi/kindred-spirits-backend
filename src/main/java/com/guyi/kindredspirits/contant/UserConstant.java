@@ -47,4 +47,9 @@ public interface UserConstant {
      */
     int USERNAME_MAX = 10;
 
+    /**
+     * 随机用户昵称前缀
+     */
+    String DEFAULT_USERNAME_PRE = "user_";
+
 }

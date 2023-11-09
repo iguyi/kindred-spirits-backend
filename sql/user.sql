@@ -19,7 +19,7 @@ CREATE TABLE `user`
     `isDelete`     tinyint(0)                                                     NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB
-  AUTO_INCREMENT = 4
+  AUTO_INCREMENT = 1
   CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户表'
   ROW_FORMAT = Dynamic;
