@@ -20,8 +20,8 @@ public class RedisTemplateConfig {
      * @return redisTemplate
      */
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
         // 设置连接工厂
         redisTemplate.setConnectionFactory(connectionFactory);
 

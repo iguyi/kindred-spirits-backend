@@ -13,15 +13,16 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.UserLoginRequest;
 import com.guyi.kindredspirits.model.request.UserRegisterRequest;
 import com.guyi.kindredspirits.service.UserService;
+import com.guyi.kindredspirits.util.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -41,7 +42,7 @@ public class UserController {
     private UserService userService;
 
     @Resource
-    RedisTemplate<String, Object> redisTemplate;
+    RedisTemplate<String, String> redisTemplate;
 
     /**
      * 注册用户
@@ -101,12 +102,13 @@ public class UserController {
         // TODO 校验是否合法
         User user = userService.getById(id);
         User safetyUser = userService.getSafetyUser(user);
+        safetyUser.setTags(userService.getTagListJson(safetyUser));
         return ResultUtils.success(safetyUser);
     }
 
     /**
-     * todo 考虑分页查询
      * 查询所有用户, 仅管理员可用
+     * todo 考虑分页查询
      *
      * @param httpServletRequest - httpServletRequest
      * @return 所有用户
@@ -129,8 +131,8 @@ public class UserController {
     }
 
     /**
-     * todo 考虑分页查询
      * 根据 username 查询用户
+     * todo 考虑分页查询
      *
      * @param username - 用户昵称
      * @return 符合要求的用户列表
@@ -179,7 +181,7 @@ public class UserController {
 
     /**
      * 推荐相似用户
-     * todo 暂时是随机返回
+     * todo 暂时是随机返回, 缓存也需要分页查询
      *
      * @param pageSize           - 每页的数据量, >0
      * @param pageNum            - 页码, >0
@@ -194,24 +196,30 @@ public class UserController {
         }
         // 如果缓存有数据, 直接读缓存
         final String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, loginUser.getId());
-        ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
-        Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
-        if (userPage != null) {
-            return ResultUtils.success(userPage.getRecords());
+        List<User> userList = new ArrayList<>();
+        userList = RedisUtil.getForValue(redisTemplate, redisKey, userList.getClass());
+        if (userList != null) {
+            return ResultUtils.success(userList);
         }
         // 无缓存, 走数据库
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
+        Page<User> userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
+        userList = userPage.getRecords();
+        userList = userList.stream().map(user -> {
+            user.setTags(userService.getTagListJson(user));
+            return userService.getSafetyUser(user);
+        }).collect(Collectors.toList());
+
         // 写缓存
         try {
             // todo 缓存问题
             // 15 小时 + 随机时间
             long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
-            valueOperations.set(redisKey, userPage, timeout, TimeUnit.MINUTES);
+            RedisUtil.setForValue(redisTemplate, redisKey, userList, timeout, TimeUnit.MINUTES);
         } catch (Exception e) {
             log.error("redis set key error: ", e);
         }
-        return ResultUtils.success(userPage.getRecords());
+        return ResultUtils.success(userList);
     }
 
     /**
