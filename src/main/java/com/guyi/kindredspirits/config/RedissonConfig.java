@@ -10,6 +10,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Redisson 配置
+ *
+ * @author 张仕恒
  */
 @Configuration
 @ConfigurationProperties(prefix = "spring.redis")
@@ -26,6 +28,11 @@ public class RedissonConfig {
      */
     private String port;
 
+    /**
+     * 使用的几号库
+     */
+    private int database;
+
     @Bean
     public RedissonClient redissonClient() {
         // 创建配置对象
@@ -33,7 +40,7 @@ public class RedissonConfig {
         String redisAddress = String.format("redis://%s:%s", host, port);
         config.useSingleServer()
                 .setAddress(redisAddress)
-                .setDatabase(1);
+                .setDatabase(database);
 
         // 创建实例
         return Redisson.create(config);
