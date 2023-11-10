@@ -7,7 +7,7 @@ server:
         domain: localhost  # 设置种 cookie 的范围
 spring:
   profiles:
-    active: dev
+    active: test
   application:
     name: kindred-spirits-backend
   datasource:
@@ -15,6 +15,10 @@ spring:
     username: root
     password: zsh654321
     url: jdbc:mysql://localhost:3306/kindred-spirits?serverTimezone=Asia/Shanghai
+    hikari:
+      minimum-idle: 3
+      maximum-pool-size: 10
+      max-lifetime: 30000   #不能小于30秒，否则默认回到1800秒
   session:
     timeout: 86400  # 分钟
     store-type: redis
