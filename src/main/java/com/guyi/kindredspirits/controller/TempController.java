@@ -174,7 +174,7 @@ public class TempController {
      * @param teamQuitRequest - 对用户退出队伍的请求参数的封装
      * @return true - 退出队伍成功; false - 退出队伍失败
      */
-    @PostMapping("quit")
+    @PostMapping("/quit")
     public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitOrDeleteRequest teamQuitRequest,
                                           HttpServletRequest httpServletRequest) {
         if (teamQuitRequest == null) {
