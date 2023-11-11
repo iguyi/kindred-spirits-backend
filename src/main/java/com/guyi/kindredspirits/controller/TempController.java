@@ -223,7 +223,7 @@ public class TempController {
     }
 
     /**
-     * 获取我管理的队伍
+     * 获取我加入的队伍
      *
      * @param teamMyQuery - 查询我所属的队伍请求封装对象
      * @return 符合要求的所有队伍
