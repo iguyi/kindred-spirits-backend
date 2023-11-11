@@ -61,7 +61,7 @@ public class PreCacheJob {
                 // 查询所有热点用户数据
                 QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
                 userQueryWrapper.select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "email",
-                        "phone", "profile")
+                                "phone", "profile")
                         .eq("isHot", UserConstant.HOT_USER_TAG);
                 List<User> mainUserList = userMapper.selectList(userQueryWrapper);
 
@@ -69,7 +69,7 @@ public class PreCacheJob {
                     // 查询所有用户信息
                     userQueryWrapper = new QueryWrapper<>();
                     userQueryWrapper.select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile"
-                            , "phone" , "email");
+                            , "phone", "email");
                     userQueryWrapper.ne("id", mainUser.getId());
                     userQueryWrapper.isNotNull("tags");
                     List<User> userList = userService.list(userQueryWrapper);
@@ -95,7 +95,11 @@ public class PreCacheJob {
                         // 写缓存, key 超时时间 = 15 小时 + 随机时间(分钟)
                         // todo 缓存问题
                         long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
-                        RedisUtil.setForValue(redisTemplate, redisKey, cacheUserList, timeout, TimeUnit.MINUTES);
+                        boolean result = RedisUtil.setForValue(redisKey, cacheUserList, timeout,
+                                TimeUnit.MINUTES);
+                        if (!result) {
+                            log.error("redis set {} error.", redisKey);
+                        }
                     } catch (Exception e) {
                         log.error("redis set key error: ", e);
                     }

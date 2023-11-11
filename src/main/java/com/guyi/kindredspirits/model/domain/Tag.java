@@ -14,6 +14,10 @@ import java.util.Date;
 @TableName(value = "tag")
 @Data
 public class Tag implements Serializable {
+
+    @TableField(exist = false)
+    private static final long serialVersionUID = 1L;
+
     /**
      * id
      */
@@ -31,9 +35,9 @@ public class Tag implements Serializable {
     private Long userId;
 
     /**
-     * 顶层父标签 id
+     * 是否是父标签
      */
-    private Long superParentId;
+    private Integer isPatent;
 
     /**
      * 父标签 id
@@ -66,6 +70,4 @@ public class Tag implements Serializable {
     @TableLogic
     private Integer isDelete;
 
-    @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
 }

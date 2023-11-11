@@ -25,6 +25,11 @@ public class TagAddRequest implements Serializable {
     private Long userId;
 
     /**
+     * 是否是父标签
+     */
+    private Integer isPatent;
+
+    /**
      * 父标签 id
      */
     private Long parentId;

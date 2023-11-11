@@ -16,7 +16,6 @@ import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,9 +39,6 @@ public class UserController {
 
     @Resource
     private UserService userService;
-
-    @Resource
-    RedisTemplate<String, String> redisTemplate;
 
     /**
      * 注册用户
@@ -182,6 +178,7 @@ public class UserController {
     /**
      * 推荐相似用户
      * todo 暂时是随机返回, 缓存也需要分页查询
+     * todo 查询缓存后, 要判断数量对不对啊！
      *
      * @param pageSize           - 每页的数据量, >0
      * @param pageNum            - 页码, >0
@@ -197,7 +194,7 @@ public class UserController {
         // 如果缓存有数据, 直接读缓存
         final String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, loginUser.getId());
         List<User> userList = new ArrayList<>();
-        userList = RedisUtil.getForValue(redisTemplate, redisKey, userList.getClass());
+        userList = RedisUtil.get(redisKey, userList.getClass());
         if (userList != null) {
             return ResultUtils.success(userList);
         }
@@ -215,7 +212,10 @@ public class UserController {
             // todo 缓存问题
             // 15 小时 + 随机时间
             long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
-            RedisUtil.setForValue(redisTemplate, redisKey, userList, timeout, TimeUnit.MINUTES);
+            boolean result = RedisUtil.setForValue(redisKey, userList, timeout, TimeUnit.MINUTES);
+            if (!result) {
+                log.error("redis set {} error.", redisKey);
+            }
         } catch (Exception e) {
             log.error("redis set key error: ", e);
         }

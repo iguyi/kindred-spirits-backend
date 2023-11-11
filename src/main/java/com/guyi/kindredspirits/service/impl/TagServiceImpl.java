@@ -9,6 +9,7 @@ import com.guyi.kindredspirits.mapper.TagMapper;
 import com.guyi.kindredspirits.model.domain.Tag;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.TagAddRequest;
+import com.guyi.kindredspirits.model.vo.TagVo;
 import com.guyi.kindredspirits.service.TagService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -16,6 +17,10 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author 张仕恒
@@ -31,7 +36,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
     @Override
     public boolean addSingleTag(TagAddRequest tagSingle, User loginUser) {
         if (loginUser == null) {
-            throw new BusinessException(ErrorCode.NO_AUTH, "未登录");
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
 
         //  用户 id 是否正确
@@ -47,7 +52,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
 
         //  是否传递被创建标签信息
         if (tagSingle == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+            throw new BusinessException(ErrorCode.NULL_ERROR, "参数为空");
         }
         //  被创建标签信息校验
         String tagName = tagSingle.getTagName();
@@ -82,5 +87,31 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
 
         //  将数据写入数据库
         return this.save(newTag);
+    }
+
+    @Override
+    public List<List<TagVo>> getAll() {
+        QueryWrapper<Tag> tagQueryWrapper = new QueryWrapper<>();
+        tagQueryWrapper.isNotNull("tagName")
+                .isNotNull("userId")
+                .isNotNull("isPatent")
+                .isNotNull("weights")
+                .last("and (isPatent=0 and parentId is not null) or (isPatent=1 and parentId is null)");
+
+        List<Tag> tagAll = tagMapper.selectList(tagQueryWrapper);
+        Map<Long, List<Tag>> tagGroup = tagAll.stream()
+                .collect(Collectors.groupingBy(tag -> (tag.getIsPatent().equals(1)) ? tag.getId() : tag.getParentId()));
+        List<List<TagVo>> resultList = new ArrayList<>();
+        tagGroup.forEach((key, value) -> {
+            List<TagVo> tempList = new ArrayList<>();
+            value.forEach(tag -> {
+                TagVo tagVo = new TagVo();
+                BeanUtils.copyProperties(tag, tagVo);
+                tempList.add(tagVo);
+            });
+            resultList.add(tempList);
+        });
+
+        return resultList;
     }
 }

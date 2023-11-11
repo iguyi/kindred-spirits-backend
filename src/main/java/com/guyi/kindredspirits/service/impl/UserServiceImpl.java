@@ -79,7 +79,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             try {
                 if (lock.tryLock(0, 30L, TimeUnit.SECONDS)) {
                     // 从缓存中取账号信息最新用户的 userAccount
-                    String maxUserAccount = RedisUtil.getForValue(redisTemplate, RedisConstant.MAX_ID_USER_ACCOUNT_KEY, String.class);
+                    String maxUserAccount = RedisUtil.get(RedisConstant.MAX_ID_USER_ACCOUNT_KEY, String.class);
 
                     // 如果缓存中没有数据查询数据库中 id 最大的 user 的 userAccount
                     if (maxUserAccount == null) {
@@ -102,7 +102,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                     }
 
                     //  将新用户的 userAccount 写入缓存
-                    RedisUtil.setForValue(redisTemplate, RedisConstant.MAX_ID_USER_ACCOUNT_KEY, newUserAccountValue);
+                    RedisUtil.setForValue(RedisConstant.MAX_ID_USER_ACCOUNT_KEY, newUserAccountValue);
                     return newUser.getId();
                 }
             } catch (Exception e) {

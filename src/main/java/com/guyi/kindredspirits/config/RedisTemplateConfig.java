@@ -3,7 +3,7 @@ package com.guyi.kindredspirits.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializer;
 
 /**
@@ -13,6 +13,7 @@ import org.springframework.data.redis.serializer.RedisSerializer;
  */
 @Configuration
 public class RedisTemplateConfig {
+
     /**
      * 自定义序列化器
      *
@@ -20,21 +21,14 @@ public class RedisTemplateConfig {
      * @return redisTemplate
      */
     @Bean
-    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
-        // 设置连接工厂
-        redisTemplate.setConnectionFactory(connectionFactory);
-
-        RedisSerializer<String> redisStringSerializer = RedisSerializer.string();
-
-        // 设置 key 和 hashKey 的序列化器
-        redisTemplate.setKeySerializer(redisStringSerializer);
-        redisTemplate.setHashKeySerializer(redisStringSerializer);
-
-        // 设置 value 和 hashValue 的序列化器
-        redisTemplate.setValueSerializer(redisStringSerializer);
-        redisTemplate.setHashValueSerializer(redisStringSerializer);
-
-        return redisTemplate;
+    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
+        StringRedisTemplate stringRedisTemplate = new StringRedisTemplate();
+        stringRedisTemplate.setConnectionFactory(connectionFactory);
+        stringRedisTemplate.setKeySerializer(RedisSerializer.string());
+        stringRedisTemplate.setHashKeySerializer(RedisSerializer.string());
+        stringRedisTemplate.setValueSerializer(RedisSerializer.string());
+        stringRedisTemplate.setHashValueSerializer(RedisSerializer.string());
+        return stringRedisTemplate;
     }
+
 }
