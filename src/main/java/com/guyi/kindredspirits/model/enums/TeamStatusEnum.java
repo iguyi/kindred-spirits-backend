@@ -2,12 +2,13 @@ package com.guyi.kindredspirits.model.enums;
 
 /**
  * 队伍状态枚举
+ *
+ * @author 张仕恒
  */
 public enum TeamStatusEnum {
     /**
      * 公开的队伍
      */
-
     PUBLIC(0, "公开"),
 
     /**
