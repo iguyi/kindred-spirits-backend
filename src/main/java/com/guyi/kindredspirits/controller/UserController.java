@@ -12,6 +12,7 @@ import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.UserLoginRequest;
 import com.guyi.kindredspirits.model.request.UserRegisterRequest;
+import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -238,19 +239,19 @@ public class UserController {
     }
 
     /**
-     * todo User 需要封装 dto
      * 更新用户信息
      *
-     * @param user - 用户的新信息
+     * @param userUpdateRequest - 更新用户请求参数
      * @return 更改的数据总量, 正常应该是 1
      */
     @PostMapping("/update")
-    public BaseResponse<Integer> updateUser(@RequestBody User user, HttpServletRequest httpServletRequest) {
-        if (user == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "无可修改的信息");
+    public BaseResponse<Integer> updateUser(@RequestBody UserUpdateRequest userUpdateRequest,
+                                            HttpServletRequest httpServletRequest) {
+        if (userUpdateRequest == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "无可修改的信息");
         }
         User loginUser = userService.getLoginUser(httpServletRequest);
-        Integer result = userService.updateUser(user, loginUser);
+        Integer result = userService.updateUser(userUpdateRequest, loginUser);
         return ResultUtils.success(result);
     }
 

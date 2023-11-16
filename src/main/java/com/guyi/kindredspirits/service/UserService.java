@@ -2,6 +2,7 @@ package com.guyi.kindredspirits.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -66,11 +67,11 @@ public interface UserService extends IService<User> {
     /**
      * 更新用户信息
      *
-     * @param user      - 用户的新信息
-     * @param loginUser - 当前登录用户
+     * @param userUpdateRequest - 用户的新信息
+     * @param loginUser         - 当前登录用户
      * @return 更改的数据总量, 正常应该是 1
      */
-    int updateUser(User user, User loginUser);
+    int updateUser(UserUpdateRequest userUpdateRequest, User loginUser);
 
 
     /**
@@ -109,11 +110,11 @@ public interface UserService extends IService<User> {
     /**
      * user 中原始的 tags 数据转换为 ["tag-1", "tag-2"] 的格式。
      * 原始的 tag 数据格式如下:
-     *  {
-     *      "1": [
-     *          {"tag": "Java", "weights": 1}
-     *      ]
-     *  }
+     * {
+     * "1": [
+     * {"tag": "Java", "weights": 1}
+     * ]
+     * }
      *
      * @param user - 用户对象
      * @return tags 经过转换的 user

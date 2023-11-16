@@ -8,8 +8,8 @@ import com.guyi.kindredspirits.mapper.TeamMapper;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.domain.UserTeam;
-import com.guyi.kindredspirits.model.dto.TeamMyQuery;
-import com.guyi.kindredspirits.model.dto.TeamQuery;
+import com.guyi.kindredspirits.model.request.TeamMyQueryRequest;
+import com.guyi.kindredspirits.model.request.TeamQueryRequest;
 import com.guyi.kindredspirits.model.enums.TeamStatusEnum;
 import com.guyi.kindredspirits.model.request.TeamJoinRequest;
 import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
@@ -75,12 +75,12 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         //  队伍人数校验
         int maxNum = Optional.ofNullable(team.getMaxNum()).orElse(0);
-        if (maxNum < 1 || maxNum > 20) {
+        if (maxNum < 2 || maxNum > 20) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍人数不符合要求!");
         }
         //  队伍标题长度验证
         String name = team.getName();
-        if (StringUtils.isBlank(name) || name.length() > 20) {
+        if (StringUtils.isBlank(name) || name.length() > 10) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍标题不符合要求!");
         }
         //  队伍描述验证
@@ -104,7 +104,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         //  超时时间 > 当前时间
         Date expireTime = team.getExpireTime();
-        if (new Date().after(expireTime)) {
+        if (new Date().before(expireTime)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "超时时间设置错误!");
         }
         //  校验用户以加入/创建的队伍不超过 5 个
@@ -120,7 +120,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         team.setUserId(userId);
         team.setLeaderId(userId);
         boolean saveResult = this.save(team);
-        Long teamId = team.getId();  // 插入成功的话, id 会回显
+        Long teamId = team.getId();
         if (!saveResult || teamId == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍创建失败!");
         }
@@ -143,7 +143,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
      * @return 用于返回给前端的用户队伍信息列表, 包括了队伍信息, 队伍成员信息
      */
     @Override
-    public List<UserTeamVo> listTeams(TeamQuery teamQuery, boolean isAdmin) {
+    public List<UserTeamVo> listTeams(TeamQueryRequest teamQuery, boolean isAdmin) {
         QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
         // 组合查询条件
         if (teamQuery != null) {
@@ -178,7 +178,8 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             Integer status = teamQuery.getStatus();
             TeamStatusEnum statusEnum = TeamStatusEnum.getEnumByValue(status);
             if (statusEnum == null) {
-                statusEnum = TeamStatusEnum.PUBLIC;  // 默认查询公开的队伍
+                // 默认查询公开的队伍
+                statusEnum = TeamStatusEnum.PUBLIC;
             }
             //  非公开队伍需要管理员权限才能查询
             if (!isAdmin && !TeamStatusEnum.PUBLIC.equals(statusEnum)) {
@@ -449,7 +450,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
      * @return 符合要求的所有队伍
      */
     @Override
-    public List<Team> listMyLeaderTeams(TeamMyQuery teamMyQuery, User loginUser) {
+    public List<Team> listMyLeaderTeams(TeamMyQueryRequest teamMyQuery, User loginUser) {
         if (teamMyQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
@@ -477,7 +478,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
      * @return 符合要求的所有队伍
      */
     @Override
-    public List<Team> listMyJoinTeams(TeamMyQuery teamMyQuery, User loginUser) {
+    public List<Team> listMyJoinTeams(TeamMyQueryRequest teamMyQuery, User loginUser) {
         if (teamMyQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }

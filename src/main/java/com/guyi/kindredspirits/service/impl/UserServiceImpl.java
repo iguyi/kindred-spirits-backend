@@ -11,12 +11,14 @@ import com.guyi.kindredspirits.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.UserMapper;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -75,7 +77,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         String lockKey = String.format(RedisConstant.KEY_PRE, "user", "register", "lock");
         RLock lock = redissonClient.getLock(lockKey);
-        for (int i=0; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             try {
                 if (lock.tryLock(0, 30L, TimeUnit.SECONDS)) {
                     // 从缓存中取账号信息最新用户的 userAccount
@@ -87,7 +89,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                         queryWrapper.orderByDesc("id");
                         User user = page(new Page<>(1, 1), queryWrapper).getRecords().get(0);
                         //  如果缓存和数据库都没有取到 userAccount，那么新用户的 userAccount 为 "100001"
-                        maxUserAccount = user == null?"100001":user.getUserAccount();
+                        maxUserAccount = user == null ? "100001" : user.getUserAccount();
                     }
 
                     //  将取到的 userAccount 加 1 作为新用户的 userAccount
@@ -245,17 +247,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     /**
      * 更新用户信息
      *
-     * @param user      - 用户的新信息
-     * @param loginUser - 当前登录用户
+     * @param userUpdateRequest - 用户的新信息
+     * @param loginUser         - 当前登录用户
      * @return 更改的数据总量
      */
     @Override
-    public int updateUser(User user, User loginUser) {
-        Long userId = user.getId();
+    public int updateUser(UserUpdateRequest userUpdateRequest, User loginUser) {
+        Long userId = userUpdateRequest.getId();
         if (userId == null || userId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
-        // todo 如果除了 id 外其他的字段信息全是 null, 直接抛异常
+
         // 不是管理员且修改的不是自己的信息
         if (!isAdmin(loginUser) && !userId.equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH, "您只能更新自己的信息!");
@@ -265,10 +267,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.NULL_ERROR, "没有要更新的数据");
         }
         // 判断 user 和 oldUser 是否一致, 如果一致, 直接返回 1
-        if (EntityUtil.entityEq(user, oldUser)) {
+        if (EntityUtil.entityEq(userUpdateRequest, oldUser)) {
             return 1;
         }
-        return userMapper.updateById(user);
+        User updateUser = new User();
+        BeanUtils.copyProperties(userUpdateRequest, updateUser);
+        return userMapper.updateById(updateUser);
     }
 
     /**

@@ -7,8 +7,8 @@ import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
-import com.guyi.kindredspirits.model.dto.TeamMyQuery;
-import com.guyi.kindredspirits.model.dto.TeamQuery;
+import com.guyi.kindredspirits.model.request.TeamMyQueryRequest;
+import com.guyi.kindredspirits.model.request.TeamQueryRequest;
 import com.guyi.kindredspirits.model.request.TeamAddRequest;
 import com.guyi.kindredspirits.model.request.TeamJoinRequest;
 import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
@@ -109,7 +109,7 @@ public class TempController {
      * (2) 如果需要展示当前已加入的队伍, 请前使用 this.listMyJoinTeams() 接口.
      */
     @GetMapping("/list")
-    public BaseResponse<List<UserTeamVo>> listTeams(TeamQuery teamQuery, HttpServletRequest httpServletRequest) {
+    public BaseResponse<List<UserTeamVo>> listTeams(TeamQueryRequest teamQuery, HttpServletRequest httpServletRequest) {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
@@ -139,7 +139,7 @@ public class TempController {
      * @return 分页返回符合要求的队伍
      */
     @GetMapping("/list/page")
-    public BaseResponse<Page<Team>> listTeamsByPage(TeamQuery teamQuery) {
+    public BaseResponse<Page<Team>> listTeamsByPage(TeamQueryRequest teamQuery) {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
@@ -212,7 +212,7 @@ public class TempController {
      * @return 符合要求的所有队伍
      */
     @GetMapping("/list/my/leader")
-    public BaseResponse<List<Team>> listMyLeaderTeams(TeamMyQuery teamMyQuery, HttpServletRequest httpServletRequest) {
+    public BaseResponse<List<Team>> listMyLeaderTeams(TeamMyQueryRequest teamMyQuery, HttpServletRequest httpServletRequest) {
         if (teamMyQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
@@ -229,7 +229,7 @@ public class TempController {
      * @return 符合要求的所有队伍
      */
     @GetMapping("/list/my/join")
-    public BaseResponse<List<Team>> listMyJoinTeams(TeamMyQuery teamMyQuery, HttpServletRequest httpServletRequest) {
+    public BaseResponse<List<Team>> listMyJoinTeams(TeamMyQueryRequest teamMyQuery, HttpServletRequest httpServletRequest) {
         if (teamMyQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }

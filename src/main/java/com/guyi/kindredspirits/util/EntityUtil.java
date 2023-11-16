@@ -5,6 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 实体类工具类
+ *
+ * @author 张仕恒
+ */
 public class EntityUtil {
 
     /**
@@ -20,7 +25,7 @@ public class EntityUtil {
      * 2) 两个对象共同属性的值对应相等.
      * </p>
      * <p>
-     *     在对数据库进行更新时, 可以用于判断 entity 和 entityVo 之间是否逻辑相等, 避免一些无意义的数据库更新操作.
+     * 在对数据库进行更新时, 可以用于判断 entity 和 entityVo 之间是否逻辑相等, 避免一些无意义的数据库更新操作.
      * </p>
      *
      * @param newObject - 新对象
@@ -28,36 +33,49 @@ public class EntityUtil {
      * @return Objects.equals() 判断 newObject 和 oldObject 相等或者它们之间存在共同属性且共同属性的值对应相等时, 返回 true.
      */
     public static boolean entityEq(Object newObject, Object oldObject) {
-        if (Objects.equals(newObject, oldObject)) {  // 两个对象实际是否相等
+        // 两个对象实际是否相等
+        if (Objects.equals(newObject, oldObject)) {
             return true;
         }
-        if (newObject == null || oldObject == null) {  // 到这里, 只要有一个 null, 一定不等
+
+        // 到这里, 只要有一个 null, 一定不等
+        if (newObject == null || oldObject == null) {
             return false;
         }
+
         Class<?> newClass = newObject.getClass();
         Class<?> oldClass = oldObject.getClass();
 
+        // 收集新对象的所有属性
         Field[] newDeclaredFields = newClass.getDeclaredFields();
-        Field[] oldDeclaredFields = oldClass.getDeclaredFields();
         List<String> newDeclaredFieldNameList = new ArrayList<>();
-        List<String> oldDeclaredFieldNameList = new ArrayList<>();
         for (Field newDeclaredField : newDeclaredFields) {
             newDeclaredFieldNameList.add(newDeclaredField.getName());
         }
+
+        // 收集旧对象的所有属性
+        Field[] oldDeclaredFields = oldClass.getDeclaredFields();
+        List<String> oldDeclaredFieldNameList = new ArrayList<>();
         for (Field oldDeclaredField : oldDeclaredFields) {
             oldDeclaredFieldNameList.add(oldDeclaredField.getName());
         }
-        for (String oldDeclaredFieldName : oldDeclaredFieldNameList) {  // 判断两对象具体属性的值是否存在差异
-            if (newDeclaredFieldNameList.contains(oldDeclaredFieldName)) {  // oldObject 的当前属性是否存在与 newObject 中
+
+        // 判断两对象具体属性的值是否存在差异
+        for (String oldDeclaredFieldName : oldDeclaredFieldNameList) {
+            // oldObject 的当前属性是否存在与 newObject 中
+            if (newDeclaredFieldNameList.contains(oldDeclaredFieldName)) {
                 try {
+                    // 设置为允许打破封装
                     Field newDeclaredField = newClass.getDeclaredField(oldDeclaredFieldName);
                     newDeclaredField.setAccessible(true);
                     Field oldDeclaredField = oldClass.getDeclaredField(oldDeclaredFieldName);
                     oldDeclaredField.setAccessible(true);
+
                     try {
+                        // 获取两对象的属性值, 并判断这两个属性值是否存在差异
                         Object newValue = newDeclaredField.get(newObject);
                         Object oldValue = oldDeclaredField.get(oldObject);
-                        if (!Objects.equals(newValue, oldValue)) {  // 两个对象都有这个属性, 并且属性值存在差异
+                        if (!Objects.equals(newValue, oldValue) && newValue != null) {
                             return false;
                         }
                     } catch (IllegalAccessException e) {

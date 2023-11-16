@@ -3,8 +3,8 @@ package com.guyi.kindredspirits.service;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
-import com.guyi.kindredspirits.model.dto.TeamMyQuery;
-import com.guyi.kindredspirits.model.dto.TeamQuery;
+import com.guyi.kindredspirits.model.request.TeamMyQueryRequest;
+import com.guyi.kindredspirits.model.request.TeamQueryRequest;
 import com.guyi.kindredspirits.model.request.TeamJoinRequest;
 import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
 import com.guyi.kindredspirits.model.request.TeamUpdateRequest;
@@ -33,7 +33,7 @@ public interface TeamService extends IService<Team> {
      * @param isAdmin   - 是否是管理员
      * @return 用于返回给前端的用户队伍信息列表, 包括了队伍信息, 队伍成员信息
      */
-    List<UserTeamVo> listTeams(TeamQuery teamQuery, boolean isAdmin);
+    List<UserTeamVo> listTeams(TeamQueryRequest teamQuery, boolean isAdmin);
 
     /**
      * 更新队伍信息
@@ -78,7 +78,7 @@ public interface TeamService extends IService<Team> {
      * @param loginUser   - 当前登录用户
      * @return 符合要求的所有队伍
      */
-    List<Team> listMyLeaderTeams(TeamMyQuery teamMyQuery, User loginUser);
+    List<Team> listMyLeaderTeams(TeamMyQueryRequest teamMyQuery, User loginUser);
 
     /**
      * 获取我加入的队伍
@@ -87,5 +87,5 @@ public interface TeamService extends IService<Team> {
      * @param loginUser   - 当前登录用户
      * @return 符合要求的所有队伍
      */
-    List<Team> listMyJoinTeams(TeamMyQuery teamMyQuery, User loginUser);
+    List<Team> listMyJoinTeams(TeamMyQueryRequest teamMyQuery, User loginUser);
 }

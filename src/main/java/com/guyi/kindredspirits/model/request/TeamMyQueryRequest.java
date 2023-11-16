@@ -1,4 +1,4 @@
-package com.guyi.kindredspirits.model.dto;
+package com.guyi.kindredspirits.model.request;
 
 import com.guyi.kindredspirits.common.PageRequest;
 import lombok.Data;
@@ -8,10 +8,12 @@ import java.io.Serializable;
 
 /**
  * 查询我管理的队伍请求封装类
+ *
+ * @author 张仕恒
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class TeamMyQuery extends PageRequest implements Serializable {
+public class TeamMyQueryRequest extends PageRequest implements Serializable {
 
     /**
      * 用户 id
