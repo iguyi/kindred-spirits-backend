@@ -58,7 +58,6 @@ public class CommonController {
             String originalFilename = avatar.getOriginalFilename();
             String fileName = getFileName(originalFilename);
             avatar.transferTo(new File(userAvatarPath, fileName));
-            System.out.println(userAvatarPath + fileName);
 
             // 更新用户信息
             String avatarUrl = urlPrefix + "/user/" + fileName;
@@ -85,7 +84,6 @@ public class CommonController {
     private String getFileName(String originalFilename) {
         String avatarName = Optional.ofNullable(originalFilename).orElse(".png");
         String[] split = avatarName.split("\\.");
-        System.out.println(IdUtil.objectId() + "." + split[split.length - 1]);
         return IdUtil.objectId() + "." + split[split.length - 1];
     }
 
