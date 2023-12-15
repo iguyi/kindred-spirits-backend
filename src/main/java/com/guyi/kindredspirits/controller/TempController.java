@@ -208,14 +208,11 @@ public class TempController {
     /**
      * 获取我管理的队伍
      *
-     * @param teamMyQuery - 查询我管理的队伍请求封装对象
      * @return 符合要求的所有队伍
      */
     @GetMapping("/list/my/leader")
-    public BaseResponse<List<Team>> listMyLeaderTeams(TeamMyQueryRequest teamMyQuery, HttpServletRequest httpServletRequest) {
-        if (teamMyQuery == null) {
-            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
-        }
+    public BaseResponse<List<Team>> listMyLeaderTeams(HttpServletRequest httpServletRequest) {
+        TeamMyQueryRequest teamMyQuery = new TeamMyQueryRequest();
         User loginUser = userService.getLoginUser(httpServletRequest);
         teamMyQuery.setId(loginUser.getId());
         List<Team> teamList = teamService.listMyLeaderTeams(teamMyQuery, loginUser);
@@ -225,14 +222,11 @@ public class TempController {
     /**
      * 获取我加入的队伍
      *
-     * @param teamMyQuery - 查询我所属的队伍请求封装对象
      * @return 符合要求的所有队伍
      */
     @GetMapping("/list/my/join")
-    public BaseResponse<List<Team>> listMyJoinTeams(TeamMyQueryRequest teamMyQuery, HttpServletRequest httpServletRequest) {
-        if (teamMyQuery == null) {
-            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
-        }
+    public BaseResponse<List<Team>> listMyJoinTeams(HttpServletRequest httpServletRequest) {
+        TeamMyQueryRequest teamMyQuery = new TeamMyQueryRequest();
         User loginUser = userService.getLoginUser(httpServletRequest);
         teamMyQuery.setId(loginUser.getId());
         List<Team> teamList = teamService.listMyJoinTeams(teamMyQuery, loginUser);
