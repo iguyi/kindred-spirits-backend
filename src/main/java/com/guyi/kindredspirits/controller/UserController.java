@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -80,6 +81,14 @@ public class UserController {
         }
         User user = userService.userLogin(userAccount, userPassword, httpServletRequest);
         return ResultUtils.success(user);
+    }
+
+    /**
+     * 退出登录
+     */
+    @PostMapping("/logout")
+    public void userLogout(HttpSession httpSession) {
+        httpSession.invalidate();
     }
 
     /**
