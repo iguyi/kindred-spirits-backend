@@ -104,7 +104,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         //  超时时间 > 当前时间
         Date expireTime = team.getExpireTime();
-        if (new Date().before(expireTime)) {
+        if (new Date().after(expireTime)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "超时时间设置错误!");
         }
         //  校验用户以加入/创建的队伍不超过 5 个
@@ -132,7 +132,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (!saveResult) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍创建失败!");
         }
-        return 0;
+        return 1;
     }
 
     /**
