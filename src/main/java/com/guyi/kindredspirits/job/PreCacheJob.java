@@ -87,6 +87,7 @@ public class PreCacheJob {
                         // 相似度大于 0.7 才认为二者相似
                         if (similarity > 0.7) {
                             cacheUserList.add(user);
+                            user.setTags(userService.getTagListJson(user));
                         }
                     }
 
