@@ -1,8 +1,10 @@
 package com.guyi.kindredspirits.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
+import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.TeamMapper;
 import com.guyi.kindredspirits.model.domain.Team;
@@ -51,13 +53,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     @Resource
     private RedissonClient redissonClient;
 
-    /**
-     * 创建队伍
-     *
-     * @param team      - 新队伍对象
-     * @param loginUser - 当前登录用户
-     * @return 添加队伍的数量
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long addTeam(Team team, User loginUser) {
@@ -135,13 +130,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return 1;
     }
 
-    /**
-     * 搜索队伍
-     *
-     * @param teamQuery - 用于查询队伍的参数的封装
-     * @param isAdmin   - 是否是管理员
-     * @return 用于返回给前端的用户队伍信息列表, 包括了队伍信息, 队伍成员信息
-     */
     @Override
     public List<UserTeamVo> listTeams(TeamQueryRequest teamQuery, boolean isAdmin) {
         QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
@@ -220,13 +208,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return userTeamVoList;
     }
 
-    /**
-     * 更新队伍信息
-     *
-     * @param teamUpdateRequest - 队伍的新信息
-     * @param loginUser         - 当前登录用户
-     * @return true - 更新成功; false - 更新失败
-     */
     @Override
     public boolean updateTeam(TeamUpdateRequest teamUpdateRequest, User loginUser) {
         if (teamUpdateRequest == null || loginUser == null) {
@@ -267,13 +248,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return this.updateById(updateTeam);
     }
 
-    /**
-     * 用户加入队伍
-     *
-     * @param teamJoinRequest - 对用户加入队伍的请求消息的封装
-     * @param loginUser       - 当前登录用户
-     * @return true - 加入成功; false - 加入失败
-     */
     @Override
     public boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser) {
         if (teamJoinRequest == null) {
@@ -352,13 +326,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
     }
 
-    /**
-     * 用户退出队伍
-     *
-     * @param teamQuitRequest - 对用户退出队伍的请求参数的封装
-     * @param loginUser       - 当前登录用户
-     * @return true - 退出队伍成功; false - 退出队伍失败
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean quitTeam(TeamQuitOrDeleteRequest teamQuitRequest, User loginUser) {
@@ -381,8 +348,8 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         // 队伍人数校验
         long teamHasJoinNum = this.countTeamUserByTeamId(teamId);
-        if (teamHasJoinNum == 1) { // 队伍只有 1 人
-            // 删除队伍相关信息
+        if (teamHasJoinNum == 1) {
+            // 队伍只有 1 人, 删除队伍相关信息
             boolean removeTeamResult = this.removeById(teamId);
             if (!removeTeamResult) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
@@ -395,7 +362,8 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             }
             return true;
         } else {
-            if (loginUserId.equals(team.getLeaderId())) {  // 队长不能退出
+            if (loginUserId.equals(team.getLeaderId())) {
+                // 队长不能退出
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "队长不能退出队伍");
             }
             userTeamQueryWrapper = new QueryWrapper<>();
@@ -405,12 +373,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
     }
 
-    /**
-     * 解散队伍
-     *
-     * @param teamDeleteRequest - 对用户退出队伍的请求参数的封装
-     * @return true - 解散队伍成功; false - 解散队伍失败
-     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteTeam(TeamQuitOrDeleteRequest teamDeleteRequest, User loginUser) {
@@ -442,13 +404,34 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return true;
     }
 
-    /**
-     * 获取我管理的队伍
-     *
-     * @param teamMyQuery - 查询我管理的队伍请求封装对象
-     * @param loginUser   - 当前登录用户
-     * @return 符合要求的所有队伍
-     */
+    @Override
+    public Page<Team> listTeamsByPage(Long loginUserId, TeamQueryRequest teamQuery) {
+        if (loginUserId == null || loginUserId <= 0) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
+        }
+        if (teamQuery == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
+        }
+
+        // 查询当前用户已加入的队伍
+        List<UserTeam> messageByUserId = userTeamService.getMessageByUserId(loginUserId);
+        List<Long> currentUserInTeamIds = messageByUserId.stream()
+                .map(UserTeam::getTeamId)
+                .collect(Collectors.toList());
+
+        Team team = new Team();
+        BeanUtils.copyProperties(teamQuery, team);
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>(team);
+        if (currentUserInTeamIds.size() > 0) {
+            // 过滤 "加入的队伍"
+            teamQueryWrapper.notIn("id", currentUserInTeamIds);
+        }
+        // 过滤 "过期的队伍"
+        teamQueryWrapper.ge("expireTime", new Date());
+        Page<Team> teamPage = new Page<>(teamQuery.getPageNum(), teamQuery.getPageSize());
+        return this.page(teamPage, teamQueryWrapper);
+    }
+
     @Override
     public List<Team> listMyLeaderTeams(TeamMyQueryRequest teamMyQuery, User loginUser) {
         if (teamMyQuery == null) {
@@ -470,13 +453,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return this.list(teamQueryWrapper);
     }
 
-    /**
-     * 获取我加入的队伍
-     *
-     * @param teamMyQuery - 查询我管理的队伍请求封装对象
-     * @param loginUser   - 当前登录用户
-     * @return 符合要求的所有队伍
-     */
     @Override
     public List<Team> listMyJoinTeams(TeamMyQueryRequest teamMyQuery, User loginUser) {
         if (teamMyQuery == null) {
@@ -507,12 +483,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return this.list(teamQueryWrapper);
     }
 
-    /**
-     * 根据队伍 id, 统计队伍成员数
-     *
-     * @param teamId - 队伍 id
-     * @return 当前队伍成员数
-     */
     private long countTeamUserByTeamId(long teamId) {
         // 队伍人数校验
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
@@ -520,12 +490,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return userTeamService.count(userTeamQueryWrapper);
     }
 
-    /**
-     * 根据 id 获取队伍信息
-     *
-     * @param teamId - 队伍 id
-     * @return 队伍
-     */
     private Team getTeamById(Long teamId) {
         if (teamId == null || teamId <= 0) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "队伍不存在");

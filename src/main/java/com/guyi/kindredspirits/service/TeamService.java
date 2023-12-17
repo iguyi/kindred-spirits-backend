@@ -1,5 +1,6 @@
 package com.guyi.kindredspirits.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
@@ -70,6 +71,16 @@ public interface TeamService extends IService<Team> {
      * @return true - 解散队伍成功; false - 解散队伍失败
      */
     boolean deleteTeam(TeamQuitOrDeleteRequest teamDeleteRequest, User loginUser);
+
+    /**
+     * 根据指定信息查询队伍
+     * 筛选条件有: 队伍 id、队伍名称、队伍描述、队伍最大人数、创建人 id、队长 id、队伍状态(公开、私密、加密)
+     *
+     * @param loginUserIid - 登录用户 id
+     * @param teamQuery - 队伍查询封装对象
+     * @return 分页返回符合要求的队伍
+     */
+    Page<Team> listTeamsByPage(Long loginUserIid, TeamQueryRequest teamQuery);
 
     /**
      * 获取我管理的队伍

@@ -139,16 +139,15 @@ public class TempController {
      * @return 分页返回符合要求的队伍
      */
     @GetMapping("/list/page")
-    public BaseResponse<Page<Team>> listTeamsByPage(TeamQueryRequest teamQuery) {
+    public BaseResponse<Page<Team>> listTeamsByPage(TeamQueryRequest teamQuery, HttpServletRequest httpServletRequest) {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
-        Team team = new Team();
-        BeanUtils.copyProperties(teamQuery, team);
-        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>(team);
-        Page<Team> teamPage = new Page<>(teamQuery.getPageNum(), teamQuery.getPageSize());
-        Page<Team> resultPage = teamService.page(teamPage, teamQueryWrapper);
-        return ResultUtils.success(resultPage);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
+        }
+        return ResultUtils.success(teamService.listTeamsByPage(loginUser.getId(), teamQuery));
     }
 
     /**
