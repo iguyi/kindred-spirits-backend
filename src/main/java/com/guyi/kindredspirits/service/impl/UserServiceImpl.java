@@ -310,7 +310,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             linkedUtil.add(user, similarity);
         }
         List<User> userListResult = linkedUtil.getList();
-        userListResult.forEach(this::getSafetyUser);
+        userListResult.forEach(user -> {
+            user.setTags(this.getTagListJson(user));
+            this.getSafetyUser(user);
+        });
         return userListResult;
     }
 
