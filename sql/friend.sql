@@ -4,10 +4,10 @@ CREATE TABLE `friend`
     `id`             bigint(0)   NOT NULL AUTO_INCREMENT COMMENT 'id',
     `activeUserId`   bigint(0)   NOT NULL COMMENT 'activeUser 向 passiveUser 发出好友申请',
     `passiveUserId`  bigint(0)   NOT NULL COMMENT 'passiveUser 同意 activeUser 的好友申请',
-    `relationStatus` int(0)      NOT NULL COMMENT '关系状态:
-            0-正常好友
-            1-activeUserId 删除了 passiveUserId
-            2-passiveUserId 删除了 activeUserId
+    `relationStatus` int(0)               DEFAULT 0 NOT NULL COMMENT '关系状态:
+            0 - 正常好友
+            1 - activeUserId 删除了 passiveUserId
+            2 - passiveUserId 删除了 activeUserId
             3 - activeUserId 拉黑 passiveUserId
             4 - passiveUserId 拉黑 activeUserId
         说明：状态 3 可以变为 状态1; 状态 4 可以变为 状态 3',
