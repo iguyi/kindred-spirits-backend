@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.guyi.kindredspirits.mapper.MessageMapper">
+
+    <resultMap id="BaseResultMap" type="com.guyi.kindredspirits.model.domain.Message">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="senderId" column="senderId" jdbcType="BIGINT"/>
+            <result property="receiverId" column="receiverId" jdbcType="BIGINT"/>
+            <result property="messageType" column="messageType" jdbcType="INTEGER"/>
+            <result property="messageBody" column="messageBody" jdbcType="VARCHAR"/>
+            <result property="processed" column="processed" jdbcType="TINYINT"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,senderId,receiverId,
+        messageType,messageBody,processed,
+        createTime,updateTime,isDelete
+    </sql>
+</mapper>
