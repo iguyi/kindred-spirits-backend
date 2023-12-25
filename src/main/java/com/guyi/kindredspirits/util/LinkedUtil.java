@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author 张仕恒
+ * @author 孤诣
  */
 public class LinkedUtil {
 

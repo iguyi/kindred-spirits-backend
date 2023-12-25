@@ -8,7 +8,7 @@ import java.util.Date;
 /**
  * 用户包装类(脱敏)
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @Data
 public class UserVo implements Serializable {

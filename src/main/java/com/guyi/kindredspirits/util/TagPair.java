@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * 存储标签的名称和权值
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @Data
 public class TagPair implements Serializable {

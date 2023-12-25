@@ -9,7 +9,7 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 /**
  * Redis 模板配置
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @Configuration
 public class RedisTemplateConfig {

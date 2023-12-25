@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * 算法工具类
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 public class AlgorithmUtil {
 

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author 张仕恒
+ * @author 孤诣
  */
 public interface UserService extends IService<User> {
 

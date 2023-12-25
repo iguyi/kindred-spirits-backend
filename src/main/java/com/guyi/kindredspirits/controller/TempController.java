@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * 队伍接口
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @RestController
 @RequestMapping("/team")

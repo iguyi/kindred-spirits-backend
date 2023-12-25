@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Redisson 配置
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @Configuration
 @ConfigurationProperties(prefix = "spring.redis")

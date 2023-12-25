@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 /**
  * 用户接口
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @RestController
 @RequestMapping("/user")

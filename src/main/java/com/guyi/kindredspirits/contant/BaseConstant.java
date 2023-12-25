@@ -3,7 +3,7 @@ package com.guyi.kindredspirits.contant;
 /**
  * 系统的一些基础常量
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 public interface BaseConstant {
 

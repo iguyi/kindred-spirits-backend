@@ -13,7 +13,7 @@ import lombok.Data;
 /**
  * 好友表
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @TableName(value = "friend")
 @Data

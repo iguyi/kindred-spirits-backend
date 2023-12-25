@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * 标签消息封装类, 用于返回给前端
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @Data
 public class TagVo implements Serializable {

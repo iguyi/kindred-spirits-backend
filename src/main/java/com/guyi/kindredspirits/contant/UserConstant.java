@@ -3,7 +3,7 @@ package com.guyi.kindredspirits.contant;
 /**
  * 用户常量
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 public interface UserConstant {
 

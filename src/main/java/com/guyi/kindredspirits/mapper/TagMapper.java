@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.guyi.kindredspirits.model.domain.Tag;
 
 /**
-* @author 张仕恒
+* @author 孤诣
 */
 public interface TagMapper extends BaseMapper<Tag> {
 

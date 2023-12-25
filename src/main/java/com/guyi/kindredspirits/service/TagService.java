@@ -9,7 +9,7 @@ import com.guyi.kindredspirits.model.vo.TagVo;
 import java.util.List;
 
 /**
- * @author 张仕恒
+ * @author 孤诣
  */
 public interface TagService extends IService<Tag> {
 

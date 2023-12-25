@@ -9,7 +9,7 @@ import java.io.Serializable;
 /**
  * 队伍查询封装类
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @EqualsAndHashCode(callSuper = true)
 @Data

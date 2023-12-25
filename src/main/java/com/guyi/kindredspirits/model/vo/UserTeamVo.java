@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 队伍和用户信息封装类(脱敏), 用于将数据返回给前端
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @Data
 public class UserTeamVo implements Serializable {

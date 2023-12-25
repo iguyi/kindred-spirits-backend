@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 针对表 friend(好友表) 的数据库操作 Service 接口
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 public interface FriendService extends IService<Friend> {
 

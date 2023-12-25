@@ -3,7 +3,7 @@ package com.guyi.kindredspirits.model.enums;
 /**
  * Friend(好友表) relationStatus 字段的枚举值
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 public enum FriendRelationStatusEnum {
 

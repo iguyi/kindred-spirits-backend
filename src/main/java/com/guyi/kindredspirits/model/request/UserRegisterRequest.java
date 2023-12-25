@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * 用户注册请求体
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @Data
 public class UserRegisterRequest implements Serializable {

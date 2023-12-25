@@ -14,7 +14,7 @@ import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import java.util.List;
 
 /**
- * @author 张仕恒
+ * @author 孤诣
  */
 public interface TeamService extends IService<Team> {
 

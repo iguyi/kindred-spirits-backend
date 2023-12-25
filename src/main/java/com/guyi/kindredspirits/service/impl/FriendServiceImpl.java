@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 /**
  * 针对表 friend(好友表) 的数据库操作 Service 实现
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @Service
 public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> implements FriendService {

@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * 更新用户请求封装类
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @Data
 public class UserUpdateRequest implements Serializable {

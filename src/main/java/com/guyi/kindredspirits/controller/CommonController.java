@@ -21,7 +21,7 @@ import java.util.Optional;
 /**
  * 通用
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @RestController
 @RequestMapping("/common")

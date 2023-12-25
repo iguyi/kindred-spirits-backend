@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import java.util.List;
 
 /**
-* @author 张仕恒
+* @author 孤诣
 * @description 针对表【user_team(用户-队伍关系表)】的数据库操作Service
 * @createDate 2023-10-01 21:57:09
 */

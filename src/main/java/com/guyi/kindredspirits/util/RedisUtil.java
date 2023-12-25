@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
  * Redis 工具类
  * todo 待完善
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 @Slf4j
 public class RedisUtil {

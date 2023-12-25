@@ -3,7 +3,7 @@ package com.guyi.kindredspirits.model.enums;
 /**
  * 队伍状态枚举
  *
- * @author 张仕恒
+ * @author 孤诣
  */
 public enum TeamStatusEnum {
     /**
