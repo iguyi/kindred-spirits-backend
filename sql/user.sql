@@ -25,3 +25,13 @@ CREATE TABLE `user`
   ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+DELIMITER \$\$
+CREATE TRIGGER tr_user_table_updateTime
+    BEFORE UPDATE
+    ON user
+    FOR EACH ROW
+BEGIN
+    SET NEW.updateTime = NOW();
+END\$\$
+DELIMITER ;

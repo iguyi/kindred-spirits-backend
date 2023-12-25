@@ -13,3 +13,13 @@ CREATE TABLE `user_team`
   CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户-队伍关系表'
   ROW_FORMAT = Dynamic;
+
+DELIMITER \$\$
+CREATE TRIGGER tr_user_team_table_updateTime
+    BEFORE UPDATE
+    ON user_team
+    FOR EACH ROW
+BEGIN
+    SET NEW.updateTime = NOW();
+END\$\$
+DELIMITER ;

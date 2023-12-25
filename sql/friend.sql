@@ -21,3 +21,13 @@ CREATE TABLE `friend`
   ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+DELIMITER \$\$
+CREATE TRIGGER tr_friend_table_updateTime
+    BEFORE UPDATE
+    ON friend
+    FOR EACH ROW
+BEGIN
+    SET NEW.updateTime = NOW();
+END\$\$
+DELIMITER ;
