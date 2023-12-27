@@ -19,6 +19,11 @@ public interface RedisConstant {
     String RECOMMEND_KEY_PRE = "kindred-spirits:user:recommend:%s";
 
     /**
+     * Redis 验证消息缓存的 key 模板
+     */
+    String MESSAGE_VERIFY_KEY_PRE = "kindred-spirits:message:verify:%s";
+
+    /**
      * 缓存 "最大 ID 用户的账号" 的 key
      */
     String MAX_ID_USER_ACCOUNT_KEY = "kindred-spirits:user:max:id";

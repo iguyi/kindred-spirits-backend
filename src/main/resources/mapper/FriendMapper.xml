@@ -19,4 +19,11 @@
         relationStatus,createTime,updateTime,
         isDelete
     </sql>
+
+    <select id="count" resultType="java.lang.Long">
+        select concat(id)
+        from `friend`
+        where (`activeUserId` = 1 and `passiveUserId` = 2)
+           or (`activeUserId` = 2 and `passiveUserId` = 1) and `relationStatus` in (0, 3, 4, 5, 6)
+    </select>
 </mapper>

@@ -4,6 +4,7 @@ import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.request.MessageRequest;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.FriendService;
 import com.guyi.kindredspirits.service.UserService;
@@ -32,6 +33,21 @@ public class FriendController {
     private UserService userService;
 
     /**
+     * 好友申请
+     *
+     * @param messageRequest - 消息封装类
+     * @return 好友申请的消息存储成功，返回 true; 否则, 返回 false
+     */
+    @PostMapping("/apply")
+    public BaseResponse<Boolean> applyFriend(@RequestBody MessageRequest messageRequest) {
+        if (messageRequest == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
+        }
+        friendService.applyFriend(messageRequest);
+        return new BaseResponse<>(0, true, "等待对方同意");
+    }
+
+    /**
      * 同意好友申请
      *
      * @param activeUserId  - activeUser 向 passiveUser 发出好友申请
@@ -39,15 +55,15 @@ public class FriendController {
      * @return > 0 表示关系创建成功
      */
     @PostMapping("/agree")
-    public BaseResponse<Long> agreeFriendRequest(Long activeUserId,
-                                                 Long passiveUserId,
-                                                 HttpServletRequest httpServletRequest) {
+    public BaseResponse<Long> agreeFriendApply(Long activeUserId,
+                                               Long passiveUserId,
+                                               HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
 
-        Long res = friendService.agreeFriendRequest(activeUserId, passiveUserId, loginUser);
+        Long res = friendService.agreeFriendApply(activeUserId, passiveUserId, loginUser);
         if (res == null || res <= 0) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统异常");
         }

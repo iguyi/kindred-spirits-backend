@@ -3,6 +3,7 @@ package com.guyi.kindredspirits.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.Friend;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.request.MessageRequest;
 
 import java.util.List;
 
@@ -14,6 +15,14 @@ import java.util.List;
 public interface FriendService extends IService<Friend> {
 
     /**
+     * 好友申请
+     *
+     * @param messageRequest - 消息封装类
+     * @return 好友申请的消息存储成功，返回 true; 否则, 返回 false
+     */
+    Boolean applyFriend(MessageRequest messageRequest);
+
+    /**
      * 同意好友申请
      *
      * @param activeUserId  - activeUser 向 passiveUser 发出好友申请
@@ -21,7 +30,7 @@ public interface FriendService extends IService<Friend> {
      * @param loginUser     - 当前登录用户
      * @return 新数据 id
      */
-    Long agreeFriendRequest(Long activeUserId, Long passiveUserId, User loginUser);
+    Long agreeFriendApply(Long activeUserId, Long passiveUserId, User loginUser);
 
     /**
      * 查询好友列表
