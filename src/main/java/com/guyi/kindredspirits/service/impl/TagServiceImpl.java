@@ -3,7 +3,7 @@ package com.guyi.kindredspirits.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
-import com.guyi.kindredspirits.contant.UserConstant;
+import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.TagMapper;
 import com.guyi.kindredspirits.model.domain.Tag;

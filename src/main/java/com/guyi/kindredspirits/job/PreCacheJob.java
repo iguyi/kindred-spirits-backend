@@ -2,8 +2,8 @@ package com.guyi.kindredspirits.job;
 
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.guyi.kindredspirits.contant.RedisConstant;
-import com.guyi.kindredspirits.contant.UserConstant;
+import com.guyi.kindredspirits.common.contant.RedisConstant;
+import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.mapper.UserMapper;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.service.UserService;

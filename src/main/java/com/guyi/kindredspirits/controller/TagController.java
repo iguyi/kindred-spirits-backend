@@ -2,17 +2,15 @@ package com.guyi.kindredspirits.controller;
 
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
-import com.guyi.kindredspirits.contant.RedisConstant;
+import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.TagAddRequest;
 import com.guyi.kindredspirits.model.vo.TagVo;
 import com.guyi.kindredspirits.service.TagService;
 import com.guyi.kindredspirits.service.UserService;
-import com.guyi.kindredspirits.util.JsonUtil;
 import com.guyi.kindredspirits.util.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;

@@ -1,4 +1,4 @@
-package com.guyi.kindredspirits.contant;
+package com.guyi.kindredspirits.common.contant;
 
 /**
  * Redis 常量
