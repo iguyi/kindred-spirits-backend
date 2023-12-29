@@ -28,6 +28,7 @@
             <url>https://maven.aliyun.com/repository/public</url>
         </repository>
     </repositories>
+
     <dependencies>
         <!-- Spring -->
         <dependency>
@@ -38,6 +39,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
+        </dependency>
+        <!-- WebSocket -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
         <!-- AOP -->
