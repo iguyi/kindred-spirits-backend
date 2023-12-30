@@ -10,12 +10,12 @@ public enum ChatTypeEnum {
     /**
      * 私聊
      */
-    PRIVATE_CHAT(0, "私聊"),
+    PRIVATE_CHAT(1, "私聊"),
 
     /**
      * 群聊(队内聊天)
      */
-    GROUP_CHAT(1, "群聊");
+    GROUP_CHAT(2, "群聊");
 
     public static ChatTypeEnum getEnumByType(Integer type) {
         if (type == null) {
