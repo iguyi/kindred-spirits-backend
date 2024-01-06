@@ -73,6 +73,12 @@ public interface UserService extends IService<User> {
      */
     int updateUser(UserUpdateRequest userUpdateRequest, User loginUser);
 
+    /**
+     * 从 Session 中获取当前登录用户信息, 并判断是否登录
+     *
+     * @return 当前登录用户
+     */
+    User getLoginUser();
 
     /**
      * 从 Session 中获取当前登录用户信息, 并判断是否登录

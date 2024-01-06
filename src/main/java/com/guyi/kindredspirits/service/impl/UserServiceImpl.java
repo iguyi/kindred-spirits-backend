@@ -49,6 +49,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Resource
     private RedissonClient redissonClient;
 
+    @Resource
+    private HttpServletRequest httpServletRequest;
+
     /**
      * 盐值，混淆密码
      */
@@ -225,6 +228,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         List<User> userList = userMapper.selectList(userQueryWrapper);
         return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
+    }
+
+    @Override
+    public User getLoginUser() {
+        return getLoginUser(this.httpServletRequest);
     }
 
     /**
