@@ -13,10 +13,12 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.UserLoginRequest;
 import com.guyi.kindredspirits.model.request.UserRegisterRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
+import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -134,6 +136,22 @@ public class UserController {
 
         List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
         return ResultUtils.success(users);
+    }
+
+    /**
+     * 根据用户 id 查询用户信息
+     *
+     * @param id - 用户 id
+     * @return 对应 id 的用户的响应信息
+     */
+    @GetMapping("/search/id")
+    public BaseResponse<UserVo> getUserById(Long id) {
+        // 用户是否登录
+        userService.getLoginUser();
+        User user = userService.getById(id);
+        UserVo res = new UserVo();
+        BeanUtils.copyProperties(user, res);
+        return ResultUtils.success(res);
     }
 
     /**
