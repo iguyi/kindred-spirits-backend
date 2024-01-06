@@ -13,22 +13,17 @@ import java.io.Serializable;
 public class ChatRequest implements Serializable {
 
     /**
-     * 聊天类型
-     */
-    private Integer chatType;
-
-    /**
-     * 发送方 id
+     * 消息发送者 id
      */
     private Long senderId;
 
     /**
-     * 接受方 id
+     * 消息接收者 id
      */
-    private String receiverId;
+    private Long receiverId;
 
     /**
-     * 队伍 id
+     * 群聊时, 对应队伍的 id
      */
     private Long teamId;
 
@@ -36,6 +31,11 @@ public class ChatRequest implements Serializable {
      * 聊天内容
      */
     private String chatContent;
+
+    /**
+     * 聊天类型 1-私聊 2-群聊
+     */
+    private Integer chatType;
 
     private static final long serialVersionUID = 1L;
 
