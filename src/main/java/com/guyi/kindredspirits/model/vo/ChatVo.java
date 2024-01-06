@@ -1,5 +1,7 @@
 package com.guyi.kindredspirits.model.vo;
 
+import lombok.Data;
+
 import java.util.Date;
 
 /**
@@ -7,17 +9,18 @@ import java.util.Date;
  *
  * @author 孤诣
  */
+@Data
 public class ChatVo {
 
     /**
      * 消息发送者
      */
-    private UserVo senderUserVo;
+    private WebSocketVo senderUser;
 
     /**
      * 消息接收者
      */
-    private UserVo receiverUserVo;
+    private WebSocketVo receiverUser;
 
     /**
      * 队伍 id
@@ -35,9 +38,9 @@ public class ChatVo {
     private Integer chatType;
 
     /**
-     * 发送时间
+     * 发送时间, 格式为: yyyy-MM-dd HH:mm:ss
      */
-    private Date sendTime;
+    private String sendTime;
 
     private static final long serialVersionUID = 1L;
 
