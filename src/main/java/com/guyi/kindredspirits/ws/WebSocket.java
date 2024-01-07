@@ -1,5 +1,6 @@
 package com.guyi.kindredspirits.ws;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONObject;
 import com.guyi.kindredspirits.common.contant.BaseConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
@@ -11,6 +12,7 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.domain.UserTeam;
 import com.guyi.kindredspirits.model.request.ChatRequest;
 import com.guyi.kindredspirits.model.vo.ChatVo;
+import com.guyi.kindredspirits.model.vo.WebSocketVo;
 import com.guyi.kindredspirits.service.ChatService;
 import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
@@ -19,6 +21,7 @@ import com.guyi.kindredspirits.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -26,6 +29,7 @@ import javax.servlet.http.HttpSession;
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -74,21 +78,11 @@ public class WebSocket {
     private HttpSession httpSession;
 
     /**
-     * 创建会话的用户
-     */
-    private User user;
-
-    /**
      * 队伍会话对应的队伍的 id
      */
     private Long teamId;
 
     private static final Object SESSION_LOCK = new Object();
-
-    /**
-     * 消息发送失败的提示消息
-     */
-    private static final String SEND_FAIL = "发送失败";
 
     /**
      * 当 teamId=0 时, 表示发送的是私聊请求
@@ -114,14 +108,16 @@ public class WebSocket {
     @OnOpen
     public void onOpen(@PathParam(value = "userId") String userId, @PathParam(value = "teamId") String teamId,
                        Session session, EndpointConfig config) {
-        if (!validId(userId)) {
+        if (invalidId(userId)) {
             sendError(userId, "user id error");
             return;
         }
-        if (!validId(teamId) && !ZERO_ID.equals(teamId)) {
+        if (invalidId(teamId) && !ZERO_ID.equals(teamId)) {
             sendError(userId, "team id error");
             return;
         }
+
+        this.teamId = Long.valueOf(teamId);
 
         try {
             HttpSession httpSession = (HttpSession) config.getUserProperties().get(HttpSession.class.getName());
@@ -139,7 +135,7 @@ public class WebSocket {
                     // 对应队伍聊天室不存在, 创建并将当前用户加入进去
                     ConcurrentHashMap<String, WebSocket> room = new ConcurrentHashMap<>(0);
                     room.put(userId, this);
-                    TEAM_SESSIONS.put(String.valueOf(teamId), room);
+                    TEAM_SESSIONS.put(teamId, room);
                 } else {
                     // 对应队伍聊天室存在
                     if (!TEAM_SESSIONS.get(teamId).containsKey(userId)) {
@@ -156,7 +152,6 @@ public class WebSocket {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     /**
@@ -169,13 +164,13 @@ public class WebSocket {
     @OnClose
     public void onClose(@PathParam("userId") String userId, @PathParam("teamId") String teamId, Session session) {
         try {
-            if (!ZERO_ID.equals(teamId) && !validId(teamId)) {
+            if (!ZERO_ID.equals(teamId) && invalidId(teamId)) {
                 // 关闭队伍聊天室
                 TEAM_SESSIONS.get(teamId).remove(userId);
                 return;
             }
 
-            if (!SESSION_POOL.isEmpty() && !validId(userId)) {
+            if (!SESSION_POOL.isEmpty() && invalidId(userId)) {
                 // 关闭私聊室
                 SESSION_POOL.remove(userId);
                 WEB_SOCKETS.remove(this);
@@ -188,7 +183,7 @@ public class WebSocket {
     /**
      * 收到客户端消息后调用的方法
      *
-     * @param userId  用户id
+     * @param userId  消息发送者 id
      * @param message 消息
      */
     @OnMessage
@@ -204,32 +199,60 @@ public class WebSocket {
 
         // 获取消息发送者信息
         Long senderId = chatRequest.getSenderId();
-        if (!validId(String.valueOf(senderId))) {
+        if (invalidId(String.valueOf(senderId))) {
             sendError(userId, "user id error");
             return;
         }
         User senderUser = userService.getById(senderId);
-
-        // 获取队伍信息
-        Long teamId = chatRequest.getTeamId();
-        if (!validId(String.valueOf(teamId)) && !ZERO_ID.equals(teamId.toString())) {
-            sendError(userId, "team id error");
+        if (senderUser == null) {
+            sendError(userId, "The user does not exist. ");
             return;
         }
-        Team team = teamService.getById(teamId);
 
+        // 获取消息内容、消息类型
         String chatContent = chatRequest.getChatContent();
         Integer chatType = chatRequest.getChatType();
-        if (ChatTypeEnum.PRIVATE_CHAT.getType().equals(chatType)) {
+
+        if (ChatTypeEnum.PRIVATE_CHAT.getType().equals(chatType) && ZERO_ID.equals(teamId.toString())) {
             // 私聊
             Long receiverId = chatRequest.getReceiverId();
-            if (!validId(String.valueOf(receiverId))) {
+            if (invalidId(String.valueOf(receiverId))) {
                 sendError(userId, "user id error");
                 return;
             }
+
+            // 获取消息接收者消息
             User receiverUser = userService.getById(receiverId);
+            if (receiverUser == null) {
+                sendError(userId, "The target does not exist. ");
+            }
+
+            // 发送私聊消息
             privateChat(senderUser, receiverUser, chatContent);
+            return;
         }
+
+        if (ChatTypeEnum.GROUP_CHAT.getType().equals(chatType) && !ZERO_ID.equals(teamId.toString())) {
+            // 队伍聊天
+            Long teamId = chatRequest.getTeamId();
+            if (invalidId(String.valueOf(teamId))) {
+                sendError(userId, "team id error");
+                return;
+            }
+
+            // 获取队伍信息
+            Team team = teamService.getById(teamId);
+            if (team == null) {
+                sendError(userId, "The team does not exist.");
+                return;
+            }
+
+            // 发送队伍聊天消息
+            teamChat(senderUser, team, chatContent);
+            return;
+        }
+
+        sendError(userId, "参数错误");
     }
 
     /**
@@ -271,28 +294,92 @@ public class WebSocket {
         }
 
         // 发送消息
-        String sendResult = JsonUtil.G.toJson(chatVo);
-        sendOneMessage(receiverUser.getId().toString(), sendResult);
+        String finalSend = JsonUtil.G.toJson(chatVo);
+        sendOneMessage(receiverUser.getId().toString(), finalSend);
     }
 
     /**
-     * 将聊天结果保存到数据库中
+     * 队伍聊天
+     *
+     * @param senderUser  - 发送者 id
+     * @param team        - 接收消息的队伍
+     * @param chatContent - 消息内容
+     */
+    private void teamChat(User senderUser, Team team, String chatContent) {
+        // 获取消息发送者签名
+        WebSocketVo senderUserLogo = new WebSocketVo();
+        BeanUtils.copyProperties(senderUser, senderUserLogo);
+
+        // 封装消息响应对象
+        ChatVo chatVo = new ChatVo();
+        chatVo.setSenderUser(senderUserLogo);
+        chatVo.setChatContent(chatContent);
+        chatVo.setTeamId(team.getId());
+        chatVo.setChatType(ChatTypeEnum.GROUP_CHAT.getType());
+        chatVo.setSendTime(DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+
+        // 格式转换
+        String finalSend = JsonUtil.G.toJson(chatVo);
+
+        // 保存聊天记录
+        boolean saveResult = saveChat(chatVo.getSenderUser().getId()
+                , null
+                , team.getId()
+                , finalSend
+                , chatVo.getChatType());
+        if (!saveResult) {
+            // todo 发生消息告知用户
+            log.error("聊天结果保存失败");
+            return;
+        }
+
+        // 获取队伍成员, 并逐发消息
+        ConcurrentHashMap<String, WebSocket> teamPlayerWebSocketMap = TEAM_SESSIONS.get(teamId.toString());
+        teamPlayerWebSocketMap.forEach((key, value) -> {
+            try {
+                value.session.getAsyncRemote().sendText(finalSend);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * 将私聊的聊天记录保存到数据库中
      *
      * @param chatVo - 聊天请求响应对象
      * @return 保存结果
      */
     private boolean saveChat(ChatVo chatVo) {
+        return saveChat(chatVo.getSenderUser().getId()
+                , chatVo.getReceiverUser().getId()
+                , null
+                , chatVo.getChatContent()
+                , chatVo.getChatType());
+    }
+
+    /**
+     * 将聊天记录保存到数据库中, 通用
+     *
+     * @param senderId   - 消息发送者 id
+     * @param receiverId - 消息接收者 id
+     * @param teamId     - 接收消息的队伍 id
+     * @param chatType   - 消息类型
+     * @return 保存结果
+     */
+    private boolean saveChat(Long senderId, Long receiverId, Long teamId, String chantContent, Integer chatType) {
         Chat chat = new Chat();
-        chat.setSenderId(chatVo.getSenderUser().getId());
-        chat.setReceiverId(chatVo.getReceiverUser().getId());
-        Long teamId = chatVo.getTeamId();
+        chat.setSenderId(senderId);
+        chat.setReceiverId(receiverId);
         chat.setTeamId(teamId);
-        chat.setChatContent(chatVo.getChatContent());
-        chat.setChatType(chatVo.getChatType());
-        List<UserTeam> receiverDataList = userTeamService.getMessageByTeamId(teamId);
-        List<Long> receiverIdList = receiverDataList.stream().map(UserTeam::getUserId).collect(Collectors.toList());
-        String receiverIds = JsonUtil.G.toJson(receiverIdList);
-        chat.setReceiverIds(receiverIds);
+        chat.setChatContent(chantContent);
+        chat.setChatType(chatType);
+        if (teamId != null) {
+            List<UserTeam> receiverDataList = userTeamService.getMessageByTeamId(teamId);
+            List<Long> receiverIdList = receiverDataList.stream().map(UserTeam::getUserId).collect(Collectors.toList());
+            String receiverIds = JsonUtil.G.toJson(receiverIdList);
+            chat.setReceiverIds(receiverIds);
+        }
         return chatService.save(chat);
     }
 
@@ -312,16 +399,16 @@ public class WebSocket {
     }
 
     /**
-     * 判断 userId 或 teamId 是否合法
+     * 判断 userId 或 teamId 是否是无效 id
      *
      * @param idStr - userId or teamId
-     * @return 合法 - true; 不合法 - false
+     * @return userId 或 teamId 无效 - true; userId 或 teamId 有效 - false
      */
-    private boolean validId(String idStr) {
+    private boolean invalidId(String idStr) {
         // 匹配正整数
         String pattern = "^[1-9][0-9]*$";
         Pattern compiledPattern = Pattern.compile(pattern);
-        return compiledPattern.matcher(idStr).matches();
+        return !compiledPattern.matcher(idStr).matches();
     }
 
     @Override
@@ -336,22 +423,12 @@ public class WebSocket {
 
         WebSocket webSocket = (WebSocket) o;
 
-        return new EqualsBuilder()
-                .append(session, webSocket.session)
-                .append(httpSession, webSocket.httpSession)
-                .append(user, webSocket.user)
-                .append(teamId, webSocket.teamId)
-                .isEquals();
+        return new EqualsBuilder().append(session, webSocket.session).append(httpSession, webSocket.httpSession).append(teamId, webSocket.teamId).isEquals();
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(session)
-                .append(httpSession)
-                .append(user)
-                .append(teamId)
-                .toHashCode();
+        return new HashCodeBuilder(17, 37).append(session).append(httpSession).append(teamId).toHashCode();
     }
 
     @Resource
