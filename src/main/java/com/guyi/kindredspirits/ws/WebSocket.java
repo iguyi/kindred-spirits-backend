@@ -1,5 +1,6 @@
 package com.guyi.kindredspirits.ws;
 
+import cn.hutool.json.JSONObject;
 import com.guyi.kindredspirits.common.contant.BaseConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
@@ -107,11 +108,11 @@ public class WebSocket {
     public void onOpen(@PathParam(value = "userId") String userId, @PathParam(value = "teamId") String teamId,
                        Session session, EndpointConfig config) {
         if (!validId(userId)) {
-            log.error("user id error");
+            sendError(userId, "user id error");
             return;
         }
         if (!validId(teamId) && !ZERO_ID.equals(teamId)) {
-            log.error("team id error");
+            sendError(userId, "team id error");
             return;
         }
 
@@ -145,7 +146,6 @@ public class WebSocket {
             // 私聊室
             WEB_SOCKETS.add(this);
             SESSION_POOL.put(userId, session);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -160,24 +160,15 @@ public class WebSocket {
      * @param session - 会话
      */
     @OnClose
-    public void onClose(@PathParam("userId") String userId, @PathParam(value = "teamId") String teamId,
-                        Session session) {
-        if (!validId(userId)) {
-            if (!validId(teamId) || ZERO_ID.equals(teamId)) {
-                // todo, 返回一条消息提示
-                log.error("参数错误");
-                return;
-            }
-        }
-
+    public void onClose(@PathParam("userId") String userId, @PathParam("teamId") String teamId, Session session) {
         try {
-            if (!ZERO_ID.equals(teamId)) {
+            if (!ZERO_ID.equals(teamId) && !validId(teamId)) {
                 // 关闭队伍聊天室
                 TEAM_SESSIONS.get(teamId).remove(userId);
                 return;
             }
 
-            if (!SESSION_POOL.isEmpty()) {
+            if (!SESSION_POOL.isEmpty() && !validId(userId)) {
                 // 关闭私聊室
                 SESSION_POOL.remove(userId);
                 WEB_SOCKETS.remove(this);
@@ -207,7 +198,7 @@ public class WebSocket {
         // 获取消息发送者信息
         Long senderId = chatRequest.getSenderId();
         if (!validId(String.valueOf(senderId))) {
-            log.error("user id error");
+            sendError(userId, "user id error");
             return;
         }
         User senderUser = userService.getById(senderId);
@@ -215,7 +206,7 @@ public class WebSocket {
         // 获取队伍信息
         Long teamId = chatRequest.getTeamId();
         if (!validId(String.valueOf(teamId)) && !ZERO_ID.equals(teamId.toString())) {
-            log.error("team id error");
+            sendError(userId, "team id error");
             return;
         }
         Team team = teamService.getById(teamId);
@@ -226,7 +217,7 @@ public class WebSocket {
             // 私聊
             Long receiverId = chatRequest.getReceiverId();
             if (!validId(String.valueOf(receiverId))) {
-                log.error("user id error");
+                sendError(userId, "user id error");
                 return;
             }
             User receiverUser = userService.getById(receiverId);
@@ -270,6 +261,21 @@ public class WebSocket {
         sendOneMessage(receiverUser.getId().toString(), sendResult);
 
         // todo 保存聊天记录
+    }
+
+
+    /**
+     * 消息发生错误时调用, 起到告知作用
+     *
+     * @param receiverId - 接收者 id, 即当前用户
+     * @param errorTip   - 错误提示
+     */
+    private void sendError(String receiverId, String errorTip) {
+        log.error(errorTip);
+
+        JSONObject obj = new JSONObject();
+        obj.set("error", errorTip);
+        sendOneMessage(receiverId, obj.toString());
     }
 
     /**
