@@ -162,10 +162,12 @@ public class WebSocket {
     @OnClose
     public void onClose(@PathParam("userId") String userId, @PathParam(value = "teamId") String teamId,
                         Session session) {
-        if (!validId(userId) && (!validId(teamId) || ZERO_ID.equals(teamId))) {
-            // todo, 返回一条消息提示
-            log.error("参数错误");
-            return;
+        if (!validId(userId)) {
+            if (!validId(teamId) || ZERO_ID.equals(teamId)) {
+                // todo, 返回一条消息提示
+                log.error("参数错误");
+                return;
+            }
         }
 
         try {
