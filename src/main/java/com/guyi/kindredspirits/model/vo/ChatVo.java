@@ -36,6 +36,13 @@ public class ChatVo {
     private Integer chatType;
 
     /**
+     * 错误响应标识
+     * 0 - 正确响应的消息
+     * 1- 错误响应的消息
+     */
+    private Integer errorFlag;
+
+    /**
      * 发送时间, 格式为: yyyy-MM-dd HH:mm:ss
      */
     private String sendTime;
