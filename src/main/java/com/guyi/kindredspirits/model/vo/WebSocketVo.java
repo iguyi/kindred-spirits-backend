@@ -20,4 +20,14 @@ public class WebSocketVo {
      */
     private String userAccount;
 
+    /**
+     * 用户昵称
+     */
+    private String username;
+
+    /**
+     * 用户头像
+     */
+    private String avatarUrl;
+
 }
