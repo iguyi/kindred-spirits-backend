@@ -5,13 +5,16 @@ import com.guyi.kindredspirits.common.contant.BaseConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
 import com.guyi.kindredspirits.config.HttpSessionConfig;
+import com.guyi.kindredspirits.model.domain.Chat;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.domain.UserTeam;
 import com.guyi.kindredspirits.model.request.ChatRequest;
 import com.guyi.kindredspirits.model.vo.ChatVo;
 import com.guyi.kindredspirits.service.ChatService;
 import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
+import com.guyi.kindredspirits.service.UserTeamService;
 import com.guyi.kindredspirits.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -23,9 +26,11 @@ import javax.servlet.http.HttpSession;
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * WebSocket 服务
@@ -95,6 +100,8 @@ public class WebSocket {
     private static TeamService teamService;
 
     private static ChatService chatService;
+
+    private static UserTeamService userTeamService;
 
     /**
      * 连接成功调用的方法
@@ -256,11 +263,37 @@ public class WebSocket {
         // 获取 "聊天请求响" 对象
         ChatVo chatVo = chatService.getChatVo(senderUser, receiverUser, chatContent, ChatTypeEnum.PRIVATE_CHAT);
 
+        boolean saveResult = saveChat(chatVo);
+        if (!saveResult) {
+            // todo 发生消息告知用户
+            log.error("聊天结果保存失败");
+            return;
+        }
+
         // 发送消息
         String sendResult = JsonUtil.G.toJson(chatVo);
         sendOneMessage(receiverUser.getId().toString(), sendResult);
+    }
 
-        // todo 保存聊天记录
+    /**
+     * 将聊天结果保存到数据库中
+     *
+     * @param chatVo - 聊天请求响应对象
+     * @return 保存结果
+     */
+    private boolean saveChat(ChatVo chatVo) {
+        Chat chat = new Chat();
+        chat.setSenderId(chatVo.getSenderUser().getId());
+        chat.setReceiverId(chatVo.getReceiverUser().getId());
+        Long teamId = chatVo.getTeamId();
+        chat.setTeamId(teamId);
+        chat.setChatContent(chatVo.getChatContent());
+        chat.setChatType(chatVo.getChatType());
+        List<UserTeam> receiverDataList = userTeamService.getMessageByTeamId(teamId);
+        List<Long> receiverIdList = receiverDataList.stream().map(UserTeam::getUserId).collect(Collectors.toList());
+        String receiverIds = JsonUtil.G.toJson(receiverIdList);
+        chat.setReceiverIds(receiverIds);
+        return chatService.save(chat);
     }
 
 
@@ -334,6 +367,11 @@ public class WebSocket {
     @Resource
     public void setChatService(ChatService chatService) {
         WebSocket.chatService = chatService;
+    }
+
+    @Resource
+    public void setUserTeamService(UserTeamService userTeamService) {
+        WebSocket.userTeamService = userTeamService;
     }
 
 }
