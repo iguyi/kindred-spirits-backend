@@ -2,8 +2,6 @@ package com.guyi.kindredspirits.model.vo;
 
 import lombok.Data;
 
-import java.util.Date;
-
 /**
  * 聊天请求响应封装类
  *
