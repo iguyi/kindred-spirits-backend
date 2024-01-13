@@ -283,7 +283,7 @@ public class WebSocket {
      * @param chatContent  - 消息内容
      */
     private void privateChat(User senderUser, User receiverUser, String chatContent) {
-        // 获取 "聊天请求响" 对象
+        // 获取 "聊天请求响应" 对象
         ChatVo chatVo = chatService.getChatVo(senderUser, receiverUser, chatContent, ChatTypeEnum.PRIVATE_CHAT);
 
         boolean saveResult = saveChat(chatVo);
