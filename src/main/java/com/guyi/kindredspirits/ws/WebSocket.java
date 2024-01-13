@@ -286,9 +286,10 @@ public class WebSocket {
         // 获取 "聊天请求响应" 对象
         ChatVo chatVo = chatService.getChatVo(senderUser, receiverUser, chatContent, ChatTypeEnum.PRIVATE_CHAT);
 
+        // 保存聊天记录
         boolean saveResult = saveChat(chatVo);
         if (!saveResult) {
-            // todo 发生消息告知用户
+            sendError(senderUser.getId().toString(), "发送失败");
             log.error("聊天结果保存失败");
             return;
         }
@@ -328,7 +329,7 @@ public class WebSocket {
                 , finalSend
                 , chatVo.getChatType());
         if (!saveResult) {
-            // todo 发生消息告知用户
+            sendError(senderUser.getId().toString(), "发送失败");
             log.error("聊天结果保存失败");
             return;
         }
