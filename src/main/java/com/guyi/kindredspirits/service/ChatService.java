@@ -4,7 +4,11 @@ import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
 import com.guyi.kindredspirits.model.domain.Chat;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.request.ChatHistoryRequest;
+import com.guyi.kindredspirits.model.request.ChatRequest;
 import com.guyi.kindredspirits.model.vo.ChatVo;
+
+import java.util.List;
 
 /**
  * 针对表 chat(聊天记录表) 的数据库操作 Service
@@ -23,5 +27,13 @@ public interface ChatService extends IService<Chat> {
      * @return "聊天请求响应" 对象
      */
     ChatVo getChatVo(User senderUser, User receiverUser, String chatContent, ChatTypeEnum chatTypeEnum);
+
+    /**
+     * 获取历史聊天记录列表
+     *
+     * @param chatHistoryRequest - 获取聊天记录请求
+     * @return 历史聊天记录列表
+     */
+    List<ChatVo> getPrivateChat(ChatHistoryRequest chatHistoryRequest);
 
 }
