@@ -58,7 +58,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private static final String SALT = "guyi";
 
     @Override
-    public long userRegister(String userPassword, String checkPassword) {
+    public User userRegister(String userPassword, String checkPassword) {
         // 密码校验: 空校验、长度校验、两次输入是否相等、特殊字符匹配
         if (StringUtils.isAnyBlank(userPassword)
                 || userPassword.length() < UserConstant.USER_PASSWORD_MIN
@@ -108,7 +108,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
                     //  将新用户的 userAccount 写入缓存
                     RedisUtil.setForValue(RedisConstant.MAX_ID_USER_ACCOUNT_KEY, newUserAccountValue);
-                    return newUser.getId();
+                    return newUser;
                 }
             } catch (Exception e) {
                 log.debug("The userRegister method of the PreCacheJob class is error: " + e);
@@ -408,6 +408,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         sb.append("]");
         return sb.toString();
     }
+
 }
 
 

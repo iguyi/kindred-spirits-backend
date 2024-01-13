@@ -44,6 +44,9 @@ public class UserController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private HttpServletRequest httpServletRequest;
+
     /**
      * 注册用户
      *
@@ -60,8 +63,10 @@ public class UserController {
         if (StringUtils.isAnyBlank(userPassword, checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long result = userService.userRegister(userPassword, checkPassword);
-        return ResultUtils.success(result);
+        User newUser = userService.userRegister(userPassword, checkPassword);
+        User safetyUser = userService.getSafetyUser(newUser);
+        httpServletRequest.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, safetyUser);
+        return ResultUtils.success(newUser.getId());
     }
 
     /**

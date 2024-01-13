@@ -20,7 +20,7 @@ public interface UserService extends IService<User> {
      * @param checkPassword - 校验密码
      * @return 返回此处操作中注册用户的数量, 正常应该是 1
      */
-    long userRegister(String userPassword, String checkPassword);
+    User userRegister(String userPassword, String checkPassword);
 
     /**
      * 用户登录
