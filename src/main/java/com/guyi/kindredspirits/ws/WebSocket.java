@@ -1,6 +1,5 @@
 package com.guyi.kindredspirits.ws;
 
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONObject;
 import com.guyi.kindredspirits.common.contant.BaseConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
@@ -29,7 +28,6 @@ import javax.servlet.http.HttpSession;
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -311,25 +309,19 @@ public class WebSocket {
         WebSocketVo senderUserLogo = new WebSocketVo();
         BeanUtils.copyProperties(senderUser, senderUserLogo);
 
-        // 封装消息响应对象
-        ChatVo chatVo = new ChatVo();
-        chatVo.setSenderUser(senderUserLogo);
-        chatVo.setChatContent(chatContent);
-        chatVo.setTeamId(team.getId());
-        chatVo.setChatType(ChatTypeEnum.GROUP_CHAT.getType());
-        chatVo.setSendTime(DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
-
-        // 格式转换
-        String finalSend = JsonUtil.G.toJson(chatVo);
+        // 获取消息发送者 id
+        Long senderUserId = senderUser.getId();
 
         // 保存聊天记录
-        boolean saveResult = saveChat(chatVo.getSenderUser().getId()
+        boolean saveResult = saveChat(senderUserId
                 , null
                 , team.getId()
-                , finalSend
-                , chatVo.getChatType());
+                , chatContent
+                , ChatTypeEnum.GROUP_CHAT.getType());
+
         if (!saveResult) {
-            sendError(senderUser.getId().toString(), "发送失败");
+            // 聊天记录保存失败
+            sendError(senderUserId.toString(), "发送失败");
             log.error("聊天结果保存失败");
             return;
         }
@@ -338,7 +330,9 @@ public class WebSocket {
         ConcurrentHashMap<String, WebSocket> teamPlayerWebSocketMap = TEAM_SESSIONS.get(teamId.toString());
         teamPlayerWebSocketMap.forEach((key, value) -> {
             try {
-                value.session.getAsyncRemote().sendText(finalSend);
+                if (!key.equals(senderUserId.toString())) {
+                    value.session.getAsyncRemote().sendText(chatContent);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
