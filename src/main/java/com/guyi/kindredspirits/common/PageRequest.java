@@ -6,9 +6,12 @@ import java.io.Serializable;
 
 /**
  * 通用分页请求参数
+ *
+ * @author 孤诣
  */
 @Data
 public class PageRequest implements Serializable {
+
     /**
      * 页面大小
      */
@@ -19,5 +22,6 @@ public class PageRequest implements Serializable {
      */
     protected int pageNum = 1;
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 4724111499141793926L;
+
 }
