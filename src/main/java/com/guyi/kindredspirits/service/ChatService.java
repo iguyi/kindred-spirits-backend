@@ -5,6 +5,7 @@ import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
 import com.guyi.kindredspirits.model.domain.Chat;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.ChatHistoryRequest;
+import com.guyi.kindredspirits.model.vo.ChatRoomVo;
 import com.guyi.kindredspirits.model.vo.ChatVo;
 
 import java.util.List;
@@ -42,4 +43,12 @@ public interface ChatService extends IService<Chat> {
      * @return 队伍聊天室的历史聊天记录列表
      */
     List<ChatVo> getTeamChat(ChatHistoryRequest chatHistoryRequest);
+
+    /**
+     * 获取历史聊天会话列表
+     *
+     * @return 历史聊天会话列表
+     */
+    List<ChatRoomVo> getChatRoomList();
+
 }

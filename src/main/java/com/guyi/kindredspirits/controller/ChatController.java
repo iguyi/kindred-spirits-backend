@@ -5,6 +5,7 @@ import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.request.ChatHistoryRequest;
+import com.guyi.kindredspirits.model.vo.ChatRoomVo;
 import com.guyi.kindredspirits.model.vo.ChatVo;
 import com.guyi.kindredspirits.service.ChatService;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,16 @@ public class ChatController {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
         }
         return ResultUtils.success(chatService.getTeamChat(chatHistoryRequest));
+    }
+
+    /**
+     * 获取历史聊天会话列表
+     *
+     * @return 历史聊天会话列表
+     */
+    @GetMapping("/room/list")
+    public BaseResponse<List<ChatRoomVo>> getChatRoomList() {
+        return ResultUtils.success(chatService.getChatRoomList());
     }
 
 }
