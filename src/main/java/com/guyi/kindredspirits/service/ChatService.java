@@ -29,11 +29,18 @@ public interface ChatService extends IService<Chat> {
     ChatVo getChatVo(User senderUser, User receiverUser, String chatContent, ChatTypeEnum chatTypeEnum);
 
     /**
-     * 获取历史聊天记录列表
+     * 获取私聊室的历史聊天记录
      *
      * @param chatHistoryRequest - 获取聊天记录请求
-     * @return 历史聊天记录列表
+     * @return 私聊室的历史聊天记录列表
      */
     List<ChatVo> getPrivateChat(ChatHistoryRequest chatHistoryRequest);
 
+    /**
+     * 获取队伍聊天室的历史聊天记录
+     *
+     * @param chatHistoryRequest - 获取聊天记录请求
+     * @return 队伍聊天室的历史聊天记录列表
+     */
+    List<ChatVo> getTeamChat(ChatHistoryRequest chatHistoryRequest);
 }

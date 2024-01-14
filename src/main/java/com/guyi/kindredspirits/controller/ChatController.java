@@ -28,10 +28,10 @@ public class ChatController {
     private ChatService chatService;
 
     /**
-     * 获取历史聊天记录列表
+     * 获取私聊室的历史聊天记录
      *
      * @param chatHistoryRequest - 获取聊天记录请求
-     * @return 历史聊天记录列表
+     * @return 私聊室的历史聊天记录列表
      */
     @PostMapping("/private")
     public BaseResponse<List<ChatVo>> getPrivateChat(@RequestBody ChatHistoryRequest chatHistoryRequest) {
@@ -39,6 +39,20 @@ public class ChatController {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
         }
         return ResultUtils.success(chatService.getPrivateChat(chatHistoryRequest));
+    }
+
+    /**
+     * 获取队伍聊天室的历史聊天记录
+     *
+     * @param chatHistoryRequest - 获取聊天记录请求
+     * @return 队伍聊天室的历史聊天记录列表
+     */
+    @PostMapping("/team")
+    public BaseResponse<List<ChatVo>> getTeamChat(@RequestBody ChatHistoryRequest chatHistoryRequest) {
+        if (chatHistoryRequest == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
+        }
+        return ResultUtils.success(chatService.getTeamChat(chatHistoryRequest));
     }
 
 }
