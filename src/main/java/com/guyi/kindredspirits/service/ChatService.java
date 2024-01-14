@@ -1,11 +1,10 @@
 package com.guyi.kindredspirits.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
 import com.guyi.kindredspirits.model.domain.Chat;
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.ChatHistoryRequest;
-import com.guyi.kindredspirits.model.request.ChatRequest;
 import com.guyi.kindredspirits.model.vo.ChatVo;
 
 import java.util.List;
