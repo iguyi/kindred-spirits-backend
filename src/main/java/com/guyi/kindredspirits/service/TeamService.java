@@ -77,7 +77,7 @@ public interface TeamService extends IService<Team> {
      * 筛选条件有: 队伍 id、队伍名称、队伍描述、队伍最大人数、创建人 id、队长 id、队伍状态(公开、私密、加密)
      *
      * @param loginUserIid - 登录用户 id
-     * @param teamQuery - 队伍查询封装对象
+     * @param teamQuery    - 队伍查询封装对象
      * @return 分页返回符合要求的队伍
      */
     Page<Team> listTeamsByPage(Long loginUserIid, TeamQueryRequest teamQuery);
@@ -99,4 +99,5 @@ public interface TeamService extends IService<Team> {
      * @return 符合要求的所有队伍
      */
     List<Team> listMyJoinTeams(TeamMyQueryRequest teamMyQuery, User loginUser);
+
 }

@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
-import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.TeamMapper;
 import com.guyi.kindredspirits.model.domain.Team;
@@ -32,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -426,6 +426,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             // 过滤 "加入的队伍"
             teamQueryWrapper.notIn("id", currentUserInTeamIds);
         }
+
         // 过滤 "过期的队伍"
         teamQueryWrapper.ge("expireTime", new Date());
         Page<Team> teamPage = new Page<>(teamQuery.getPageNum(), teamQuery.getPageSize());
@@ -500,4 +501,5 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         return team;
     }
+
 }
