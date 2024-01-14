@@ -18,6 +18,11 @@ public class ChatRoomVo implements Serializable {
     private Long receiverId;
 
     /**
+     * 接收者名称(好友名或队伍名)
+     */
+    private String receiverName;
+
+    /**
      * 聊天室消息接收者(朋友或队伍) 头像
      */
     private String avatarUrl;
@@ -37,6 +42,11 @@ public class ChatRoomVo implements Serializable {
      * -- 自己: "消息"
      */
     private String lastRecord;
+
+    /**
+     * 发送时间
+     */
+    private String sendTime;
 
     private static final long serialVersionUID = 4910198001360086136L;
 
