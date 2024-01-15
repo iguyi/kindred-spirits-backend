@@ -198,7 +198,7 @@ public class WebSocket {
         // 获取消息发送者信息
         Long senderId = chatRequest.getSenderId();
         if (invalidId(String.valueOf(senderId))) {
-            sendError(userId, "user id error");
+            sendError(userId, "User id error");
             return;
         }
         User senderUser = userService.getById(senderId);
@@ -215,7 +215,7 @@ public class WebSocket {
             // 私聊
             Long receiverId = chatRequest.getReceiverId();
             if (invalidId(String.valueOf(receiverId))) {
-                sendError(userId, "user id error");
+                sendError(userId, "User id error");
                 return;
             }
 
@@ -234,7 +234,7 @@ public class WebSocket {
             // 队伍聊天
             Long teamId = chatRequest.getTeamId();
             if (invalidId(String.valueOf(teamId))) {
-                sendError(userId, "team id error");
+                sendError(userId, "Team id error");
                 return;
             }
 
@@ -326,12 +326,15 @@ public class WebSocket {
             return;
         }
 
+        ChatVo chatVo = chatService.getChatVo(senderUser, null, chatContent, ChatTypeEnum.GROUP_CHAT);
+        String sendMessage = JsonUtil.G.toJson(chatVo);
+
         // 获取队伍成员, 并逐发消息
         ConcurrentHashMap<String, WebSocket> teamPlayerWebSocketMap = TEAM_SESSIONS.get(teamId.toString());
         teamPlayerWebSocketMap.forEach((key, value) -> {
             try {
                 if (!key.equals(senderUserId.toString())) {
-                    value.session.getAsyncRemote().sendText(chatContent);
+                    value.session.getAsyncRemote().sendText(sendMessage);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
