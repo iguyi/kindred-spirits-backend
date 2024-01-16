@@ -33,6 +33,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
+ * 针对表 user(用户表) 的数据库操作 Service 实现
+ *
  * @author 孤诣
  */
 @Service

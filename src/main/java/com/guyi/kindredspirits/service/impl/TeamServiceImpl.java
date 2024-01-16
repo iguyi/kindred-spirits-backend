@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
+ * 针对表 team(队伍表) 的数据库操作 Service 实现
+ *
  * @author 孤诣
  */
 @Service

@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 针对表 user(用户表) 的数据库操作 Service
+ *
  * @author 孤诣
  */
 public interface UserService extends IService<User> {

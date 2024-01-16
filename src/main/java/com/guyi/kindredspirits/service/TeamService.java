@@ -14,6 +14,8 @@ import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import java.util.List;
 
 /**
+ * 针对表 team(队伍表) 的数据库操作 Service
+ *
  * @author 孤诣
  */
 public interface TeamService extends IService<Team> {
