@@ -102,4 +102,12 @@ public interface TeamService extends IService<Team> {
      */
     List<Team> listMyJoinTeams(TeamMyQueryRequest teamMyQuery, User loginUser);
 
+    /**
+     * 自由搜索队伍 - 主要用于用户查找队伍
+     *
+     * @param searchCondition - 搜索条件(关键词)
+     * @return 符合要求的队伍
+     */
+    List<Team> searchTeam(String searchCondition);
+
 }
