@@ -154,6 +154,7 @@ public class UserController {
         // 用户是否登录
         userService.getLoginUser();
         User user = userService.getById(id);
+        user.setTags(userService.getTagListJson(user));
         UserVo res = new UserVo();
         BeanUtils.copyProperties(user, res);
         return ResultUtils.success(res);
