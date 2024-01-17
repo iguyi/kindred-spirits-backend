@@ -66,6 +66,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         if (senderId == null || receiverId == null || senderId.equals(receiverId) || senderId * receiverId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
+
         // 消息发送者是否为当前登录用户
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (loginUser == null) {
@@ -106,6 +107,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         message.setId(null);
         message.setProcessed(0);
         boolean res = messageService.save(message);
+
         if (res) {
             // 消息保存至 Redis
             String key = String.format(RedisConstant.MESSAGE_VERIFY_KEY_PRE, message.getId() + "_" + receiverId);
