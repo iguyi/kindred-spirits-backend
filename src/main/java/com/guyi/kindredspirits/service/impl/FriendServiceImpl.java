@@ -52,6 +52,9 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
      */
     private static final long TWO_PEOPLE = 2L;
 
+    /**
+     * sender 向 receiverId 进行好友申请
+     */
     @Override
     public Boolean applyFriend(MessageRequest messageRequest) {
         // 校验发送者和接收者的 id 是否正确
@@ -63,7 +66,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         if (senderId == null || receiverId == null || senderId.equals(receiverId) || senderId * receiverId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
-        // A 是否为当前登录用户
+        // 消息发送者是否为当前登录用户
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
@@ -78,7 +81,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
 
-        // 校验是否存在 B 用户
+        // 校验消息发送者是否存在
         User receiverUser = userService.getById(receiverId);
         if (receiverUser == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "对方不存在");

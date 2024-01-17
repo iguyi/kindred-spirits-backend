@@ -35,7 +35,7 @@ public class FriendController {
     /**
      * 好友申请
      *
-     * @param messageRequest - 消息封装类
+     * @param messageRequest - 消息封装类: sender 向 receiver 进行好友申请
      * @return 好友申请的消息存储成功，返回 true; 否则, 返回 false
      */
     @PostMapping("/apply")
