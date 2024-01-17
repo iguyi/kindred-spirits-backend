@@ -212,6 +212,7 @@ public class UserController {
      * 推荐相似用户
      * todo 暂时是随机返回, 缓存也需要分页查询
      * todo 查询缓存后, 要判断数量对不对啊！
+     * todo 排除已经是好友的用户
      *
      * @param pageSize           - 每页的数据量, >0
      * @param pageNum            - 页码, >0
