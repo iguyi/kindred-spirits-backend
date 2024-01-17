@@ -36,9 +36,6 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
     private UserService userService;
 
     @Resource
-    private FriendMapper friendMapper;
-
-    @Resource
     private MessageService messageService;
 
     @Resource
@@ -53,17 +50,17 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
     private static final long TWO_PEOPLE = 2L;
 
     /**
+     * todo WebSocket 发送消息告知被添加者
      * sender 向 receiverId 进行好友申请
      */
     @Override
     public Boolean applyFriend(MessageRequest messageRequest) {
-        // 校验发送者和接收者的 id 是否正确
+        // 校验接收者的 id 是否正确
         if (messageRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
         }
-        Long senderId = messageRequest.getSenderId();
         Long receiverId = messageRequest.getReceiverId();
-        if (senderId == null || receiverId == null || senderId.equals(receiverId) || senderId * receiverId <= 0) {
+        if (receiverId == null || receiverId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
 
@@ -72,9 +69,6 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
-        if (!loginUser.getId().equals(senderId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH, "无权限");
-        }
 
         Integer messageType = messageRequest.getMessageType();
         if (!MessageTypeEnum.VERIFY_MESSAGE.getType().equals(messageType)) {
@@ -82,14 +76,24 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
 
-        // 校验消息发送者是否存在
+        // 校验消息接收者是否存在
         User receiverUser = userService.getById(receiverId);
         if (receiverUser == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "对方不存在");
         }
 
         // 合法性校验
-        Long count = friendMapper.count();
+        QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
+        Long loginUserId = loginUser.getId();
+        friendQueryWrapper
+                .eq("activeUserId", loginUserId)
+                .eq("passiveUserId", receiverId)
+                .or(queryWrapper -> queryWrapper
+                        .eq("activeUserId", receiverId)
+                        .eq("passiveUserId", loginUserId)
+                )
+                .in("relationStatus", 0, 3, 4, 5, 6);
+        long count = this.count(friendQueryWrapper);
         if (count != 0) {
             /*
              可能的情况:
@@ -105,6 +109,8 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         Message message = new Message();
         BeanUtils.copyProperties(messageRequest, message);
         message.setId(null);
+        message.setSenderId(loginUserId);
+        message.setMessageBody("好友申请");
         message.setProcessed(0);
         boolean res = messageService.save(message);
 
