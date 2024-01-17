@@ -100,7 +100,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
             throw new BusinessException(ErrorCode.FORBIDDEN, "禁止操作");
         }
 
-        // 存储申请信息，待 B 进行处理, 并将结果返回
+        // 存储申请信息，待消息接收者进行处理, 并将结果返回
         Message message = new Message();
         BeanUtils.copyProperties(messageRequest, message);
         message.setId(null);
