@@ -45,13 +45,16 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
     private HttpServletRequest httpServletRequest;
 
     /**
-     * "A 同意 B 的好友申请" / "B 向 A 发出好友申请, 那么在 user 表中根据 AId 和 BId 查询, 要查询到两条记录
+     * "好友申请" 和 "同意好友申请" 时, 根据相关用户的 id 应在数据库中查询到的数据的数量:
+     * - 消息接收者同意消息发送者的好友申请
+     * - 消息发送者向消息接收者发出好友申请
+     * 那么在 user 表中, 根据二者 id 作为查询条件, 要查询到两条记录
      */
     private static final long TWO_PEOPLE = 2L;
 
     @Override
     public Boolean applyFriend(MessageRequest messageRequest) {
-        // 校验 A 和 B 的 id 是否正确
+        // 校验发送者和接收者的 id 是否正确
         if (messageRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
         }
