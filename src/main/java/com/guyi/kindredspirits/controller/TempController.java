@@ -117,7 +117,7 @@ public class TempController {
             List<UserVo> userList = userTeamVo.getUserList();
             if (userList != null) {
                 userList.forEach(userVo -> {
-                    if (loginUserId.equals(userVo.getId())) {  // 当前用于已加入该队伍
+                    if (loginUserId.equals(userVo.getId())) {  // 当前用户已加入该队伍
                         userTeamVo.setHasJoin(true);
                     }
                 });
