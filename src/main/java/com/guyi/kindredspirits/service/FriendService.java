@@ -17,7 +17,7 @@ public interface FriendService extends IService<Friend> {
     /**
      * 好友申请
      *
-     * @param messageRequest - 消息封装类
+     * @param messageRequest - 消息封装类: sender 向 receiverId 进行好友申请
      * @return 好友申请的消息存储成功，返回 true; 否则, 返回 false
      */
     Boolean applyFriend(MessageRequest messageRequest);
