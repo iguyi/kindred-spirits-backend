@@ -2,6 +2,7 @@ package com.guyi.kindredspirits.controller;
 
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
+import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.MessageRequest;
@@ -43,8 +44,11 @@ public class FriendController {
         if (messageRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
         }
-        friendService.applyFriend(messageRequest);
-        return new BaseResponse<>(0, true, "等待对方同意");
+        Boolean result = friendService.applyFriend(messageRequest);
+        if (result) {
+            return ResultUtils.success(true);
+        }
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "消息发送失败");
     }
 
     /**
