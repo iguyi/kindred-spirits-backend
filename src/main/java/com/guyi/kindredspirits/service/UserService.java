@@ -128,4 +128,13 @@ public interface UserService extends IService<User> {
      * @return tags 经过转换的 user
      */
     String getTagListJson(User user);
+
+    /**
+     * 自由搜索用户
+     *
+     * @param searchCondition - 搜索条件(关键词)
+     * @return 符合要求的用户
+     */
+    List<User> searchUser(String searchCondition);
+
 }
