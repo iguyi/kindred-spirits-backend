@@ -486,6 +486,24 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return this.list(teamQueryWrapper);
     }
 
+    @Override
+    public List<Team> searchTeam(String searchCondition) {
+        userService.getLoginUser();
+        if (StringUtils.isBlank(searchCondition)) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, ErrorCode.NULL_ERROR.getMsg());
+        }
+
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
+        teamQueryWrapper
+                .and(queryWrapper -> queryWrapper
+                        .eq("id", searchCondition)
+                        .or().like("name", searchCondition)
+                        .or().like("description", searchCondition)
+                )
+                .and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
+        return this.list(teamQueryWrapper);
+    }
+
     private long countTeamUserByTeamId(long teamId) {
         // 队伍人数校验
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
