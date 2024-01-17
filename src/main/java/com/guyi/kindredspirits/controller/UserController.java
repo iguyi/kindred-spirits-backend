@@ -120,6 +120,27 @@ public class UserController {
     }
 
     /**
+     * 自由搜索用户
+     *
+     * @param searchCondition - 搜索条件(关键词)
+     * @return 符合要求的用户
+     */
+    @GetMapping("/search")
+    public BaseResponse<List<UserVo>> searchUser(String searchCondition) {
+        // 用户是否登录
+        userService.getLoginUser();
+        List<User> userList = userService.searchUser(searchCondition);
+        List<UserVo> result = userList.stream().map(user -> {
+            user.setTags(userService.getTagListJson(user));
+            UserVo userVo = new UserVo();
+            BeanUtils.copyProperties(user, userVo);
+            return userVo;
+        }).collect(Collectors.toList());
+        return ResultUtils.success(result);
+    }
+
+
+    /**
      * 查询所有用户, 仅管理员可用
      * todo 考虑分页查询
      *
