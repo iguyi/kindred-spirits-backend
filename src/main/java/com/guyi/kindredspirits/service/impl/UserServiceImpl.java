@@ -412,6 +412,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return sb.toString();
     }
 
+    @Override
+    public List<User> searchUser(String searchCondition) {
+        this.getLoginUser();
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper
+                .eq("id", searchCondition)
+                .or().eq("userAccount", searchCondition)
+                .or().like("username", searchCondition)
+                .or().like("tags", searchCondition)
+                .or().like("profile", searchCondition);
+        return this.list(userQueryWrapper);
+    }
+
 }
 
 
