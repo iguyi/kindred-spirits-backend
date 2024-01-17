@@ -8,6 +8,7 @@ import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.*;
+import com.guyi.kindredspirits.model.vo.TeamVo;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.TeamService;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 队伍接口
@@ -92,6 +94,26 @@ public class TempController {
         }
         return ResultUtils.success(team);
     }
+
+    /**
+     * 自由搜索队伍 - 主要用于用户查找队伍
+     *
+     * @param searchCondition - 搜索条件(关键词)
+     * @return 符合要求的队伍
+     */
+    @GetMapping("/search")
+    public BaseResponse<List<TeamVo>> searchTeam(String searchCondition) {
+        userService.getLoginUser();
+
+        List<Team> teamList = teamService.searchTeam(searchCondition);
+        List<TeamVo> result = teamList.stream().map(team -> {
+            TeamVo teamVo = new TeamVo();
+            BeanUtils.copyProperties(team, teamVo);
+            return teamVo;
+        }).collect(Collectors.toList());
+        return ResultUtils.success(result);
+    }
+
 
     /**
      * 根据指定信息查询队伍。<br/>
