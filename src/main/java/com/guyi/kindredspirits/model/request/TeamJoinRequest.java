@@ -6,6 +6,8 @@ import java.io.Serializable;
 
 /**
  * 加入队伍的请求封装类
+ *
+ * @author 孤诣
  */
 @Data
 public class TeamJoinRequest implements Serializable {
@@ -20,5 +22,11 @@ public class TeamJoinRequest implements Serializable {
      */
     private String password;
 
-    private static final long serialVersionUID = 1L;
+    /**
+     * 队伍邀请链接
+     */
+    private String teamLink;
+
+    private static final long serialVersionUID = 1769513560162057479L;
+
 }
