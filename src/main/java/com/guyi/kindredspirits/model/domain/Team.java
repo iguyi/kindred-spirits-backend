@@ -38,6 +38,11 @@ public class Team implements Serializable {
     private String description;
 
     /**
+     * 队伍邀请链接
+     */
+    private String teamLink;
+
+    /**
      * 队伍最大人数
      */
     private Integer maxNum;
