@@ -17,9 +17,8 @@ import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.service.UserTeamService;
 import com.guyi.kindredspirits.util.JsonUtil;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +38,7 @@ import java.util.stream.Collectors;
  *
  * @author 孤诣
  */
+@EqualsAndHashCode
 @Component
 @Slf4j
 @ServerEndpoint(value = "/websocket/{userId}/{teamId}", configurator = HttpSessionConfig.class)
@@ -407,26 +407,6 @@ public class WebSocket {
         String pattern = "^[1-9][0-9]*$";
         Pattern compiledPattern = Pattern.compile(pattern);
         return !compiledPattern.matcher(idStr).matches();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        WebSocket webSocket = (WebSocket) o;
-
-        return new EqualsBuilder().append(session, webSocket.session).append(httpSession, webSocket.httpSession).append(teamId, webSocket.teamId).isEquals();
-    }
-
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(session).append(httpSession).append(teamId).toHashCode();
     }
 
     @Resource
