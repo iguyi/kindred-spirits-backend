@@ -235,11 +235,13 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         Integer newTeamStatus = teamUpdateRequest.getStatus();
         TeamStatusEnum newEnumTeamStatus = TeamStatusEnum.getEnumByValue(newTeamStatus);
-        if (TeamStatusEnum.SECRET.equals(newEnumTeamStatus)) {  // 修改为加密队伍
+        if (TeamStatusEnum.SECRET.equals(newEnumTeamStatus)) {
+            // 修改为加密队伍
             Integer oldTeamStatus = oldTeam.getStatus();
             TeamStatusEnum oldEnumTeamStatus = TeamStatusEnum.getEnumByValue(oldTeamStatus);
             String oldPassword = oldTeam.getPassword();
-            if (!newEnumTeamStatus.equals(oldEnumTeamStatus)) {  // 原队伍不是加密的
+            if (!newEnumTeamStatus.equals(oldEnumTeamStatus)) {
+                // 原队伍不是加密的
                 if (StringUtils.isBlank(oldPassword) || StringUtils.isBlank(teamUpdateRequest.getPassword())) {
                     throw new BusinessException(ErrorCode.PARAMS_ERROR, "加密队伍必须要有密码");
                 }
@@ -251,6 +253,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean joinTeam(TeamJoinRequest teamJoinRequest, User loginUser) {
         if (teamJoinRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求数据为空");
@@ -263,10 +266,14 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (teamId == null || teamId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求数据为空");
         }
-        final String lockKey = "kindredspirits:teamservice:jointeam:" + loginUserId;  // 保证不会阻塞其他用户对的请求
-        RLock lock = redissonClient.getLock(lockKey);    // 获取锁对象
+
+        // 获取锁对象: 不同用户对有不同的 lock key, 保证不会阻塞其他用户对的请求
+        final String lockKey = "kindredspirits:teamservice:jointeam:" + loginUserId;
+        RLock lock = redissonClient.getLock(lockKey);
         int counter = 0;
-        while (counter < 100) {  // 防死锁
+
+        // 限制重试次数, 防死锁
+        while (counter < 100) {
             counter++;
             try {
                 if (lock.tryLock(0, 30L, TimeUnit.SECONDS)) {
@@ -278,7 +285,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                         throw new BusinessException(ErrorCode.PARAMS_ERROR, "所属队伍不能操作 5 个");
                     }
                     for (UserTeam userTeam : userTeamList) {
-                        if (userTeam.getTeamId().equals(teamId)) {  // 幂等性
+                        if (userTeam.getTeamId().equals(teamId)) {
                             throw new BusinessException(ErrorCode.PARAMS_ERROR, "已加入该队伍");
                         }
                     }
@@ -306,21 +313,32 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                         }
                     }
                     // 队伍人数校验
-                    long teamHasJoinNum = this.countTeamUserByTeamId(teamId);
-                    if (teamHasJoinNum >= team.getMaxNum()) {
+                    Integer num = team.getNum();
+                    if (num >= team.getMaxNum()) {
                         throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍已满");
                     }
+                    // 更新当前队伍人数
+                    team.setNum(num + 1);
+                    boolean updateResult = this.updateById(team);
+
                     // 新增用户-队伍关联信息
                     UserTeam userTeam = new UserTeam();
                     userTeam.setUserId(loginUserId);
                     userTeam.setTeamId(teamId);
                     userTeam.setJoinTime(new Date());
-                    return userTeamService.save(userTeam);
+                    boolean saveResult = userTeamService.save(userTeam);
+
+                    if (updateResult && saveResult) {
+                        return true;
+                    }
+
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统错误");
                 }
             } catch (InterruptedException e) {
                 log.debug("The doCacheRecommendUser method of the PreCacheJob class is error: " + e);
             } finally {
-                if (lock.isHeldByCurrentThread()) {  // 只释放当前线程加的锁
+                // 只释放当前线程加的锁
+                if (lock.isHeldByCurrentThread()) {
                     lock.unlock();
                 }
             }
