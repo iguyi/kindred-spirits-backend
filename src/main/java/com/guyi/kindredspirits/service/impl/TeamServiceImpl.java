@@ -349,26 +349,37 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean quitTeam(TeamQuitOrDeleteRequest teamQuitRequest, User loginUser) {
-        if (teamQuitRequest == null) {
+        if (teamQuitRequest == null || loginUser == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
+
         Long teamId = teamQuitRequest.getTeamId();
-        Team team = getTeamById(teamId);
+        if (teamId <= 0 ) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
+        }
+
+        // 获取队伍信息
+        Team team = this.getTeamById(teamId);
+
+        // 获取用户信息
         Long loginUserId = loginUser.getId();
         if (loginUserId == null || loginUserId <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求数据为空");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
         UserTeam userTeam = new UserTeam();
         userTeam.setTeamId(teamId);
         userTeam.setUserId(loginUserId);
+
+        // 判断是否已加入队伍
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>(userTeam);
         long count = userTeamService.count(userTeamQueryWrapper);
         if (count == 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "未加入队伍");
         }
+
         // 队伍人数校验
-        long teamHasJoinNum = this.countTeamUserByTeamId(teamId);
-        if (teamHasJoinNum == 1) {
+        Integer num = team.getNum();
+        if (num == 1) {
             // 队伍只有 1 人, 删除队伍相关信息
             boolean removeTeamResult = this.removeById(teamId);
             if (!removeTeamResult) {
@@ -386,10 +397,21 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 // 队长不能退出
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "队长不能退出队伍");
             }
+
+            // 退出队伍
             userTeamQueryWrapper = new QueryWrapper<>();
             userTeamQueryWrapper.eq("userId", loginUserId);
             userTeamQueryWrapper.eq("teamId", teamId);
-            return userTeamService.remove(userTeamQueryWrapper);
+            boolean removeResult = userTeamService.remove(userTeamQueryWrapper);
+
+            // 更新队伍人数
+            team.setNum(num-1);
+            boolean updateResult = this.updateById(team);
+            if (removeResult && updateResult) {
+                return true;
+            }
+
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统错误");
         }
     }
 
