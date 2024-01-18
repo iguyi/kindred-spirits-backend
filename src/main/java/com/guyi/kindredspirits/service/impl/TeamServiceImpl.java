@@ -9,12 +9,8 @@ import com.guyi.kindredspirits.mapper.TeamMapper;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.domain.UserTeam;
-import com.guyi.kindredspirits.model.request.TeamMyQueryRequest;
-import com.guyi.kindredspirits.model.request.TeamQueryRequest;
 import com.guyi.kindredspirits.model.enums.TeamStatusEnum;
-import com.guyi.kindredspirits.model.request.TeamJoinRequest;
-import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
-import com.guyi.kindredspirits.model.request.TeamUpdateRequest;
+import com.guyi.kindredspirits.model.request.*;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.TeamService;
@@ -31,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -542,13 +537,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 )
                 .and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
         return this.list(teamQueryWrapper);
-    }
-
-    private long countTeamUserByTeamId(long teamId) {
-        // 队伍人数校验
-        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
-        userTeamQueryWrapper.eq("teamId", teamId);
-        return userTeamService.count(userTeamQueryWrapper);
     }
 
     private Team getTeamById(Long teamId) {
