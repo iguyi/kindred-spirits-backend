@@ -34,6 +34,11 @@ public class TeamAddRequest implements Serializable {
     private Integer maxNum;
 
     /**
+     * 队伍已有人数
+     */
+    private Integer num;
+
+    /**
      * 过期时间
      */
     private Date expireTime;
