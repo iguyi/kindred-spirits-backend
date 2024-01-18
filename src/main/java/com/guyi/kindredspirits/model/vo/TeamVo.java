@@ -24,6 +24,16 @@ public class TeamVo implements Serializable {
     private String name;
 
     /**
+     * 队伍头像
+     */
+    private String avatarUrl;
+
+    /**
+     * 队伍邀请链接
+     */
+    private String teamLink;
+
+    /**
      * 队伍描述
      */
     private String description;
@@ -32,6 +42,11 @@ public class TeamVo implements Serializable {
      * 队伍最大人数
      */
     private Integer maxNum;
+
+    /**
+     * 队伍已有人数
+     */
+    private Integer num;
 
     /**
      * 过期时间
@@ -63,6 +78,6 @@ public class TeamVo implements Serializable {
      */
     private Date updateTime;
 
-    private static final long serialVersionUID = -43278945587191896L;
+    private static final long serialVersionUID = 1012602453235408378L;
 
 }
