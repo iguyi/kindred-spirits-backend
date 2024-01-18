@@ -19,6 +19,11 @@ public class TeamAddRequest implements Serializable {
     private String name;
 
     /**
+     * 队伍头像
+     */
+    private String avatarUrl;
+
+    /**
      * 队伍描述
      */
     private String description;
@@ -43,5 +48,6 @@ public class TeamAddRequest implements Serializable {
      */
     private String password;
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 3605169030317584853L;
+
 }
