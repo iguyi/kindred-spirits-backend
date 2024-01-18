@@ -4,15 +4,18 @@ import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serializable;
 import java.util.Date;
+
 import lombok.Data;
 
 /**
  * 队伍表
- * @TableName team
+ *
+ * @author 孤诣
  */
-@TableName(value ="team")
+@TableName(value = "team")
 @Data
 public class Team implements Serializable {
+
     /**
      * id
      */
@@ -25,6 +28,11 @@ public class Team implements Serializable {
     private String name;
 
     /**
+     * 队伍头像
+     */
+    private String avatarUrl;
+
+    /**
      * 队伍描述
      */
     private String description;
@@ -33,6 +41,11 @@ public class Team implements Serializable {
      * 队伍最大人数
      */
     private Integer maxNum;
+
+    /**
+     * 队伍已有人数
+     */
+    private Integer num;
 
     /**
      * 过期时间
@@ -76,5 +89,6 @@ public class Team implements Serializable {
     private Integer isDelete;
 
     @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -3890199569607069722L;
+
 }
