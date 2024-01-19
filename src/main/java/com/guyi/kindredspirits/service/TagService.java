@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.Tag;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.TagAddRequest;
+import com.guyi.kindredspirits.model.vo.TagSimpleVo;
 import com.guyi.kindredspirits.model.vo.TagVo;
 
 import java.util.List;
@@ -29,4 +30,13 @@ public interface TagService extends IService<Tag> {
      * @return 根据顶级标签分组后的标签基本信息
      */
     List<List<TagVo>> getAll();
+
+    /**
+     * 分组获取标签的基本信息。
+     * 基本信息包括: id、标签名、对应顶级标签 id、权值。
+     *
+     * @return - 分组后的标签列表请求响应封装对象列表
+     */
+    List<List<TagVo>> getTagGroup();
+
 }
