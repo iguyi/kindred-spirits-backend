@@ -27,7 +27,7 @@ public class TagAddRequest implements Serializable {
     /**
      * 是否是父标签
      */
-    private Integer isPatent;
+    private Integer isParent;
 
     /**
      * 父标签 id
