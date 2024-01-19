@@ -2,6 +2,7 @@ package com.guyi.kindredspirits.controller;
 
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
+import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
@@ -79,6 +80,17 @@ public class TagController {
             log.error("Set cache error in '/tag/get/all'.");
         }
         return new BaseResponse<>(0, groupTagVoList);
+    }
+
+    /**
+     * 分组获取标签的基本信息。
+     * 基本信息包括: id、标签名、对应顶级标签 id、权值。
+     *
+     * @return - 分组后的标签列表请求响应封装对象列表
+     */
+    @GetMapping("/simple/list")
+    public BaseResponse<List<List<TagVo>>> getTagGroup() {
+        return ResultUtils.success(tagService.getTagGroup());
     }
 
 }
