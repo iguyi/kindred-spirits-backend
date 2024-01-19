@@ -27,7 +27,7 @@ public class TagVo implements Serializable {
     /**
      * 是否是父标签
      */
-    private Integer isPatent;
+    private Integer isParent;
 
     /**
      * 父标签权值+自己的基本权值
