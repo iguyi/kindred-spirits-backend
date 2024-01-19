@@ -9,14 +9,17 @@ import com.guyi.kindredspirits.mapper.TagMapper;
 import com.guyi.kindredspirits.model.domain.Tag;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.TagAddRequest;
+import com.guyi.kindredspirits.model.vo.TagSimpleVo;
 import com.guyi.kindredspirits.model.vo.TagVo;
 import com.guyi.kindredspirits.service.TagService;
+import com.guyi.kindredspirits.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +35,9 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
 
     @Resource
     private TagMapper tagMapper;
+
+    @Resource
+    private UserService userService;
 
     @Override
     public boolean addSingleTag(TagAddRequest tagSingle, User loginUser) {
@@ -94,13 +100,13 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
         QueryWrapper<Tag> tagQueryWrapper = new QueryWrapper<>();
         tagQueryWrapper.isNotNull("tagName")
                 .isNotNull("userId")
-                .isNotNull("isPatent")
+                .isNotNull("isParent")
                 .isNotNull("weights")
-                .last("and (isPatent=0 and parentId is not null) or (isPatent=1 and parentId is null)");
+                .last("and (isParent=0 and parentId is not null) or (isParent=1 and parentId is null)");
 
         List<Tag> tagAll = tagMapper.selectList(tagQueryWrapper);
         Map<Long, List<Tag>> tagGroup = tagAll.stream()
-                .collect(Collectors.groupingBy(tag -> (tag.getIsPatent().equals(1)) ? tag.getId() : tag.getParentId()));
+                .collect(Collectors.groupingBy(tag -> (tag.getIsParent().equals(1)) ? tag.getId() : tag.getParentId()));
         List<List<TagVo>> resultList = new ArrayList<>();
         tagGroup.forEach((key, value) -> {
             List<TagVo> tempList = new ArrayList<>();
@@ -114,4 +120,27 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
 
         return resultList;
     }
+
+    @Override
+    public List<List<TagVo>> getTagGroup() {
+        userService.getLoginUser();
+
+        QueryWrapper<Tag> tagQueryWrapper = new QueryWrapper<>();
+        tagQueryWrapper.select("id", "tagName", "isParent", "parentId", "weights");
+        List<Tag> tagList = this.list(tagQueryWrapper);
+        Map<Long, List<Tag>> simpleTagVoMap = tagList.stream()
+                .collect(Collectors.groupingBy(tag -> tag.getIsParent().equals(1) ? tag.getId() : tag.getParentId()));
+        List<List<TagVo>> resultList = new ArrayList<>();
+        simpleTagVoMap.forEach((key, value) -> {
+            List<TagVo> tempList = new ArrayList<>();
+            value.forEach(tag -> {
+                TagVo tagVo = new TagVo();
+                BeanUtils.copyProperties(tag, tagVo);
+                tempList.add(tagVo);
+            });
+            resultList.add(tempList);
+        });
+        return resultList;
+    }
+
 }
