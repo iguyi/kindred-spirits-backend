@@ -8,9 +8,9 @@
         <id property="id" column="id" jdbcType="BIGINT"/>
         <result property="tagName" column="tagName" jdbcType="VARCHAR"/>
         <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="isParent" column="isParent" jdbcType="TINYINT"/>
         <result property="parentId" column="parentId" jdbcType="BIGINT"/>
-        <result property="count" column="count" jdbcType="INTEGER"/>
-        <result property="level" column="level" jdbcType="INTEGER"/>
+        <result property="baseWeight" column="baseWeight" jdbcType="FLOAT"/>
         <result property="weights" column="weights" jdbcType="FLOAT"/>
         <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
         <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
@@ -18,8 +18,8 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,tagName,userId,
-        parentId,count,level,weights,
+        id,tagName,userId,isParent,
+        parentId,baseWeight,weights,
         createTime,updateTime,isDelete
     </sql>
 </mapper>
