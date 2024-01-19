@@ -25,7 +25,7 @@ public class TagSimpleVo implements Serializable {
     /**
      * 是否是父标签
      */
-    private Integer isPatent;
+    private Integer isParent;
 
     private static final long serialVersionUID = -5679702908750667983L;
 
