@@ -245,7 +245,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public User getLoginUser(HttpServletRequest httpServletRequest) {
         if (httpServletRequest == null) {
-            return null;
+            log.error("The httpServletRequest is null");
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
         Object userObj = httpServletRequest.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
         if (userObj == null) {
