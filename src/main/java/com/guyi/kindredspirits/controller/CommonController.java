@@ -42,11 +42,19 @@ public class CommonController {
     private String urlPrefix;
 
     @Resource
+    private HttpServletRequest httpServletRequest;
+
+    @Resource
     private UserService userService;
 
+    /**
+     * 上传用户头像
+     *
+     * @param avatar - 文件数据
+     * @return 1-上传成功
+     */
     @PostMapping("/avatar/user")
-    public BaseResponse<Integer> userRegister(@RequestBody MultipartFile avatar,
-                                              HttpServletRequest httpServletRequest) {
+    public BaseResponse<Integer> userAvatar(@RequestBody MultipartFile avatar) {
 
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (loginUser == null) {
