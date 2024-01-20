@@ -4,8 +4,10 @@ import cn.hutool.core.util.IdUtil;
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.exception.BusinessException;
+import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
+import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,11 @@ public class CommonController {
     private String userAvatarPath;
 
     /**
+     * 队伍头像存放位置
+     */
+    private String teamAvatarPath;
+
+    /**
      * 头像对应 url 前缀
      */
     private String urlPrefix;
@@ -47,6 +54,9 @@ public class CommonController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private TeamService teamService;
+
     /**
      * 上传用户头像
      *
@@ -55,7 +65,6 @@ public class CommonController {
      */
     @PostMapping("/avatar/user")
     public BaseResponse<Integer> userAvatar(@RequestBody MultipartFile avatar) {
-
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
@@ -78,6 +87,53 @@ public class CommonController {
             }
 
             return new BaseResponse<>(0, result);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
+        }
+    }
+
+    /**
+     * 上传队伍头像
+     *
+     * @param avatar - 文件数据
+     * @param teamId - 队伍 id
+     * @return 1-上传成功
+     */
+    @PostMapping("/avatar/team")
+    public BaseResponse<Integer> teamAvatar(@RequestBody MultipartFile avatar, @RequestBody Long teamId) {
+        User loginUser = userService.getLoginUser();
+
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+
+
+        Team team = teamService.getById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, ErrorCode.NULL_ERROR.getMsg());
+        }
+
+        if (loginUser.getId().equals(team.getLeaderId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH, ErrorCode.NO_AUTH.getMsg());
+        }
+
+        try {
+            // 写文件
+            String originalFilename = avatar.getOriginalFilename();
+            String fileName = getFileName(originalFilename);
+            avatar.transferTo(new File(teamAvatarPath, fileName));
+
+            // 更新队伍信息
+            Team updateTeam = new Team();
+            updateTeam.setId(teamId);
+            updateTeam.setAvatarUrl(urlPrefix + "/team/" + fileName);
+            boolean updateResult = teamService.updateById(updateTeam);
+
+            if (!updateResult) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
+            }
+
+            return new BaseResponse<>(0, 1);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
         }
