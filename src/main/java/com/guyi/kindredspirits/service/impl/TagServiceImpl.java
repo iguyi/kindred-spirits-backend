@@ -9,7 +9,6 @@ import com.guyi.kindredspirits.mapper.TagMapper;
 import com.guyi.kindredspirits.model.domain.Tag;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.TagAddRequest;
-import com.guyi.kindredspirits.model.vo.TagSimpleVo;
 import com.guyi.kindredspirits.model.vo.TagVo;
 import com.guyi.kindredspirits.service.TagService;
 import com.guyi.kindredspirits.service.UserService;
@@ -19,7 +18,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
