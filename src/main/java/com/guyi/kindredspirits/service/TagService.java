@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.Tag;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.TagAddRequest;
-import com.guyi.kindredspirits.model.vo.TagSimpleVo;
 import com.guyi.kindredspirits.model.vo.TagVo;
 
 import java.util.List;
