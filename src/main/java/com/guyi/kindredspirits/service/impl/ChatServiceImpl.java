@@ -194,8 +194,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             if (isTeamChat) {
                 teamList.forEach(team -> {
                     if (team.getId().equals(senderObjectId)) {
-                        // todo 队伍聊天
-                        chatRoomVo.setAvatarUrl("http://localhost:3000/public/avatar//user/65577f7ea926b79976036065.jpg");
+                        chatRoomVo.setAvatarUrl(team.getAvatarUrl());
                         chatRoomVo.setReceiverName(team.getName());
                     }
                 });
