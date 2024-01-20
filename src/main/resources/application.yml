@@ -43,5 +43,6 @@ mybatis-plus:
       logic-delete-value: 1 # 逻辑已删除值(默认为 1)
       logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
 project:
-  userAvatarPath: D:\CodeRepository\project\kindred-spirits\kindred-spirits-frontend\public\avatar\user\
-  urlPrefix: http://localhost:3000/public/avatar/
+  userAvatarPath: D:\CodeRepository\project\kindred-spirits\kindred-spirits-frontend\public\avatar\user # 用户头像存放地址
+  teamAvatarPath: D:\CodeRepository\project\kindred-spirits\kindred-spirits-frontend\public\avatar\team # 队伍查询存放地址
+  urlPrefix: http://localhost:3000/public/avatar/ # 头像请求路径
