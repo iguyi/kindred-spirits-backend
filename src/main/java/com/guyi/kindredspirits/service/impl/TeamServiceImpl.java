@@ -1,6 +1,7 @@
 package com.guyi.kindredspirits.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
@@ -11,6 +12,8 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.domain.UserTeam;
 import com.guyi.kindredspirits.model.enums.TeamStatusEnum;
 import com.guyi.kindredspirits.model.request.*;
+import com.guyi.kindredspirits.model.vo.TeamAllVo;
+import com.guyi.kindredspirits.model.vo.UserSimpleVo;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.TeamService;
@@ -537,6 +540,50 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 )
                 .and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
         return this.list(teamQueryWrapper);
+    }
+
+    @Override
+    public TeamAllVo checkTeam(Long teamId) {
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+        User loginUser = userService.getLoginUser();
+        Long loginUserId = loginUser.getId();
+
+        // 查询该目标队伍的 "用户-队伍" 关系
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.select("userId").eq("teamId", teamId);
+        List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
+        if (userTeamList.isEmpty()) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, ErrorCode.NULL_ERROR.getMsg());
+        }
+
+        // 获取目标队伍所有成员的 id
+        List<Long> inTeamUserIdList = userTeamList.stream().map(UserTeam::getUserId).collect(Collectors.toList());
+        if (!inTeamUserIdList.contains(loginUserId)) {
+            throw new BusinessException(ErrorCode.NO_AUTH, ErrorCode.NO_AUTH.getMsg());
+        }
+
+        // 整合返回结果
+        TeamAllVo result = new TeamAllVo();
+
+        // 获取队伍信息
+        Team team = this.getById(teamId);
+        BeanUtils.copyProperties(team, result);
+
+        // 获取队伍所有成员信息
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.select("id", "username", "avatarUrl").in("id", inTeamUserIdList);
+        List<User> userList = userService.list(userQueryWrapper);
+        // 转化为用于返回的类型
+        List<UserSimpleVo> userSimpleVoList = userList.stream().map(user -> {
+            UserSimpleVo userSimpleVo = new UserSimpleVo();
+            BeanUtils.copyProperties(user, userSimpleVo);
+            return userSimpleVo;
+        }).collect(Collectors.toList());
+        result.setUserList(userSimpleVoList);
+
+        return result;
     }
 
     private Team getTeamById(Long teamId) {
