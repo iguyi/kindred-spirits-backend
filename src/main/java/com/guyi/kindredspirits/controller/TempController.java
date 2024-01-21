@@ -8,6 +8,7 @@ import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.*;
+import com.guyi.kindredspirits.model.vo.TeamAllVo;
 import com.guyi.kindredspirits.model.vo.TeamVo;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
@@ -114,6 +115,19 @@ public class TempController {
         return ResultUtils.success(result);
     }
 
+    /**
+     * 查看自己队伍的详细信息
+     *
+     * @param teamId - 队伍 id
+     * @return 队伍详细信息
+     */
+    @GetMapping("/check")
+    public BaseResponse<TeamAllVo> checkTeam(Long teamId) {
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+        return ResultUtils.success(teamService.checkTeam(teamId));
+    }
 
     /**
      * 根据指定信息查询队伍。<br/>
@@ -248,4 +262,5 @@ public class TempController {
         List<Team> teamList = teamService.listMyJoinTeams(teamMyQuery, loginUser);
         return ResultUtils.success(teamList);
     }
+
 }
