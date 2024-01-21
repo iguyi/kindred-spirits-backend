@@ -9,6 +9,7 @@ import com.guyi.kindredspirits.model.request.TeamQueryRequest;
 import com.guyi.kindredspirits.model.request.TeamJoinRequest;
 import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
 import com.guyi.kindredspirits.model.request.TeamUpdateRequest;
+import com.guyi.kindredspirits.model.vo.TeamAllVo;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
 
 import java.util.List;
@@ -109,5 +110,13 @@ public interface TeamService extends IService<Team> {
      * @return 符合要求的队伍
      */
     List<Team> searchTeam(String searchCondition);
+
+    /**
+     * 查看自己队伍的详细信息
+     *
+     * @param teamId - 队伍 id
+     * @return 队伍详细信息
+     */
+    TeamAllVo checkTeam(Long teamId);
 
 }
