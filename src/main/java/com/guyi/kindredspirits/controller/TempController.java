@@ -205,12 +205,11 @@ public class TempController {
      * @return true - 退出队伍成功; false - 退出队伍失败
      */
     @PostMapping("/quit")
-    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitOrDeleteRequest teamQuitRequest,
-                                          HttpServletRequest httpServletRequest) {
+    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitOrDeleteRequest teamQuitRequest) {
         if (teamQuitRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
-        User loginUser = userService.getLoginUser(httpServletRequest);
+        User loginUser = userService.getLoginUser();
         boolean result = teamService.quitTeam(teamQuitRequest, loginUser);
         return ResultUtils.success(result);
     }
