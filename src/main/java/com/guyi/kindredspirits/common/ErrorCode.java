@@ -2,6 +2,8 @@ package com.guyi.kindredspirits.common;
 
 /**
  * 错误码
+ *
+ * @author 孤诣
  */
 public enum ErrorCode {
 
