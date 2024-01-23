@@ -10,6 +10,7 @@ import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.request.UpdatePwdRequest;
 import com.guyi.kindredspirits.model.request.UserLoginRequest;
 import com.guyi.kindredspirits.model.request.UserRegisterRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
@@ -311,6 +312,26 @@ public class UserController {
         User loginUser = userService.getLoginUser(httpServletRequest);
         Integer result = userService.updateUser(userUpdateRequest, loginUser);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 用户更新密码
+     *
+     * @param updatePwdRequest - 请求封装类
+     * @return 更新密码的结果
+     */
+    @PostMapping("/update/pwd")
+    public BaseResponse<Boolean> updatePwd(@RequestBody UpdatePwdRequest updatePwdRequest, HttpSession httpSession) {
+        if (updatePwdRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        Boolean result = userService.updatePwd(updatePwdRequest);
+        if (!result) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "密码修改失败");
+        }
+        // 密码修改成功后, 用户需要重新登录
+        this.userLogout(httpSession);
+        return ResultUtils.success(true);
     }
 
     /**
