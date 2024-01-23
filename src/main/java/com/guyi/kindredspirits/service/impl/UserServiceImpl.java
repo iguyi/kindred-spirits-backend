@@ -2,6 +2,7 @@ package com.guyi.kindredspirits.service.impl;
 
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
@@ -11,6 +12,7 @@ import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.UserMapper;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.request.UpdatePwdRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.*;
@@ -424,6 +426,56 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 .or().like("tags", searchCondition)
                 .or().like("profile", searchCondition);
         return this.list(userQueryWrapper);
+    }
+
+    @Override
+    public Boolean updatePwd(UpdatePwdRequest updatePwdRequest) {
+        // 判断用户是否登录, 并获取登录用户数据
+        User loginUser = this.getLoginUser();
+
+        if (updatePwdRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+
+        String oldPwd = updatePwdRequest.getOldPwd();
+        String newPwd = updatePwdRequest.getNewPwd();
+        String checkPwd = updatePwdRequest.getCheckPwd();
+        if (StringUtils.isBlank(oldPwd) || StringUtils.isBlank(newPwd) || StringUtils.isBlank(checkPwd)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+
+        int oldPwdLength = oldPwd.length();
+        int newPwdLength = newPwd.length();
+        if (oldPwdLength < UserConstant.USER_PASSWORD_MIN || oldPwdLength > UserConstant.USER_PASSWORD_MAX
+                || newPwdLength < UserConstant.USER_ACCOUNT_MIN || newPwdLength > UserConstant.USER_PASSWORD_MAX) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度错误");
+        }
+
+        if (oldPwd.equals(newPwd)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码和旧密码输入重复");
+        }
+
+        if (!newPwd.equals(checkPwd)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码和确认密码不一致");
+        }
+
+        // 查询用户密码数据
+        Long loginUserId = loginUser.getId();
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.select("id", "userPassword").eq("id", loginUserId);
+        User user = userMapper.selectOne(userQueryWrapper);
+        String loginUserPwd = user.getUserPassword();
+
+        // 将用户输入的原密码加密后与数据库数据比较
+        String encryptOldPwd = DigestUtils.md5DigestAsHex((SALT + oldPwd).getBytes());
+        if (!encryptOldPwd.equals(loginUserPwd)) {
+            throw new BusinessException(ErrorCode.NO_AUTH, "原密码输入错误");
+        }
+
+        // 加密用户新密码并更新至数据库
+        String encryptNewPwd = DigestUtils.md5DigestAsHex((SALT + newPwd).getBytes());
+        user.setUserPassword(encryptNewPwd);
+        return this.updateById(user);
     }
 
 }
