@@ -4,11 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
-import com.guyi.kindredspirits.model.request.TeamMyQueryRequest;
-import com.guyi.kindredspirits.model.request.TeamQueryRequest;
-import com.guyi.kindredspirits.model.request.TeamJoinRequest;
-import com.guyi.kindredspirits.model.request.TeamQuitOrDeleteRequest;
-import com.guyi.kindredspirits.model.request.TeamUpdateRequest;
+import com.guyi.kindredspirits.model.request.*;
 import com.guyi.kindredspirits.model.vo.TeamAllVo;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
 
@@ -118,5 +114,13 @@ public interface TeamService extends IService<Team> {
      * @return 队伍详细信息
      */
     TeamAllVo checkTeam(Long teamId);
+
+    /**
+     * 将指定成员提出队伍
+     *
+     * @param kickOutRequest - 队长将成员踢出队伍请求封装类对象
+     * @return 操作结果
+     */
+    Boolean kickOut(KickOutRequest kickOutRequest);
 
 }
