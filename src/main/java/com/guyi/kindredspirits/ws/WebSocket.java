@@ -141,12 +141,11 @@ public class WebSocket {
                         TEAM_SESSIONS.get(teamId).put(userId, this);
                     }
                 }
-                return;
+            } else {
+                // 私聊室
+                WEB_SOCKETS.add(this);
+                SESSION_POOL.put(userId, session);
             }
-
-            // 私聊室
-            WEB_SOCKETS.add(this);
-            SESSION_POOL.put(userId, session);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -162,13 +161,13 @@ public class WebSocket {
     @OnClose
     public void onClose(@PathParam("userId") String userId, @PathParam("teamId") String teamId, Session session) {
         try {
-            if (!ZERO_ID.equals(teamId) && invalidId(teamId)) {
+            if (!ZERO_ID.equals(teamId) && !invalidId(teamId)) {
                 // 关闭队伍聊天室
                 TEAM_SESSIONS.get(teamId).remove(userId);
                 return;
             }
 
-            if (!SESSION_POOL.isEmpty() && invalidId(userId)) {
+            if (!SESSION_POOL.isEmpty() && !invalidId(userId)) {
                 // 关闭私聊室
                 SESSION_POOL.remove(userId);
                 WEB_SOCKETS.remove(this);
