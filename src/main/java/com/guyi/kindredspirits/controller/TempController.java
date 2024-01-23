@@ -14,6 +14,7 @@ import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
+import com.guyi.kindredspirits.service.UserTeamService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +40,9 @@ public class TempController {
 
     @Resource
     private TeamService teamService;
+
+    @Resource
+    private UserTeamService userTeamService;
 
     /**
      * 创建队伍
@@ -260,6 +264,20 @@ public class TempController {
         teamMyQuery.setId(loginUser.getId());
         List<Team> teamList = teamService.listMyJoinTeams(teamMyQuery, loginUser);
         return ResultUtils.success(teamList);
+    }
+
+    /**
+     * 将指定成员提出队伍
+     *
+     * @param kickOutRequest - 队长将成员踢出队伍请求封装类对象
+     * @return 操作结果
+     */
+    @PostMapping("/kick")
+    public BaseResponse<Boolean> kickOut(@RequestBody KickOutRequest kickOutRequest) {
+        if (kickOutRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+        return ResultUtils.success(teamService.kickOut(kickOutRequest));
     }
 
 }
