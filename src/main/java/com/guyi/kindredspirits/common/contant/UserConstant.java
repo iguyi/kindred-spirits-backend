@@ -43,6 +43,11 @@ public interface UserConstant {
     int USER_PASSWORD_MIN = 8;
 
     /**
+     * 用户密码最大长度
+     */
+    int USER_PASSWORD_MAX = 32;
+
+    /**
      * 用户昵称最大长度
      */
     int USERNAME_MAX = 10;
