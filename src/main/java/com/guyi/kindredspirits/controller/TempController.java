@@ -269,15 +269,29 @@ public class TempController {
     /**
      * 将指定成员提出队伍
      *
-     * @param kickOutRequest - 队长将成员踢出队伍请求封装类对象
+     * @param operationMemberRequest - 队长将成员踢出队伍请求封装类对象
      * @return 操作结果
      */
     @PostMapping("/kick")
-    public BaseResponse<Boolean> kickOut(@RequestBody KickOutRequest kickOutRequest) {
-        if (kickOutRequest == null) {
+    public BaseResponse<Boolean> kickOut(@RequestBody OperationMemberRequest operationMemberRequest) {
+        if (operationMemberRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
-        return ResultUtils.success(teamService.kickOut(kickOutRequest));
+        return ResultUtils.success(teamService.kickOut(operationMemberRequest));
+    }
+
+    /**
+     * 队长位置转让
+     *
+     * @param operationMemberRequest - 队长位置转让请求封装类
+     * @return 操作结果
+     */
+    @PostMapping("/abdicator")
+    public BaseResponse<Boolean> abdicator(@RequestBody OperationMemberRequest operationMemberRequest) {
+        if (operationMemberRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+        return ResultUtils.success(teamService.abdicator(operationMemberRequest));
     }
 
 }
