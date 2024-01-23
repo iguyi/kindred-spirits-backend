@@ -1,7 +1,6 @@
 package com.guyi.kindredspirits.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
@@ -352,7 +351,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
 
         Long teamId = teamQuitRequest.getTeamId();
-        if (teamId <= 0 ) {
+        if (teamId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
 
@@ -403,7 +402,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             boolean removeResult = userTeamService.remove(userTeamQueryWrapper);
 
             // 更新队伍人数
-            team.setNum(num-1);
+            team.setNum(num - 1);
             boolean updateResult = this.updateById(team);
             if (removeResult && updateResult) {
                 return true;
@@ -599,26 +598,11 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Boolean kickOut(KickOutRequest kickOutRequest) {
-        // 参数校验
-        if (kickOutRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
-        }
-        Long memberId = kickOutRequest.getMemberId();
-        Long teamId = kickOutRequest.getTeamId();
-        if (memberId == null || teamId == null || memberId < 1 || teamId < 1) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
-        }
-
-        // 用户登录校验
-        User loginUser = userService.getLoginUser();
-
-        // 查询队伍信息
-        Team team = this.getById(teamId);
-        Long loginUserId = loginUser.getId();
-        if (!team.getLeaderId().equals(loginUserId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH, ErrorCode.NO_AUTH.getMsg());
-        }
+    public Boolean kickOut(OperationMemberRequest operationMemberRequest) {
+        // 校验
+        Team team = operationParamCheck(operationMemberRequest);
+        Long teamId = team.getId();
+        Long memberId = operationMemberRequest.getMemberId();
 
         // 踢出
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
@@ -636,6 +620,60 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
 
         return true;
+    }
+
+    @Override
+    public Boolean abdicator(OperationMemberRequest operationMemberRequest) {
+        // 校验
+        Team team = operationParamCheck(operationMemberRequest);
+        Long memberId = operationMemberRequest.getMemberId();
+
+        // 位置转让
+        team.setLeaderId(memberId);
+        return this.updateById(team);
+    }
+
+    /**
+     * 对队长操作队员时的参数、权限进行统一校验
+     *
+     * @param operationMemberRequest - 队长操作队伍成员请求封装类对象
+     * @return 队长、被操作队员的所在队伍
+     */
+    private Team operationParamCheck(OperationMemberRequest operationMemberRequest) {
+        // 参数校验
+        if (operationMemberRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+        Long memberId = operationMemberRequest.getMemberId();
+        Long teamId = operationMemberRequest.getTeamId();
+        if (memberId == null || teamId == null || memberId < 1 || teamId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+
+        // 用户登录校验
+        User loginUser = userService.getLoginUser();
+
+        // 查询队伍信息
+        Team team = this.getById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+
+        // 权限校验
+        Long loginUserId = loginUser.getId();
+        if (!team.getLeaderId().equals(loginUserId)) {
+            throw new BusinessException(ErrorCode.NO_AUTH, ErrorCode.NO_AUTH.getMsg());
+        }
+
+        // 成员是否在队伍中
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId).eq("userId", memberId);
+        long result = userTeamService.count(userTeamQueryWrapper);
+        if (result != 1) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+
+        return team;
     }
 
 }
