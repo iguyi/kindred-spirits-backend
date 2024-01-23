@@ -597,4 +597,45 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return team;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean kickOut(KickOutRequest kickOutRequest) {
+        // 参数校验
+        if (kickOutRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+        Long memberId = kickOutRequest.getMemberId();
+        Long teamId = kickOutRequest.getTeamId();
+        if (memberId == null || teamId == null || memberId < 1 || teamId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+
+        // 用户登录校验
+        User loginUser = userService.getLoginUser();
+
+        // 查询队伍信息
+        Team team = this.getById(teamId);
+        Long loginUserId = loginUser.getId();
+        if (!team.getLeaderId().equals(loginUserId)) {
+            throw new BusinessException(ErrorCode.NO_AUTH, ErrorCode.NO_AUTH.getMsg());
+        }
+
+        // 踢出
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId).eq("userId", memberId);
+        boolean removeResult = userTeamService.remove(userTeamQueryWrapper);
+        if (!removeResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, ErrorCode.SYSTEM_ERROR.getMsg());
+        }
+
+        // 更新队伍人数
+        team.setNum(team.getNum() - 1);
+        boolean updateResult = this.updateById(team);
+        if (!updateResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, ErrorCode.SYSTEM_ERROR.getMsg());
+        }
+
+        return true;
+    }
+
 }
