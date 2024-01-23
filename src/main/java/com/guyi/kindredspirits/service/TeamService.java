@@ -118,9 +118,17 @@ public interface TeamService extends IService<Team> {
     /**
      * 将指定成员提出队伍
      *
-     * @param kickOutRequest - 队长将成员踢出队伍请求封装类对象
+     * @param operationMemberRequest - 队长将成员踢出队伍请求封装类对象
      * @return 操作结果
      */
-    Boolean kickOut(KickOutRequest kickOutRequest);
+    Boolean kickOut(OperationMemberRequest operationMemberRequest);
+
+    /**
+     * 队长位置转让
+     *
+     * @param operationMemberRequest - 队长位置转让请求封装类
+     * @return 操作结果
+     */
+    Boolean abdicator(OperationMemberRequest operationMemberRequest);
 
 }
