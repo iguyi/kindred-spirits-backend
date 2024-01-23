@@ -2,6 +2,7 @@ package com.guyi.kindredspirits.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.request.UpdatePwdRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 
 import javax.servlet.http.HttpServletRequest;
@@ -136,5 +137,13 @@ public interface UserService extends IService<User> {
      * @return 符合要求的用户
      */
     List<User> searchUser(String searchCondition);
+
+    /**
+     * 用户更新密码
+     *
+     * @param updatePwdRequest - 请求封装类
+     * @return 更新密码的结果
+     */
+    Boolean updatePwd(UpdatePwdRequest updatePwdRequest);
 
 }
