@@ -1,5 +1,6 @@
 package com.guyi.kindredspirits.service.impl;
 
+import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -42,6 +43,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         implements TeamService {
+
+    @Resource
+    private TeamMapper teamMapper;
 
     @Resource
     private UserTeamService userTeamService;
@@ -631,6 +635,33 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         // 位置转让
         team.setLeaderId(memberId);
         return this.updateById(team);
+    }
+
+    @Override
+    public String refreshLink(Long teamId) {
+        if (teamId == null || teamId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+
+        // 刷新入队链接者必须是队长
+        User loginUser = userService.getLoginUser();
+        Long loginUserId = loginUser.getId();
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
+        teamQueryWrapper.select("id", "teamLink").eq("id", teamId).eq("leaderId", loginUserId);
+        Team team = teamMapper.selectOne(teamQueryWrapper);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+
+        // 生成入队邀请码
+        String newTeamLink = IdUtil.simpleUUID();
+        team.setTeamLink(newTeamLink);
+        boolean result = this.updateById(team);
+        if (result) {
+            return newTeamLink;
+        }
+
+        throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
     }
 
     /**
