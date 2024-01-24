@@ -131,4 +131,12 @@ public interface TeamService extends IService<Team> {
      */
     Boolean abdicator(OperationMemberRequest operationMemberRequest);
 
+    /**
+     * 刷新入队链接
+     *
+     * @param teamId - 队伍 id
+     * @return 队伍的新入队链接
+     */
+    String refreshLink(Long teamId);
+
 }
