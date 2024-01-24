@@ -294,4 +294,18 @@ public class TempController {
         return ResultUtils.success(teamService.abdicator(operationMemberRequest));
     }
 
+    /**
+     * 刷新入队链接
+     *
+     * @param teamId - 队伍 id
+     * @return 队伍的新入队链接
+     */
+    @GetMapping("/link")
+    public BaseResponse<String> refreshLink(Long teamId) {
+        if (teamId == null || teamId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+        return ResultUtils.success(teamService.refreshLink(teamId));
+    }
+
 }
