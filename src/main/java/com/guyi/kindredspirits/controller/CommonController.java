@@ -3,6 +3,7 @@ package com.guyi.kindredspirits.controller;
 import cn.hutool.core.util.IdUtil;
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
+import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
@@ -86,7 +87,7 @@ public class CommonController {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
             }
 
-            return new BaseResponse<>(0, result);
+            return ResultUtils.success(result);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
         }
@@ -100,7 +101,7 @@ public class CommonController {
      * @return 1-上传成功
      */
     @PostMapping("/avatar/team")
-    public BaseResponse<Integer> teamAvatar(@RequestBody MultipartFile avatar, @RequestBody Long teamId) {
+    public BaseResponse<Integer> teamAvatar(@RequestBody MultipartFile avatar, Long teamId) {
         User loginUser = userService.getLoginUser();
 
         if (teamId == null || teamId <= 0) {
@@ -113,7 +114,7 @@ public class CommonController {
             throw new BusinessException(ErrorCode.NULL_ERROR, ErrorCode.NULL_ERROR.getMsg());
         }
 
-        if (loginUser.getId().equals(team.getLeaderId())) {
+        if (!loginUser.getId().equals(team.getLeaderId())) {
             throw new BusinessException(ErrorCode.NO_AUTH, ErrorCode.NO_AUTH.getMsg());
         }
 
@@ -133,7 +134,7 @@ public class CommonController {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
             }
 
-            return new BaseResponse<>(0, 1);
+            return ResultUtils.success(1);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
         }
