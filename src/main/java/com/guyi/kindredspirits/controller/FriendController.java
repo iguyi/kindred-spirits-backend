@@ -6,6 +6,7 @@ import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.MessageRequest;
+import com.guyi.kindredspirits.model.vo.FriendVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.FriendService;
 import com.guyi.kindredspirits.service.UserService;
@@ -14,6 +15,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -97,6 +99,21 @@ public class FriendController {
         });
 
         return new BaseResponse<>(0, finalFriendList);
+    }
+
+    /**
+     * 查看好友信息
+     *
+     * @param friendId           - 好友 id
+     * @param httpServletRequest - 客户端请求
+     * @return 对应好友信息
+     */
+    @GetMapping("/show")
+    public BaseResponse<FriendVo> showFriend(Long friendId, HttpServletRequest httpServletRequest) {
+        if (friendId == null || friendId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+        return ResultUtils.success(friendService.showFriend(friendId, httpServletRequest));
     }
 
 }
