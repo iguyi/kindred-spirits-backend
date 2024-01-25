@@ -1,6 +1,7 @@
 package com.guyi.kindredspirits.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.contant.RedisConstant;
@@ -11,8 +12,10 @@ import com.guyi.kindredspirits.model.domain.Message;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.enums.FriendRelationStatusEnum;
 import com.guyi.kindredspirits.model.enums.MessageTypeEnum;
+import com.guyi.kindredspirits.model.enums.UpdateFriendRelationOperationEnum;
 import com.guyi.kindredspirits.model.request.MessageRequest;
 import com.guyi.kindredspirits.model.vo.FriendVo;
+import com.guyi.kindredspirits.model.request.UpdateRelationRequest;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.FriendService;
 import com.guyi.kindredspirits.service.MessageService;
@@ -218,8 +221,153 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         FriendVo friendVo = new FriendVo();
         BeanUtils.copyProperties(friend, friendVo);
         friendVo.setFriend(friendUserVo);
+        friendVo.setIsActive(loginUserId.equals(friend.getActiveUserId()));
 
         return friendVo;
+    }
+
+    @Override
+    public Boolean updateRelation(UpdateRelationRequest updateRelationRequest, HttpServletRequest httpServletRequest) {
+        if (updateRelationRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+        Long friendId = updateRelationRequest.getFriendId();
+        Integer operation = updateRelationRequest.getOperation();
+        Boolean isActive = updateRelationRequest.getIsActive();
+        UpdateFriendRelationOperationEnum operationType = UpdateFriendRelationOperationEnum.getEnumByValue(operation);
+        if (friendId == null || friendId < 1 || operationType == null || isActive == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        Long loginUserId = loginUser.getId();
+
+        QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
+        friendQueryWrapper.select("id", "relationStatus");
+        UpdateWrapper<Friend> friendUpdateWrapper = new UpdateWrapper<>();
+        if (isActive) {
+            return isActiveOperation(friendId, operationType, loginUserId, friendQueryWrapper, friendUpdateWrapper);
+        } else {
+            return notActiveOperation(friendId, operationType, loginUserId, friendQueryWrapper, friendUpdateWrapper);
+        }
+    }
+
+    /**
+     * 在当前用户不是主动添加对方的情况下, 对对方进行删除或拉黑操作
+     *
+     * @param friendId            - 好友 id
+     * @param operationType       - 操作类型
+     * @param loginUserId         - 当前登录用户 id
+     * @param friendQueryWrapper  - 查询构造器
+     * @param friendUpdateWrapper - 更新构造器
+     * @return 操作是否成功
+     */
+    private Boolean notActiveOperation(Long friendId,
+                                       UpdateFriendRelationOperationEnum operationType,
+                                       Long loginUserId,
+                                       QueryWrapper<Friend> friendQueryWrapper,
+                                       UpdateWrapper<Friend> friendUpdateWrapper) {
+        // 之前不是当前用户主动添加的对方
+        friendQueryWrapper.eq("activeUserId", friendId).eq("passiveUserId", loginUserId);
+        friendUpdateWrapper.eq("activeUserId", friendId).eq("passiveUserId", loginUserId);
+
+        if (UpdateFriendRelationOperationEnum.DELETE.equals(operationType)) {
+            // 之前是对方加的当前用户好友, 现在当前用户将对方删除
+            friendQueryWrapper
+                    .ne("relationStatus", FriendRelationStatusEnum.PASSIVE_DELETE.getValue())
+                    .ne("relationStatus", FriendRelationStatusEnum.ALL_DELETE.getValue())
+                    .ne("relationStatus", FriendRelationStatusEnum.ACTIVE_HATE.getValue())
+                    .ne("relationStatus", FriendRelationStatusEnum.ALL_HATE.getValue());
+            Friend friend = friendMapper.selectOne(friendQueryWrapper);
+            if (friend == null) {
+                return true;
+            }
+
+            if (friend.getRelationStatus().equals(FriendRelationStatusEnum.PASSIVE_DELETE.getValue())) {
+                // 对方已经将当前用户删除
+                friendUpdateWrapper.set("relationStatus", FriendRelationStatusEnum.ALL_DELETE.getValue());
+            } else {
+                // 对方没有将当前用户删除
+                friendUpdateWrapper.set("relationStatus", FriendRelationStatusEnum.PASSIVE_DELETE.getValue());
+            }
+        } else {
+            // 之前是对方加的当前用户好友, 现在当前用户将对方拉黑
+            friendQueryWrapper
+                    .ne("relationStatus", FriendRelationStatusEnum.PASSIVE_HATE.getValue())
+                    .ne("relationStatus", FriendRelationStatusEnum.ALL_HATE.getValue());
+            Friend friend = friendMapper.selectOne(friendQueryWrapper);
+            if (friend == null) {
+                return true;
+            }
+
+            if (friend.getRelationStatus().equals(FriendRelationStatusEnum.ACTIVE_HATE.getValue())) {
+                // 对方已经将当前用户拉黑
+                friendUpdateWrapper.set("relationStatus", FriendRelationStatusEnum.ALL_HATE.getValue());
+            } else {
+                // 对方没有将当前用户拉黑
+                friendUpdateWrapper.set("relationStatus", FriendRelationStatusEnum.PASSIVE_HATE.getValue());
+            }
+        }
+        return this.update(friendUpdateWrapper);
+    }
+
+    /**
+     * 在当前用户是主动添加对方的情况下, 对对方进行删除或拉黑操作
+     *
+     * @param friendId            - 好友 id
+     * @param operationType       - 操作类型
+     * @param loginUserId         - 当前登录用户 id
+     * @param friendQueryWrapper  - 查询构造器
+     * @param friendUpdateWrapper - 更新构造器
+     * @return 操作是否成功
+     */
+    private boolean isActiveOperation(Long friendId,
+                                      UpdateFriendRelationOperationEnum operationType,
+                                      Long loginUserId,
+                                      QueryWrapper<Friend> friendQueryWrapper,
+                                      UpdateWrapper<Friend> friendUpdateWrapper) {
+        // 之前是当前用户主动添加的对方
+        friendQueryWrapper.eq("activeUserId", loginUserId).eq("passiveUserId", friendId);
+        friendUpdateWrapper.eq("activeUserId", loginUserId).eq("passiveUserId", friendId);
+
+        if (UpdateFriendRelationOperationEnum.DELETE.equals(operationType)) {
+            // 当前用户主动添加对方后, 又将对方对方删除了
+            friendQueryWrapper
+                    .ne("relationStatus", FriendRelationStatusEnum.ACTIVE_DELETE.getValue())
+                    .ne("relationStatus", FriendRelationStatusEnum.ALL_DELETE.getValue())
+                    .ne("relationStatus", FriendRelationStatusEnum.ACTIVE_HATE.getValue())
+                    .ne("relationStatus", FriendRelationStatusEnum.ALL_HATE.getValue());
+            Friend friend = friendMapper.selectOne(friendQueryWrapper);
+            if (friend == null) {
+                return true;
+            }
+
+            if (friend.getRelationStatus().equals(FriendRelationStatusEnum.PASSIVE_DELETE.getValue())) {
+                // 对方已经将当前用户删除
+                friendUpdateWrapper.set("relationStatus", FriendRelationStatusEnum.ALL_DELETE.getValue());
+            } else {
+                // 对方没有将当前用户删除
+                friendUpdateWrapper.set("relationStatus", FriendRelationStatusEnum.ACTIVE_DELETE.getValue());
+            }
+        } else {
+            // 当前用户主动添加对方后, 然后将对方对方拉黑了
+            friendQueryWrapper
+                    .ne("relationStatus", FriendRelationStatusEnum.ACTIVE_HATE.getValue())
+                    .ne("relationStatus", FriendRelationStatusEnum.ALL_HATE.getValue());
+            Friend friend = friendMapper.selectOne(friendQueryWrapper);
+            if (friend == null) {
+                return true;
+            }
+
+            if (friend.getRelationStatus().equals(FriendRelationStatusEnum.PASSIVE_HATE.getValue())) {
+                // 对方已经将当前用户拉黑
+                friendUpdateWrapper.set("relationStatus", FriendRelationStatusEnum.ALL_HATE.getValue());
+            } else {
+                // 对方没有将当前用户拉黑
+                friendUpdateWrapper.set("relationStatus", FriendRelationStatusEnum.ACTIVE_HATE.getValue());
+            }
+        }
+        return this.update(friendUpdateWrapper);
     }
 
 }
