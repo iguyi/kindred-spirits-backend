@@ -14,7 +14,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,10 +58,8 @@ public class FriendController {
      * @return > 0 表示关系创建成功
      */
     @PostMapping("/agree")
-    public BaseResponse<Long> agreeFriendApply(Long activeUserId,
-                                               Long passiveUserId,
-                                               HttpServletRequest httpServletRequest) {
-        User loginUser = userService.getLoginUser(httpServletRequest);
+    public BaseResponse<Long> agreeFriendApply(Long activeUserId, Long passiveUserId) {
+        User loginUser = userService.getLoginUser();
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
@@ -80,8 +77,8 @@ public class FriendController {
      * @return 好友列表
      */
     @GetMapping("/list")
-    public BaseResponse<List<UserVo>> getFriendList(HttpServletRequest httpServletRequest) {
-        User loginUser = userService.getLoginUser(httpServletRequest);
+    public BaseResponse<List<UserVo>> getFriendList() {
+        User loginUser = userService.getLoginUser();
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
