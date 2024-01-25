@@ -5,12 +5,14 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 队长将成员踢出队伍请求封装类
+ * 队长操作队伍成员请求封装类
+ * - 位置转让
+ * - 踢出成员
  *
  * @author 孤诣
  */
 @Data
-public class KickOutRequest implements Serializable {
+public class OperationMemberRequest implements Serializable {
 
     /**
      * 成员 id
