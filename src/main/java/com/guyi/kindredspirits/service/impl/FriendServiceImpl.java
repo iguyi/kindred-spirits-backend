@@ -12,6 +12,8 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.enums.FriendRelationStatusEnum;
 import com.guyi.kindredspirits.model.enums.MessageTypeEnum;
 import com.guyi.kindredspirits.model.request.MessageRequest;
+import com.guyi.kindredspirits.model.vo.FriendVo;
+import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.FriendService;
 import com.guyi.kindredspirits.service.MessageService;
 import com.guyi.kindredspirits.service.UserService;
@@ -37,6 +39,9 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
     @Resource
     private MessageService messageService;
+
+    @Resource
+    private FriendMapper friendMapper;
 
     @Resource
     private HttpServletRequest httpServletRequest;
@@ -183,6 +188,38 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         }
         userQueryWrapper.in("id", friendIdList);
         return userService.list(userQueryWrapper);
+    }
+
+    @Override
+    public FriendVo showFriend(Long friendId, HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        if (friendId == null || friendId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+
+        Long loginUserId = loginUser.getId();
+        QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
+        friendQueryWrapper
+                .eq("passiveUserId", loginUserId).eq("activeUserId", friendId)
+                .or(queryWrapper -> queryWrapper
+                        .eq("passiveUserId", friendId)
+                        .eq("activeUserId", loginUserId)
+                );
+        Friend friend = friendMapper.selectOne(friendQueryWrapper);
+        if (friend == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+
+        User friendUser = userService.getById(friendId);
+        friendUser.setTags(userService.getTagListJson(friendUser));
+        UserVo friendUserVo = new UserVo();
+        BeanUtils.copyProperties(friendUser, friendUserVo);
+
+        FriendVo friendVo = new FriendVo();
+        BeanUtils.copyProperties(friend, friendVo);
+        friendVo.setFriend(friendUserVo);
+
+        return friendVo;
     }
 
 }
