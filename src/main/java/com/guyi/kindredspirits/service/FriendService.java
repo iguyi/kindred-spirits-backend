@@ -5,7 +5,7 @@ import com.guyi.kindredspirits.model.domain.Friend;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.MessageRequest;
 import com.guyi.kindredspirits.model.vo.FriendVo;
-import com.guyi.kindredspirits.model.vo.UserVo;
+import com.guyi.kindredspirits.model.request.UpdateRelationRequest;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -51,5 +51,14 @@ public interface FriendService extends IService<Friend> {
      * @return 对应好友信息
      */
     FriendVo showFriend(Long friendId, HttpServletRequest httpServletRequest);
+
+    /**
+     * 更新和好友的关系
+     *
+     * @param updateRelationRequest - 更新好友状态请求封装
+     * @param httpServletRequest    - 客户端请求
+     * @return 更新结果
+     */
+    Boolean updateRelation(UpdateRelationRequest updateRelationRequest, HttpServletRequest httpServletRequest);
 
 }
