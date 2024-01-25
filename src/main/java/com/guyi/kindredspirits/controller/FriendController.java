@@ -7,6 +7,7 @@ import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.MessageRequest;
 import com.guyi.kindredspirits.model.vo.FriendVo;
+import com.guyi.kindredspirits.model.request.UpdateRelationRequest;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.FriendService;
 import com.guyi.kindredspirits.service.UserService;
@@ -114,6 +115,22 @@ public class FriendController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
         return ResultUtils.success(friendService.showFriend(friendId, httpServletRequest));
+    }
+
+    /**
+     * 更新和好友的关系
+     *
+     * @param updateRelationRequest - 更新好友状态请求封装
+     * @param httpServletRequest    - 客户端请求
+     * @return 更新结果
+     */
+    @PostMapping("/update/relation")
+    public BaseResponse<Boolean> updateRelation(@RequestBody UpdateRelationRequest updateRelationRequest,
+                                                HttpServletRequest httpServletRequest) {
+        if (updateRelationRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
+        return ResultUtils.success(friendService.updateRelation(updateRelationRequest, httpServletRequest));
     }
 
 }
