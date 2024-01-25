@@ -19,6 +19,11 @@ public class FriendVo implements Serializable {
     private Long id;
 
     /**
+     * 之前是否是当前用户主动加的对方
+     */
+    private Boolean isActive;
+
+    /**
      * 关系状态:
      * 0 - 正常好友
      * 1 - activeUserId 删除了 passiveUserId
