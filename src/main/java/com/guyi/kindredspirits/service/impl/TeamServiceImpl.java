@@ -117,6 +117,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         team.setId(null);
         team.setUserId(userId);
         team.setLeaderId(userId);
+        // 生成入队邀请码
+        String newTeamLink = IdUtil.simpleUUID();
+        team.setTeamLink(newTeamLink);
         boolean saveResult = this.save(team);
         Long teamId = team.getId();
         if (!saveResult || teamId == null) {
