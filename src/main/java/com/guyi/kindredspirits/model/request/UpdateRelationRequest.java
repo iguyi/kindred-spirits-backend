@@ -1,4 +1,4 @@
-package com.guyi.kindredspirits.model.vo;
+package com.guyi.kindredspirits.model.request;
 
 import lombok.Data;
 
@@ -18,9 +18,14 @@ public class UpdateRelationRequest implements Serializable {
     private Long friendId;
 
     /**
-     * 好友关系状态
+     * 操作: 1-表示删除 2-表示拉黑
      */
-    private Integer relationStatus;
+    private Integer operation;
+
+    /**
+     * 之前是否是当前用户主动添加的对方
+     */
+    private Boolean isActive;
 
     private static final long serialVersionUID = 8311275218886581143L;
 
