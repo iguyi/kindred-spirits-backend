@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.Friend;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.MessageRequest;
+import com.guyi.kindredspirits.model.request.ProcessFriendApplyRequest;
 import com.guyi.kindredspirits.model.vo.FriendVo;
 import com.guyi.kindredspirits.model.request.UpdateRelationRequest;
 
@@ -26,14 +27,13 @@ public interface FriendService extends IService<Friend> {
     Boolean applyFriend(MessageRequest messageRequest);
 
     /**
-     * 同意好友申请
+     * 处理好友申请
      *
-     * @param activeUserId  - activeUser 向 passiveUser 发出好友申请
-     * @param passiveUserId - passiveUser 同意 activeUser 的好友申请
-     * @param loginUser     - 当前登录用户
-     * @return 新数据 id
+     * @param processFriendApplyRequest - 处理好友申请请求封装
+     * @param loginUser                 - 当前登录用户
+     * @return 处理结果
      */
-    Long agreeFriendApply(Long activeUserId, Long passiveUserId, User loginUser);
+    Boolean agreeFriendApply(ProcessFriendApplyRequest processFriendApplyRequest, User loginUser);
 
     /**
      * 查询好友列表
