@@ -24,6 +24,11 @@ public class MessageVo implements Serializable {
     private Long senderId;
 
     /**
+     * 消息发送者昵称
+     */
+    private String sendName;
+
+    /**
      * 消息接受者 id
      */
     private Long receiverId;
