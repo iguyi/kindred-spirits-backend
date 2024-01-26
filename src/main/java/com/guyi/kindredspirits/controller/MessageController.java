@@ -1,10 +1,12 @@
 package com.guyi.kindredspirits.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.model.domain.Message;
 import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.enums.MessageTypeEnum;
 import com.guyi.kindredspirits.model.vo.MessageVo;
 import com.guyi.kindredspirits.service.MessageService;
 import com.guyi.kindredspirits.service.UserService;
@@ -63,6 +65,24 @@ public class MessageController {
                         .or().isNull("processed"));
         long count = messageService.count(messageQueryWrapper);
         return ResultUtils.success(count);
+    }
+
+    /**
+     * 刷新当前用户未读的系统消息状态 - 未读的系统消息更改为已读
+     *
+     * @param httpServletRequest 客户端请求
+     * @return 刷新数据的数量
+     */
+    @GetMapping("/refresh")
+    public BaseResponse<Boolean> refresh(HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        UpdateWrapper<Message> messageUpdateWrapper = new UpdateWrapper<>();
+        messageUpdateWrapper
+                .set("processed", 1)
+                .eq("receiverId", loginUser.getId())
+                .eq("messageType", MessageTypeEnum.SYSTEM_MESSAGE.getType());
+        boolean result = messageService.update(messageUpdateWrapper);
+        return ResultUtils.success(result);
     }
 
 }
