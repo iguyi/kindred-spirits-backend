@@ -1,12 +1,20 @@
 package com.guyi.kindredspirits.controller;
 
+import com.guyi.kindredspirits.common.BaseResponse;
+import com.guyi.kindredspirits.common.ResultUtils;
+import com.guyi.kindredspirits.model.domain.User;
+import com.guyi.kindredspirits.model.vo.MessageVo;
 import com.guyi.kindredspirits.service.MessageService;
+import com.guyi.kindredspirits.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * 消息接口
@@ -21,5 +29,19 @@ public class MessageController {
 
     @Resource
     private MessageService messageService;
+
+    @Resource
+    private UserService userService;
+
+    /**
+     * 查询当前用户的所有消息
+     *
+     * @return 当前用户接收的所有消息的列表
+     */
+    @GetMapping("/list")
+    public BaseResponse<List<MessageVo>> getMessageList(HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(messageService.getMessageList(loginUser));
+    }
 
 }
