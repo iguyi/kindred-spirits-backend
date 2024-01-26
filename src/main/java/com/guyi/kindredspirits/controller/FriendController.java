@@ -59,7 +59,7 @@ public class FriendController {
      *
      * @param processFriendApplyRequest - 处理好友申请请求封装
      * @param httpServletRequest        - 客户端请求
-     * @return > 0 表示关系创建成功
+     * @return 处理结果
      */
     @PostMapping("/process/apply")
     public BaseResponse<Boolean> processFriendApply(@RequestBody ProcessFriendApplyRequest processFriendApplyRequest,
