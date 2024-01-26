@@ -6,8 +6,9 @@ import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.MessageRequest;
-import com.guyi.kindredspirits.model.vo.FriendVo;
+import com.guyi.kindredspirits.model.request.ProcessFriendApplyRequest;
 import com.guyi.kindredspirits.model.request.UpdateRelationRequest;
+import com.guyi.kindredspirits.model.vo.FriendVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.FriendService;
 import com.guyi.kindredspirits.service.UserService;
@@ -54,24 +55,25 @@ public class FriendController {
     }
 
     /**
-     * 同意好友申请
+     * 处理好友申请
      *
-     * @param activeUserId  - activeUser 向 passiveUser 发出好友申请
-     * @param passiveUserId - passiveUser 同意 activeUser 的好友申请
+     * @param processFriendApplyRequest - 处理好友申请请求封装
+     * @param httpServletRequest        - 客户端请求
      * @return > 0 表示关系创建成功
      */
-    @PostMapping("/agree")
-    public BaseResponse<Long> agreeFriendApply(Long activeUserId, Long passiveUserId) {
-        User loginUser = userService.getLoginUser();
-        if (loginUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
+    @PostMapping("/process/apply")
+    public BaseResponse<Boolean> processFriendApply(@RequestBody ProcessFriendApplyRequest processFriendApplyRequest,
+                                                    HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        if (processFriendApplyRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
-        Long res = friendService.agreeFriendApply(activeUserId, passiveUserId, loginUser);
-        if (res == null || res <= 0) {
+        Boolean res = friendService.agreeFriendApply(processFriendApplyRequest, loginUser);
+        if (res == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统异常");
         }
-        return new BaseResponse<>(0, res);
+        return ResultUtils.success(true);
     }
 
     /**
