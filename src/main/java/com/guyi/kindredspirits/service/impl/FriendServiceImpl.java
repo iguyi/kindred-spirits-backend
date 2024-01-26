@@ -14,6 +14,7 @@ import com.guyi.kindredspirits.model.enums.FriendRelationStatusEnum;
 import com.guyi.kindredspirits.model.enums.MessageTypeEnum;
 import com.guyi.kindredspirits.model.enums.UpdateFriendRelationOperationEnum;
 import com.guyi.kindredspirits.model.request.MessageRequest;
+import com.guyi.kindredspirits.model.request.ProcessFriendApplyRequest;
 import com.guyi.kindredspirits.model.vo.FriendVo;
 import com.guyi.kindredspirits.model.request.UpdateRelationRequest;
 import com.guyi.kindredspirits.model.vo.UserVo;
@@ -23,6 +24,7 @@ import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.RedisUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -48,14 +50,6 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
     @Resource
     private HttpServletRequest httpServletRequest;
-
-    /**
-     * "好友申请" 和 "同意好友申请" 时, 根据相关用户的 id 应在数据库中查询到的数据的数量:
-     * - 消息接收者同意消息发送者的好友申请
-     * - 消息发送者向消息接收者发出好友申请
-     * 那么在 user 表中, 根据二者 id 作为查询条件, 要查询到两条记录
-     */
-    private static final long TWO_PEOPLE = 2L;
 
     /**
      * todo WebSocket 发送消息告知被添加者
@@ -132,32 +126,56 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
     }
 
     @Override
-    public Long agreeFriendApply(Long activeUserId, Long passiveUserId, User loginUser) {
-        if (activeUserId == null || passiveUserId == null || activeUserId <= 0 || passiveUserId <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean agreeFriendApply(ProcessFriendApplyRequest processFriendApplyRequest, User loginUser) {
+        // 参数校验
+        if (processFriendApplyRequest == null || loginUser == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        if (passiveUserId.equals(loginUser.getId())) {
-            // passiveUser 为被添加人, 当前登录用户必须是被添加人才可以同意和 activeUser 建立好友关系
-            throw new BusinessException(ErrorCode.NO_AUTH, "无权限");
-        }
-
-        // 用户真实性判断
-        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        userQueryWrapper.eq("id", activeUserId).or().eq("id", passiveUserId);
-        long count = userService.count(userQueryWrapper);
-        if (count != TWO_PEOPLE) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
+        Long senderId = processFriendApplyRequest.getSenderId();
+        Boolean isAgreed = processFriendApplyRequest.getIsAgreed();
+        Long loginUserId = loginUser.getId();
+        if (senderId == null || senderId < 1 || isAgreed == null || loginUserId == null || loginUserId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
-        // todo 考虑是否 拉黑 等状况
+        // 将消息设置为已处理
+        UpdateWrapper<Message> messageUpdateWrapper = new UpdateWrapper<>();
+        messageUpdateWrapper.set("processed", 1).eq("senderId", senderId).eq("receiverId", loginUserId);
+        boolean updateMessageResult = messageService.update(messageUpdateWrapper);
+        if (!updateMessageResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+        }
 
-        // 保存数据
-        Friend newFriend = new Friend();
-        newFriend.setActiveUserId(activeUserId);
-        newFriend.setPassiveUserId(passiveUserId);
-        this.save(newFriend);
+        // 构建系统消息, 告知好友申请者结果
+        Message message = new Message();
+        message.setSenderId(0L);
+        message.setReceiverId(senderId);
+        message.setMessageType(MessageTypeEnum.SYSTEM_MESSAGE.getType());
 
-        return newFriend.getId();
+        String username = loginUser.getUsername();
+        if (isAgreed) {
+            // 好友验证通过, 保存好友关系
+            Friend friend = new Friend();
+            friend.setActiveUserId(senderId);
+            friend.setPassiveUserId(loginUserId);
+            boolean saveFriendResult = this.save(friend);
+            if (!saveFriendResult) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+            }
+            message.setMessageBody(username + "通过了您的好友申请");
+        } else {
+            // 好友验证未通过
+            message.setMessageBody(username + "拒绝了您的好友申请");
+        }
+
+        // 保存消息
+        boolean saveMessageResult = messageService.save(message);
+        if (!saveMessageResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+        }
+
+        return true;
     }
 
     @Override
