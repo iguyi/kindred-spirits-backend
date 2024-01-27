@@ -98,8 +98,8 @@ public class WebSocket {
     /**
      * 连接成功调用的方法
      *
-     * @param userId  - 用户 id
-     * @param teamId  - 队伍id
+     * @param userId  - 用户 id, 正常情况下是当前登录用户对应的 id
+     * @param teamId  - 队伍 id
      * @param session - 会话
      * @param config  - 配置
      */
@@ -115,20 +115,30 @@ public class WebSocket {
             return;
         }
 
-        this.teamId = Long.valueOf(teamId);
+        Long teamIdNum = Long.valueOf(teamId);
+        Long userIdNum = Long.valueOf(userId);
+        this.teamId = teamIdNum;
 
         try {
             HttpSession httpSession = (HttpSession) config.getUserProperties().get(HttpSession.class.getName());
             User user = (User) httpSession.getAttribute(UserConstant.USER_LOGIN_STATE);
 
-            if (user != null) {
-                // 用户登录消息存在, 设置 Session 和 HttpSession
-                this.session = session;
-                this.httpSession = httpSession;
+            // 不是当前登录用户
+            if (user == null || !userIdNum.equals(user.getId())) {
+                return;
             }
+
+            // 用户登录消息存在, 设置 Session 和 HttpSession
+            this.session = session;
+            this.httpSession = httpSession;
 
             if (!ZERO_ID.equals(teamId)) {
                 // 队伍聊天室
+                if (!userTeamService.correlation(userIdNum, teamIdNum)) {
+                    // userId 对应的用户和 teamId 对应的队伍没有关系, 拒绝连接
+                    return;
+                }
+
                 if (!TEAM_SESSIONS.containsKey(teamId)) {
                     // 对应队伍聊天室不存在, 创建并将当前用户加入进去
                     ConcurrentHashMap<String, WebSocket> room = new ConcurrentHashMap<>(0);
