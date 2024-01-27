@@ -391,7 +391,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             }
             userTeamQueryWrapper = new QueryWrapper<>();
             userTeamQueryWrapper.eq("teamId", teamId);
-            boolean removeUserTeamResult = userTeamService.removeById(userTeamQueryWrapper);
+            boolean removeUserTeamResult = userTeamService.remove(userTeamQueryWrapper);
             if (!removeUserTeamResult) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
             }
