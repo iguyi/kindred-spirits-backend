@@ -7,6 +7,7 @@ import com.guyi.kindredspirits.model.domain.UserTeam;
 import com.guyi.kindredspirits.service.UserTeamService;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -16,6 +17,9 @@ import java.util.List;
  */
 @Service
 public class UserTeamServiceImpl extends ServiceImpl<UserTeamMapper, UserTeam> implements UserTeamService {
+
+    @Resource
+    private UserTeamMapper userTeamMapper;
 
     @Override
     public List<UserTeam> getMessageByUserId(Long userId) {
@@ -29,6 +33,17 @@ public class UserTeamServiceImpl extends ServiceImpl<UserTeamMapper, UserTeam> i
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
         userTeamQueryWrapper.eq("teamId", teamId);
         return this.list(userTeamQueryWrapper);
+    }
+
+    @Override
+    public Boolean correlation(Long userId, Long teamId) {
+        if (userId == null || teamId == null || userId * teamId < 1) {
+            return false;
+        }
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("userId", userId).eq("teamId", teamId);
+        UserTeam userTeam = userTeamMapper.selectOne(userTeamQueryWrapper);
+        return userTeam == null;
     }
 
 }
