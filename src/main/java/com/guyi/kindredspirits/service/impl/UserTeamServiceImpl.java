@@ -43,7 +43,7 @@ public class UserTeamServiceImpl extends ServiceImpl<UserTeamMapper, UserTeam> i
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
         userTeamQueryWrapper.eq("userId", userId).eq("teamId", teamId);
         UserTeam userTeam = userTeamMapper.selectOne(userTeamQueryWrapper);
-        return userTeam == null;
+        return userTeam != null;
     }
 
 }
