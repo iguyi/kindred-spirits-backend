@@ -241,21 +241,16 @@ public class WebSocket {
 
         if (ChatTypeEnum.GROUP_CHAT.getType().equals(chatType) && !ZERO_ID.equals(teamId.toString())) {
             // 队伍聊天
-            Long teamId = chatRequest.getTeamId();
-            if (invalidId(String.valueOf(teamId))) {
-                sendError(userId, "Team id error");
-                return;
-            }
 
-            // 获取队伍信息
-            Team team = teamService.getById(teamId);
-            if (team == null) {
-                sendError(userId, "The team does not exist.");
+            // 判断用户是否在队伍内
+            Long teamId = chatRequest.getTeamId();
+            if (invalidId(String.valueOf(teamId)) || userTeamService.correlation(Long.valueOf(userId), teamId)) {
+                sendError(userId, "You're not on this team");
                 return;
             }
 
             // 发送队伍聊天消息
-            teamChat(senderUser, team, chatContent);
+            teamChat(senderUser, teamId, chatContent);
             return;
         }
 
@@ -310,10 +305,10 @@ public class WebSocket {
      * 队伍聊天
      *
      * @param senderUser  - 发送者 id
-     * @param team        - 接收消息的队伍
+     * @param teamId      - 接收消息的队伍的 id
      * @param chatContent - 消息内容
      */
-    private void teamChat(User senderUser, Team team, String chatContent) {
+    private void teamChat(User senderUser, Long teamId, String chatContent) {
         // 获取消息发送者签名
         WebSocketVo senderUserLogo = new WebSocketVo();
         BeanUtils.copyProperties(senderUser, senderUserLogo);
@@ -324,7 +319,7 @@ public class WebSocket {
         // 保存聊天记录
         boolean saveResult = saveChat(senderUserId
                 , null
-                , team.getId()
+                , teamId
                 , chatContent
                 , ChatTypeEnum.GROUP_CHAT.getType());
 
