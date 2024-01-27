@@ -667,6 +667,74 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean joinTeamByLink(TeamJoinRequest teamJoinRequest, User loginUser) {
+        // 参数校验
+        if (teamJoinRequest == null || loginUser == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long teamId = teamJoinRequest.getTeamId();
+        String teamLink = teamJoinRequest.getTeamLink();
+        Long loginUserId = loginUser.getId();
+        if (teamId == null || StringUtils.isBlank(teamLink) || loginUserId == null || teamId * loginUserId < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        // 判断是否已加入过该队伍
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("userId", loginUserId).eq("teamId", teamId);
+        long count = userTeamService.count(userTeamQueryWrapper);
+        if (count > 0) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "不能重复加入");
+        }
+
+        // 查询目标队伍
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
+        teamQueryWrapper
+                .select("id", "maxNum", "num", "expireTime")
+                .eq("id", teamId)
+                .eq("teamLink", teamLink);
+        Team targetTeam = teamMapper.selectOne(teamQueryWrapper);
+
+        if (targetTeam == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "邀请码错误");
+        }
+
+        // 判断目标队伍是否以及满员
+        Integer maxNum = targetTeam.getMaxNum();
+        Integer num = targetTeam.getNum();
+        if (maxNum <= num) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "队伍已满");
+        }
+
+        // 判断现在是否不在可入队时间(即队伍过期)
+        Date now = new Date();
+        Date expireTime = targetTeam.getExpireTime();
+        if (now.after(expireTime)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "队伍已过期");
+        }
+
+        // 创建 "用户-队伍关系"
+        UserTeam userTeam = new UserTeam();
+        userTeam.setUserId(loginUserId);
+        userTeam.setTeamId(teamId);
+        userTeam.setJoinTime(now);
+        boolean saveUserTeamResult = userTeamService.save(userTeam);
+        if (!saveUserTeamResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+        }
+
+        // 更新队伍人数
+        targetTeam.setNum(++num);
+        boolean updateTeamResult = this.updateById(targetTeam);
+        if (!updateTeamResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+        }
+
+        return true;
+    }
+
     /**
      * 对队长操作队员时的参数、权限进行统一校验
      *
