@@ -28,4 +28,13 @@ public interface UserTeamService extends IService<UserTeam> {
      */
     List<UserTeam> getMessageByTeamId(Long teamId);
 
+    /**
+     * 判断用户是否在队伍中
+     *
+     * @param userId - 用户 id
+     * @param teamId - 队伍 id
+     * @return true - 在; false - 不在
+     */
+    Boolean correlation(Long userId, Long teamId);
+
 }
