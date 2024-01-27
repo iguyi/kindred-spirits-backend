@@ -203,6 +203,27 @@ public class TempController {
     }
 
     /**
+     * 根据队伍邀请码加入队伍
+     *
+     * @param teamJoinRequest    - 入队请求封装
+     * @param httpServletRequest - 客户端请求
+     * @return 操作结果
+     */
+    @PostMapping("/join/link")
+    public BaseResponse<Boolean> joinTeamByLink(@RequestBody TeamJoinRequest teamJoinRequest,
+                                                HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        if (teamJoinRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Boolean result = teamService.joinTeamByLink(teamJoinRequest, loginUser);
+        if (result != null && !result) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+        }
+        return ResultUtils.success(true);
+    }
+
+    /**
      * 退出队伍
      *
      * @param teamQuitRequest - 对用户退出队伍的请求参数的封装
