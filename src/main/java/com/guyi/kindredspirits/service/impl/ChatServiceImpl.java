@@ -220,6 +220,8 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             chatRoomVoList.add(chatRoomVo);
         });
         sortChatRoomList(chatRoomVoList);
+        String nowDate = DateUtil.format(new Date(), "yy-MM-dd");
+        chatRoomVoList.forEach(chatRoomVo -> chatRoomVo.setSendTime(timeFormat(chatRoomVo.getSendTime(), nowDate)));
         return chatRoomVoList;
     }
 
@@ -258,16 +260,10 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
      * @param source 历史聊天会话列表
      */
     private void sortChatRoomList(List<ChatRoomVo> source) {
-        String nowDate = DateUtil.format(new Date(), "yy-MM-dd");
-
         source.sort((c1, c2) -> {
             String sendTime1 = c1.getSendTime();
             String sendTime2 = c2.getSendTime();
-
-            int sortResult = sendTime2.compareTo(sendTime1);
-            c1.setSendTime(timeFormat(sendTime1, nowDate));
-            c2.setSendTime(timeFormat(sendTime2, nowDate));
-            return sortResult;
+            return sendTime2.compareTo(sendTime1);
         });
     }
 
