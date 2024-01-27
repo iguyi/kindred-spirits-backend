@@ -139,4 +139,13 @@ public interface TeamService extends IService<Team> {
      */
     String refreshLink(Long teamId);
 
+    /**
+     * 根据队伍邀请码加入队伍
+     *
+     * @param teamJoinRequest - 入队请求封装
+     * @param loginUser       - 登录用户
+     * @return 操作结果
+     */
+    Boolean joinTeamByLink(TeamJoinRequest teamJoinRequest, User loginUser);
+
 }
