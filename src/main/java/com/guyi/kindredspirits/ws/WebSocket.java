@@ -244,7 +244,7 @@ public class WebSocket {
 
             // 判断用户是否在队伍内
             Long teamId = chatRequest.getTeamId();
-            if (invalidId(String.valueOf(teamId)) || userTeamService.correlation(Long.valueOf(userId), teamId)) {
+            if (invalidId(String.valueOf(teamId)) || !userTeamService.correlation(Long.valueOf(userId), teamId)) {
                 sendError(userId, "You're not on this team");
                 return;
             }
