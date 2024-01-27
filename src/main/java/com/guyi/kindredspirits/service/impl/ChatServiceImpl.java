@@ -214,14 +214,12 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             // 获取最后一条聊天记录
             Chat lastChat = value.get(value.size() - 1);
             chatRoomVo.setLastRecord(lastChat.getChatContent());
-            // 获取消息发送日期和时间
-            String sendDate = DateUtil.format(lastChat.getCreateTime(), "yy-MM-dd");
-            String sendTime = DateUtil.format(lastChat.getCreateTime(), "HH:mm:ss");
-            // 获取当前日期
-            String nowDate = DateUtil.format(new Date(), "yy-MM-dd");
-            chatRoomVo.setSendTime((nowDate.equals(sendDate)) ? sendTime : sendDate);
+            // 获取消息发送的日期、时间信息
+            String sendDateAndTime = DateUtil.format(lastChat.getCreateTime(), "yy-MM-dd HH:mm:ss");
+            chatRoomVo.setSendTime(sendDateAndTime);
             chatRoomVoList.add(chatRoomVo);
         });
+        sortChatRoomList(chatRoomVoList);
         return chatRoomVoList;
     }
 
@@ -252,6 +250,41 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         }
 
         return loginUser.getId();
+    }
+
+    /**
+     * 按照时间对历史聊天会话列表进行排序, 会话中的最后一条聊天记录的发送时间里当前时间越近, 排序位置越靠前.
+     *
+     * @param source 历史聊天会话列表
+     */
+    private void sortChatRoomList(List<ChatRoomVo> source) {
+        String nowDate = DateUtil.format(new Date(), "yy-MM-dd");
+
+        source.sort((c1, c2) -> {
+            String sendTime1 = c1.getSendTime();
+            String sendTime2 = c2.getSendTime();
+
+            int sortResult = sendTime2.compareTo(sendTime1);
+            c1.setSendTime(timeFormat(sendTime1, nowDate));
+            c2.setSendTime(timeFormat(sendTime2, nowDate));
+            return sortResult;
+        });
+    }
+
+    /**
+     * 根据现在的日期, 对时间进行格式化, 假设现在的日期为 2024-01-20:
+     * - "2024-01-20 12:09:01" => "12:09:01"
+     * - "2024-01-19 12:09:01" => "2024-01-19"
+     *
+     * @param time - yy-MM-dd HH:mm:ss
+     * @param date - yy-MM-dd
+     * @return HH:mm:ss 或者 yy-MM-dd
+     */
+    private String timeFormat(String time, String date) {
+        if (time.contains(date)) {
+            return time.substring(9);
+        }
+        return time.substring(0, 8);
     }
 
 }
