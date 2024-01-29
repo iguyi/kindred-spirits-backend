@@ -12,7 +12,6 @@ import com.guyi.kindredspirits.model.domain.Chat;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.ChatHistoryRequest;
-import com.guyi.kindredspirits.model.request.TeamMyQueryRequest;
 import com.guyi.kindredspirits.model.vo.ChatRoomVo;
 import com.guyi.kindredspirits.model.vo.ChatVo;
 import com.guyi.kindredspirits.model.vo.WebSocketVo;
@@ -136,20 +135,20 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         // 获取用户 id
         Long loginUserId = loginUser.getId();
 
-        // 查询我所在队伍的信息
-        TeamMyQueryRequest teamMyQueryRequest = new TeamMyQueryRequest();
-        teamMyQueryRequest.setId(loginUserId);
-        List<Team> teamList = teamService.listMyJoinTeams(teamMyQueryRequest, loginUser);
+        // 查询我有交流过的队伍
+        List<Long> teamIdList = exchangeTeam(loginUserId);
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
+        teamQueryWrapper.select("id", "name", "avatarUrl").in("id", teamIdList);
+        List<Team> teamList = teamService.list(teamQueryWrapper);
 
         // 获取和当前登录用户相关的所有聊天记录
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
         chatQueryWrapper.eq("senderId", loginUserId).or().eq("receiverId", loginUserId);
-        // 获取我所在队伍的 id 列表
-        List<Long> teamIdList = teamList.stream().map(Team::getId).collect(Collectors.toList());
         if (!CollectionUtils.isEmpty(teamIdList)) {
             chatQueryWrapper.or().in("teamId", teamIdList);
         }
         List<Chat> chatList = this.list(chatQueryWrapper);
+
         // 将聊天记录按照好友 id 或者队伍 id 进行分组
         Map<Pair<Long, Integer>, List<Chat>> chatGroup = chatList.stream().collect(Collectors.groupingBy(chat -> {
             if (chat.getTeamId() != null) {
@@ -223,6 +222,27 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         String nowDate = DateUtil.format(new Date(), "yy-MM-dd");
         chatRoomVoList.forEach(chatRoomVo -> chatRoomVo.setSendTime(timeFormat(chatRoomVo.getSendTime(), nowDate)));
         return chatRoomVoList;
+    }
+
+    /**
+     * 获取所有与 userId 对应用户进行交流过的队伍的 id
+     * - userId 在该队伍接收过消息
+     * - userId 在该队伍发送过消息
+     *
+     * @param userId - 用户 id
+     * @return 队伍 id 列表
+     */
+    private List<Long> exchangeTeam(Long userId) {
+        QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
+        chatQueryWrapper
+                .select("teamId")
+                .and(queryWrapper -> queryWrapper
+                        .eq("senderId", userId)
+                        .or().eq("receiverId", userId)
+                )
+                .isNotNull("teamId");
+        List<Chat> chatList = this.list(chatQueryWrapper);
+        return chatList.stream().map(Chat::getTeamId).distinct().collect(Collectors.toList());
     }
 
     /**
