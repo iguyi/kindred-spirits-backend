@@ -156,13 +156,39 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
         String username = loginUser.getUsername();
         if (isAgreed) {
-            // 好友验证通过, 保存好友关系
-            Friend friend = new Friend();
-            friend.setActiveUserId(senderId);
-            friend.setPassiveUserId(loginUserId);
-            boolean saveFriendResult = this.save(friend);
-            if (!saveFriendResult) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+            // 好友验证通过
+            // 验证二者曾经是否是好友关系
+            QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
+            friendQueryWrapper
+                    .select("id", "relationStatus")
+                    .and(queryWrapper -> queryWrapper.eq("activeUserId", loginUserId)
+                            .eq("passiveUserId", senderId)
+                            .or(wrapper -> wrapper
+                                    .eq("activeUserId", senderId)
+                                    .eq("passiveUserId", loginUserId)
+                            )
+                    )
+                    .in("relationStatus", FriendRelationStatusEnum.ACTIVE_DELETE.getValue(),
+                            FriendRelationStatusEnum.PASSIVE_DELETE.getValue(),
+                            FriendRelationStatusEnum.ALL_DELETE.getValue()
+                    );
+            Friend friend = friendMapper.selectOne(friendQueryWrapper);
+            if (friend != null) {
+                // 曾经是好友, 更新关系
+                friend.setActiveUserId(senderId);
+                friend.setPassiveUserId(loginUserId);
+                friend.setRelationStatus(0);
+                this.updateById(friend);
+            } else {
+                // 曾经不是好友
+                friend = new Friend();
+                friend.setActiveUserId(senderId);
+                friend.setPassiveUserId(loginUserId);
+                // 保存好友关系
+                boolean saveFriendResult = this.save(friend);
+                if (!saveFriendResult) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+                }
             }
             message.setMessageBody(username + "通过了您的好友申请");
         } else {
