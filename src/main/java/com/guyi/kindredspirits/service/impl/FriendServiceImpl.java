@@ -88,11 +88,12 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
         Long loginUserId = loginUser.getId();
         friendQueryWrapper
-                .eq("activeUserId", loginUserId)
-                .eq("passiveUserId", receiverId)
-                .or(queryWrapper -> queryWrapper
-                        .eq("activeUserId", receiverId)
-                        .eq("passiveUserId", loginUserId)
+                .and(queryWrapper -> queryWrapper.eq("activeUserId", loginUserId)
+                        .eq("passiveUserId", receiverId)
+                        .or(wrapper -> wrapper
+                                .eq("activeUserId", receiverId)
+                                .eq("passiveUserId", loginUserId)
+                        )
                 )
                 .in("relationStatus", 0, 3, 4, 5, 6);
         long count = this.count(friendQueryWrapper);
