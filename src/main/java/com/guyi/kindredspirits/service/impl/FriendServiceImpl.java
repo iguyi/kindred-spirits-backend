@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
-import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.FriendMapper;
 import com.guyi.kindredspirits.model.domain.Friend;
@@ -15,13 +14,12 @@ import com.guyi.kindredspirits.model.enums.MessageTypeEnum;
 import com.guyi.kindredspirits.model.enums.UpdateFriendRelationOperationEnum;
 import com.guyi.kindredspirits.model.request.MessageRequest;
 import com.guyi.kindredspirits.model.request.ProcessFriendApplyRequest;
-import com.guyi.kindredspirits.model.vo.FriendVo;
 import com.guyi.kindredspirits.model.request.UpdateRelationRequest;
+import com.guyi.kindredspirits.model.vo.FriendVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.FriendService;
 import com.guyi.kindredspirits.service.MessageService;
 import com.guyi.kindredspirits.service.UserService;
-import com.guyi.kindredspirits.util.RedisUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +50,6 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
     private HttpServletRequest httpServletRequest;
 
     /**
-     * todo WebSocket 发送消息告知被添加者
      * sender 向 receiverId 进行好友申请
      */
     @Override
@@ -115,15 +112,8 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         message.setSenderId(loginUserId);
         message.setMessageBody("好友申请");
         message.setProcessed(0);
-        boolean res = messageService.save(message);
-
-        if (res) {
-            // 消息保存至 Redis
-            String key = String.format(RedisConstant.MESSAGE_VERIFY_KEY_PRE, message.getId() + "_" + receiverId);
-            RedisUtil.setForValue(key, message);
-            return true;
-        }
-        return false;
+        // todo 设置缓存（ hash 结构）
+        return messageService.save(message);
     }
 
     @Override
