@@ -8,7 +8,7 @@ import com.guyi.kindredspirits.mapper.UserMapper;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.AlgorithmUtil;
-import com.guyi.kindredspirits.util.RedisUtil;
+import com.guyi.kindredspirits.util.redis.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
@@ -91,18 +91,13 @@ public class PreCacheJob {
                         }
                     }
 
+                    // 写缓存, key 超时时间 = 15 小时 + 随机时间(分钟)
+                    // todo 缓存问题
                     String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, mainUser.getId());
-                    try {
-                        // 写缓存, key 超时时间 = 15 小时 + 随机时间(分钟)
-                        // todo 缓存问题
-                        long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
-                        boolean result = RedisUtil.setForValue(redisKey, cacheUserList, timeout,
-                                TimeUnit.MINUTES);
-                        if (!result) {
-                            log.error("redis set {} error.", redisKey);
-                        }
-                    } catch (Exception e) {
-                        log.error("redis set key error: ", e);
+                    long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
+                    boolean result = RedisUtil.setValue(redisKey, cacheUserList, timeout, TimeUnit.MINUTES);
+                    if (!result) {
+                        log.error("缓存设置失败");
                     }
                 }
             }
