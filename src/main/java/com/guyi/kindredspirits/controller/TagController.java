@@ -1,5 +1,6 @@
 package com.guyi.kindredspirits.controller;
 
+import com.google.gson.reflect.TypeToken;
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.ResultUtils;
@@ -10,14 +11,16 @@ import com.guyi.kindredspirits.model.request.TagAddRequest;
 import com.guyi.kindredspirits.model.vo.TagVo;
 import com.guyi.kindredspirits.service.TagService;
 import com.guyi.kindredspirits.service.UserService;
-import com.guyi.kindredspirits.util.RedisUtil;
+import com.guyi.kindredspirits.util.redis.RedisQueryReturn;
+import com.guyi.kindredspirits.util.redis.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
+import java.lang.reflect.Type;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 标签接口
@@ -67,19 +70,24 @@ public class TagController {
     @GetMapping("/get/all")
     public BaseResponse<List<List<TagVo>>> getAll() {
         String redisKey = String.format(RedisConstant.KEY_PRE, "tag", "get-all", "simple");
-        List<List<TagVo>> groupTagVoList = new ArrayList<>();
-        groupTagVoList = RedisUtil.get(redisKey, groupTagVoList.getClass());
+        Type tagVoListType = new TypeToken<List<List<TagVo>>>() {
+        }.getType();
+        RedisQueryReturn<List<List<TagVo>>> redisQueryReturn = RedisUtil.getValue(redisKey, tagVoListType);
+
+        List<List<TagVo>> groupTagVoList = redisQueryReturn.getData();
         if (groupTagVoList != null) {
+            // 缓存中存在数据
+            // todo 判断缓存是否过期
             return new BaseResponse<>(0, groupTagVoList);
         }
 
+        // 缓存中不存在数据, 从数据查询数据, 并将其写入缓存
         groupTagVoList = tagService.getAll();
-        // 写缓存
-        boolean result = RedisUtil.setForValue(redisKey, groupTagVoList);
+        boolean result = RedisUtil.setValue(redisKey, groupTagVoList, 20L, TimeUnit.HOURS);
         if (!result) {
-            log.error("Set cache error in '/tag/get/all'.");
+            log.error("缓存设置失败");
         }
-        return new BaseResponse<>(0, groupTagVoList);
+        return ResultUtils.success(groupTagVoList);
     }
 
     /**
