@@ -2,7 +2,6 @@ package com.guyi.kindredspirits.service.impl;
 
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
@@ -16,6 +15,8 @@ import com.guyi.kindredspirits.model.request.UpdatePwdRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.*;
+import com.guyi.kindredspirits.util.redis.RedisQueryReturn;
+import com.guyi.kindredspirits.util.redis.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
@@ -88,15 +89,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             try {
                 if (lock.tryLock(0, 30L, TimeUnit.SECONDS)) {
                     // 从缓存中取账号信息最新用户的 userAccount
-                    String maxUserAccount = RedisUtil.get(RedisConstant.MAX_ID_USER_ACCOUNT_KEY, String.class);
-
-                    // 如果缓存中没有数据查询数据库中 id 最大的 user 的 userAccount
-                    if (maxUserAccount == null) {
-                        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-                        queryWrapper.orderByDesc("id");
-                        User user = page(new Page<>(1, 1), queryWrapper).getRecords().get(0);
-                        //  如果缓存和数据库都没有取到 userAccount，那么新用户的 userAccount 为 "100001"
-                        maxUserAccount = user == null ? "100001" : user.getUserAccount();
+                    RedisQueryReturn<String> redisQueryReturn =
+                            RedisUtil.getValue(RedisConstant.MAX_ID_USER_ACCOUNT_KEY, String.class);
+                    String maxUserAccount;
+                    if (redisQueryReturn == null || redisQueryReturn.isExpiration()) {
+                        // 查询缓存出现异常或者缓存过期
+                        maxUserAccount = getMaxUserAccount();
+                    } else {
+                        // 缓存未过期
+                        maxUserAccount = redisQueryReturn.getData();
+                        if (maxUserAccount == null || maxUserAccount.compareTo("100001") < 0) {
+                            // 缓存中的数据有误
+                            maxUserAccount = getMaxUserAccount();
+                        }
                     }
 
                     //  将取到的 userAccount 加 1 作为新用户的 userAccount
@@ -111,11 +116,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                     }
 
                     //  将新用户的 userAccount 写入缓存
-                    RedisUtil.setForValue(RedisConstant.MAX_ID_USER_ACCOUNT_KEY, newUserAccountValue);
+                    RedisUtil.setValue(RedisConstant.MAX_ID_USER_ACCOUNT_KEY, newUserAccountValue,
+                            10L, TimeUnit.MINUTES);
                     return newUser;
                 }
             } catch (Exception e) {
-                log.debug("The userRegister method of the PreCacheJob class is error: " + e);
+                log.debug("用户注册异常, 异常信息如下: \n" + e);
             } finally {
                 // 只释放当前线程加的锁
                 if (lock.isHeldByCurrentThread()) {
@@ -125,6 +131,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+    }
+
+    /**
+     * 获取最大用户账号
+     *
+     * @return 用户账号
+     */
+    private String getMaxUserAccount() {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.orderByDesc("id");
+        User user = page(new Page<>(1, 1), queryWrapper).getRecords().get(0);
+        return user == null ? "100001" : user.getUserAccount();
     }
 
     /**
