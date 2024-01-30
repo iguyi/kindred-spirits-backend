@@ -29,7 +29,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/common")
 @Slf4j
-@CrossOrigin(origins = {"http://127.0.0.1:3000", "http://localhost:3000"}, allowCredentials = "true")
 @ConfigurationProperties("project")
 @Data
 public class CommonController {
