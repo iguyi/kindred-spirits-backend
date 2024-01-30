@@ -3,6 +3,7 @@ package com.guyi.kindredspirits.controller;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.google.gson.reflect.TypeToken;
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.ResultUtils;
@@ -16,7 +17,8 @@ import com.guyi.kindredspirits.model.request.UserRegisterRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.UserService;
-import com.guyi.kindredspirits.util.RedisUtil;
+import com.guyi.kindredspirits.util.redis.RedisQueryReturn;
+import com.guyi.kindredspirits.util.redis.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -26,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -249,14 +251,19 @@ public class UserController {
         if (pageSize < 1 || pageNum < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
-        // 如果缓存有数据, 直接读缓存
+
+        // 查询缓存
         final String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, loginUser.getId());
-        List<User> userList = new ArrayList<>();
-        userList = RedisUtil.get(redisKey, userList.getClass());
+        Type userListType = new TypeToken<List<User>>() {
+        }.getType();
+        RedisQueryReturn<List<User>> redisQueryReturn = RedisUtil.getValue(redisKey, userListType);
+        List<User> userList = redisQueryReturn.getData();
         if (userList != null) {
+            // 数据存在缓存, 直接返回缓存中的数据
             return ResultUtils.success(userList);
         }
-        // 无缓存, 走数据库
+
+        // 缓存中不存在数据, 从数据查询数据, 并将其写入缓存
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         Page<User> userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
         userList = userPage.getRecords();
@@ -265,17 +272,11 @@ public class UserController {
             return userService.getSafetyUser(user);
         }).collect(Collectors.toList());
 
-        // 写缓存
-        try {
-            // todo 缓存问题
-            // 15 小时 + 随机时间
-            long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
-            boolean result = RedisUtil.setForValue(redisKey, userList, timeout, TimeUnit.MINUTES);
-            if (!result) {
-                log.error("redis set {} error.", redisKey);
-            }
-        } catch (Exception e) {
-            log.error("redis set key error: ", e);
+        // 15 小时 + 随机时间
+        long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
+        boolean result = RedisUtil.setValue(redisKey, userList, timeout, TimeUnit.MINUTES);
+        if (!result) {
+            log.error("缓存设置失败");
         }
         return ResultUtils.success(userList);
     }
