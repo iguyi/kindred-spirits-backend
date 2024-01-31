@@ -22,4 +22,9 @@ public interface BaseConstant {
      */
     String HEARTBEAT_PONG = "PONG";
 
+    /**
+     * 获取锁失败后允许重试的次数
+     */
+    int RETRIES_MAX_NUMBER = 100;
+
 }
