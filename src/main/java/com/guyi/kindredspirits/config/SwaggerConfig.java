@@ -14,6 +14,8 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2WebMvc;
 
 /**
  * Swagger 配置
+ *
+ * @author 孤诣
  */
 @Configuration
 @EnableSwagger2WebMvc
@@ -25,23 +27,26 @@ public class SwaggerConfig {
         return new Docket(DocumentationType.SWAGGER_2)
                 .apiInfo(apiInfo())
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("com.guyi.kindredspirits.controller"))  // 重要，标注控制器的位置
+                // 重要，标注控制器的位置
+                .apis(RequestHandlerSelectors.basePackage("com.guyi.kindredspirits.controller"))
                 .paths(PathSelectors.any())
                 .build();
     }
 
     /**
      * API 信息
-     *
-     * @return
      */
     public ApiInfo apiInfo() {
         return new ApiInfoBuilder()
-                .title("道友--伙伴匹配系统")  // 设置标题
-                .description("")  // 设置文档的描述
+                // 设置标题
+                .title("道友--伙伴匹配系统")
+                // 设置文档的描述
+                .description("")
                 .version("1.0")
                 .contact(new Contact("孤诣", "", ""))
-                .termsOfServiceUrl("")  // 设置文档的 许可证 信息
+                // 设置文档的 许可证 信息
+                .termsOfServiceUrl("")
                 .build();
     }
+
 }
