@@ -12,7 +12,6 @@ import com.guyi.kindredspirits.model.request.ChatRequest;
 import com.guyi.kindredspirits.model.vo.ChatVo;
 import com.guyi.kindredspirits.model.vo.WebSocketVo;
 import com.guyi.kindredspirits.service.ChatService;
-import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.service.UserTeamService;
 import com.guyi.kindredspirits.util.JsonUtil;
@@ -87,8 +86,6 @@ public class WebSocket {
     private static final String ZERO_ID = "0";
 
     private static UserService userService;
-
-    private static TeamService teamService;
 
     private static ChatService chatService;
 
@@ -415,11 +412,6 @@ public class WebSocket {
     @Resource
     public void setUserService(UserService userService) {
         WebSocket.userService = userService;
-    }
-
-    @Resource
-    public void setTeamService(TeamService teamService) {
-        WebSocket.teamService = teamService;
     }
 
     @Resource
