@@ -2,6 +2,8 @@ package com.guyi.kindredspirits.common;
 
 /**
  * 返回工具类
+ *
+ * @author 孤诣
  */
 public class ResultUtils {
     /**
@@ -23,7 +25,7 @@ public class ResultUtils {
      * 失败
      */
     public static <T> BaseResponse<T> error(ErrorCode errorCode, String message, String description) {
-        return new BaseResponse(errorCode.getCode(), null, message, description);
+        return new BaseResponse<>(errorCode.getCode(), null, message, description);
     }
 
     /**
@@ -37,6 +39,7 @@ public class ResultUtils {
      * 失败
      */
     public static <T> BaseResponse<T> error(int code, String message, String description) {
-        return new BaseResponse(code, null, message, description);
+        return new BaseResponse<>(code, null, message, description);
     }
+
 }
