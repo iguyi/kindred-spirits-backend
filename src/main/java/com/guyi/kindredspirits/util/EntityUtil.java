@@ -89,6 +89,4 @@ public class EntityUtil {
         return true;
     }
 
-    // todo 判定除了指定属性外, 其他属性是否都为 null
-
 }
