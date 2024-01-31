@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * 全局异常处理器
  * 利用 Spring AOP 处理全局异常
+ *
+ * @author 孤诣
  */
 @RestControllerAdvice
 @Slf4j
