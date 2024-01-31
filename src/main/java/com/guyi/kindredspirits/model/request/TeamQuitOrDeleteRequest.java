@@ -6,6 +6,8 @@ import java.io.Serializable;
 
 /**
  * 对用户退出队伍或队长删除队伍的请求参数封装类
+ *
+ * @author 孤诣
  */
 @Data
 public class TeamQuitOrDeleteRequest implements Serializable {
@@ -15,5 +17,6 @@ public class TeamQuitOrDeleteRequest implements Serializable {
      */
     private Long teamId;
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -1831963437448473166L;
+
 }
