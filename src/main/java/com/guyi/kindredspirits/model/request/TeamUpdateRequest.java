@@ -7,6 +7,8 @@ import java.util.Date;
 
 /**
  * 更新队伍的请求封装类
+ *
+ * @author 孤诣
  */
 @Data
 public class TeamUpdateRequest implements Serializable {
@@ -41,5 +43,6 @@ public class TeamUpdateRequest implements Serializable {
      */
     private String password;
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1145460880112951333L;
+
 }
