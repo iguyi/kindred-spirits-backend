@@ -4,13 +4,15 @@ import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serializable;
 import java.util.Date;
+
 import lombok.Data;
 
 /**
  * 用户-队伍关系表
- * @TableName user_team
+ *
+ * @author 孤诣
  */
-@TableName(value ="user_team")
+@TableName(value = "user_team")
 @Data
 public class UserTeam implements Serializable {
     /**
