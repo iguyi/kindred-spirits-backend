@@ -4,6 +4,8 @@ import com.guyi.kindredspirits.common.ErrorCode;
 
 /**
  * 自定义异常类
+ *
+ * @author 孤诣
  */
 public class BusinessException extends RuntimeException {
 
@@ -44,4 +46,5 @@ public class BusinessException extends RuntimeException {
         this.code = errorCode.getCode();
         this.description = description;
     }
+
 }
