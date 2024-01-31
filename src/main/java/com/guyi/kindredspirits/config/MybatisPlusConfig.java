@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * MyBatis-Plus 配置
+ *
+ * @author 孤诣
  */
 @Configuration
 @MapperScan("com.guyi.kindredspirits.mapper")
@@ -23,4 +25,5 @@ public class MybatisPlusConfig {
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
         return interceptor;
     }
+
 }
