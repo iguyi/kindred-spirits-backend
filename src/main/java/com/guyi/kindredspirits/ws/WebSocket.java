@@ -6,7 +6,6 @@ import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
 import com.guyi.kindredspirits.config.HttpSessionConfig;
 import com.guyi.kindredspirits.model.domain.Chat;
-import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.domain.UserTeam;
 import com.guyi.kindredspirits.model.request.ChatRequest;
