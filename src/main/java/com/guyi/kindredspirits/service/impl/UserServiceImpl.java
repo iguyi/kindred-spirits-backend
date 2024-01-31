@@ -35,6 +35,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.guyi.kindredspirits.common.contant.BaseConstant.RETRIES_MAX_NUMBER;
+
 /**
  * 针对表 user(用户表) 的数据库操作 Service 实现
  *
@@ -85,7 +87,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         String lockKey = String.format(RedisConstant.KEY_PRE, "user", "register", "lock");
         RLock lock = redissonClient.getLock(lockKey);
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < RETRIES_MAX_NUMBER; i++) {
             try {
                 if (lock.tryLock(0, 30L, TimeUnit.SECONDS)) {
                     // 从缓存中取账号信息最新用户的 userAccount
