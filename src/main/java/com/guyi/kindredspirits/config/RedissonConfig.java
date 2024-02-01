@@ -45,4 +45,5 @@ public class RedissonConfig {
         // 创建实例
         return Redisson.create(config);
     }
+
 }
