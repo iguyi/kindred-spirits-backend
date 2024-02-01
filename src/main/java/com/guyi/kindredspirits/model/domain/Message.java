@@ -69,6 +69,6 @@ public class Message implements Serializable {
     private Integer isDelete;
 
     @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -2756826664422631286L;
 
 }
