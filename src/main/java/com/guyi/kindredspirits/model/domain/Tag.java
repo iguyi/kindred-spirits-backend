@@ -16,7 +16,7 @@ import java.util.Date;
 public class Tag implements Serializable {
 
     @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 7853696643171338748L;
 
     /**
      * id
