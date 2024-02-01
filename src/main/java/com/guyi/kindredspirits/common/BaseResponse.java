@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * 通用返回类
  *
- * @param <T>
+ * @param <T> 返回参数对象的类型
  * @author 孤诣
  */
 @Data
@@ -54,6 +54,7 @@ public class BaseResponse<T> implements Serializable {
     }
 
     public BaseResponse(ErrorCode errorCode) {
-        this(errorCode.getCode(), null ,errorCode.getMsg(), errorCode.getDescription());
+        this(errorCode.getCode(), null, errorCode.getMsg(), errorCode.getDescription());
     }
+
 }
