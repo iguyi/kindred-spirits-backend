@@ -62,6 +62,6 @@ public class Friend implements Serializable {
     private Integer isDelete;
 
     @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 4820980863292024384L;
 
 }
