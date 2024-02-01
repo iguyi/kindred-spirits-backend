@@ -6,6 +6,7 @@ package com.guyi.kindredspirits.common;
  * @author 孤诣
  */
 public class ResultUtils {
+    
     /**
      * 成功
      */
