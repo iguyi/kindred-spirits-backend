@@ -8,13 +8,14 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 用户
+ * 用户表
  *
  * @author 孤诣
  */
 @TableName(value = "user")
 @Data
 public class User implements Serializable {
+
     /**
      * id
      */
@@ -98,5 +99,6 @@ public class User implements Serializable {
     private Integer isDelete;
 
     @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 3706033945307221771L;
+
 }
