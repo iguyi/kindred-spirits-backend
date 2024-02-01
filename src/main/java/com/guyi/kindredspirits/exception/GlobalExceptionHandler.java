@@ -20,14 +20,15 @@ public class GlobalExceptionHandler {
      * 只捕获 BusinessException 类型的异常
      */
     @ExceptionHandler(BusinessException.class)
-    public BaseResponse businessException(BusinessException e) {
+    public BaseResponse<Object> businessException(BusinessException e) {
         log.error("businessException: " + e.getMessage(), e);
         return ResultUtils.error(e.getCode(), e.getMessage(), e.getDescription());
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public BaseResponse runtimeException(RuntimeException e) {
+    public BaseResponse<Object> runtimeException(RuntimeException e) {
         log.error("runtimeException", e);
         return ResultUtils.error(ErrorCode.SYSTEM_ERROR, e.getMessage(), "");
     }
+
 }
