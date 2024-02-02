@@ -40,6 +40,6 @@ public class MessageRequest implements Serializable {
      */
     private String messageBody;
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 5898698196341759649L;
 
 }
