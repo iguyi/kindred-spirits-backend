@@ -96,7 +96,6 @@ public class PreCacheJob {
             }
 
             // 写缓存, key 超时时间 = 15 小时 + 随机时间(分钟)
-            // todo 缓存问题
             String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, mainUser.getId());
             long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
             boolean result = RedisUtil.setValue(redisKey, cacheUserList, timeout, TimeUnit.MINUTES);
