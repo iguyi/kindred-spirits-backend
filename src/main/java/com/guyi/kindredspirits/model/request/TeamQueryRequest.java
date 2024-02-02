@@ -14,6 +14,7 @@ import java.io.Serializable;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class TeamQueryRequest extends PageRequest implements Serializable {
+
     /**
      * id
      */
@@ -54,5 +55,6 @@ public class TeamQueryRequest extends PageRequest implements Serializable {
      */
     private Integer status;
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -4532186854643391018L;
+
 }
