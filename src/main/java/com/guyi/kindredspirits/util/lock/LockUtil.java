@@ -26,12 +26,15 @@ public class LockUtil {
      * @param redissonClient - Redisson 客户端
      * @param callback       - 回调函数, 用于定义需要执行的任务
      */
-    public static void opsRedissonLock(String lockKey, long waitTime, long leaseTime, TimeUnit timeUnit,
-                                       RedissonClient redissonClient, LockCallback callback) {
+    public static <T> T opsRedissonLock(String lockKey, long waitTime, long leaseTime, TimeUnit timeUnit,
+                                       RedissonClient redissonClient, LockCallback<T> callback) {
+
+        T executeResult = null;
+
         RLock lock = redissonClient.getLock(lockKey);
         try {
             if (lock.tryLock(waitTime, leaseTime, timeUnit)) {
-                callback.execute();
+                executeResult = callback.execute();
             }
         } catch (InterruptedException e) {
             log.debug("{}#opsRedissonLock 发生异常, 异常信息如下: \n", LockUtil.class.getName(), e);
@@ -41,6 +44,7 @@ public class LockUtil {
                 lock.unlock();
             }
         }
+        return executeResult;
     }
 
 }
