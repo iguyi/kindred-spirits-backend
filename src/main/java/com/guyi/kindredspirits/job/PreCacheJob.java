@@ -60,7 +60,7 @@ public class PreCacheJob {
     /**
      * 缓存为人点用户推荐的用户
      */
-    private void cacheRecommendUser() {
+    private boolean cacheRecommendUser() {
         // 查询所有热点用户数据
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper
@@ -104,6 +104,7 @@ public class PreCacheJob {
                 log.error("缓存设置失败");
             }
         }
+        return true;
     }
 
 }
