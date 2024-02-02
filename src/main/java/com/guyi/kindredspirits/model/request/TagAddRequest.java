@@ -12,8 +12,6 @@ import java.io.Serializable;
 @Data
 public class TagAddRequest implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-
     /**
      * 标签名称
      */
@@ -43,5 +41,7 @@ public class TagAddRequest implements Serializable {
      * 父标签权值+自己的基本权值
      */
     private Integer weights;
+
+    private static final long serialVersionUID = -1524343094720502924L;
 
 }
