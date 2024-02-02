@@ -22,6 +22,6 @@ public class ChatHistoryRequest implements Serializable {
      */
     private Long teamId;
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -7425907527382387336L;
 
 }
