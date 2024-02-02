@@ -19,6 +19,11 @@ public interface RedisConstant {
     String RECOMMEND_KEY_PRE = "kindred-spirits:user:recommend:%s";
 
     /**
+     * 锁的 key 模板
+     */
+    String LOCK_KEY = "kindred-spirits:lock:%s:%s:%s";
+
+    /**
      * Redis 验证消息缓存的 key 模板
      */
     String MESSAGE_VERIFY_KEY_PRE = "kindred-spirits:message:verify:%s";
