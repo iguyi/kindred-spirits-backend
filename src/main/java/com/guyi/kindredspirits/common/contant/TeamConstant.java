@@ -1,7 +1,7 @@
 package com.guyi.kindredspirits.common.contant;
 
 /**
- * 队伍枚举类
+ * 队伍常量
  *
  * @author 孤诣
  */
