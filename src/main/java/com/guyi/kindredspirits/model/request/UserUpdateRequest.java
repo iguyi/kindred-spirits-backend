@@ -12,7 +12,7 @@ import java.io.Serializable;
 @Data
 public class UserUpdateRequest implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 4004273446337544931L;
 
     /**
      * id
