@@ -20,5 +20,6 @@ public class TeamMyQueryRequest extends PageRequest implements Serializable {
      */
     private Long id;
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -1633497805936992971L;
+
 }
