@@ -37,6 +37,6 @@ public class ChatRequest implements Serializable {
      */
     private Integer chatType;
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 6751692774436332096L;
 
 }
