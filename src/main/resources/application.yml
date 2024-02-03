@@ -30,6 +30,7 @@ spring:
     port: 6379
     host: localhost
     database: 6
+    password: ''
   mvc:
     pathmatch:
       matching-strategy: ANT_PATH_MATCHER
