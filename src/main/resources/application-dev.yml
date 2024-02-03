@@ -1,0 +1,28 @@
+server:
+  servlet:
+    session:
+      cookie:
+        domain: localhost  # 设置种 cookie 的范围
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: zsh654321
+    url: jdbc:mysql://localhost:3306/kindred-spirits?serverTimezone=Asia/Shanghai
+    hikari:
+      minimum-idle: 3
+      maximum-pool-size: 10
+      max-lifetime: 30000   #不能小于30秒，否则默认回到1800秒
+  # redis 配置
+  redis:
+    port: 6379
+    host: localhost
+    database: 6
+    password: ''
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 开启日志
+project:
+  userAvatarPath: D:\CodeRepository\project\kindred-spirits\kindred-spirits-frontend\public\avatar\user # 用户头像存放地址
+  teamAvatarPath: D:\CodeRepository\project\kindred-spirits\kindred-spirits-frontend\public\avatar\team # 队伍查询存放地址
+  urlPrefix: http://localhost:3000/public/avatar/ # 头像请求路径
