@@ -25,10 +25,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -137,14 +134,15 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
 
         // 查询我有交流过的队伍
         List<Long> teamIdList = exchangeTeam(loginUserId);
+        boolean teamIdListIsEmpty = CollectionUtils.isEmpty(teamIdList);
         QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
         teamQueryWrapper.select("id", "name", "avatarUrl").in("id", teamIdList);
-        List<Team> teamList = teamService.list(teamQueryWrapper);
+        List<Team> teamList = teamIdListIsEmpty ? Collections.emptyList() : teamService.list(teamQueryWrapper);
 
         // 获取和当前登录用户相关的所有聊天记录
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
         chatQueryWrapper.eq("senderId", loginUserId).or().eq("receiverId", loginUserId);
-        if (!CollectionUtils.isEmpty(teamIdList)) {
+        if (!teamIdListIsEmpty) {
             chatQueryWrapper.or().in("teamId", teamIdList);
         }
         List<Chat> chatList = this.list(chatQueryWrapper);
