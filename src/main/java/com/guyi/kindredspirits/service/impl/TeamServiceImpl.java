@@ -274,15 +274,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
         // 获取锁对象: 不同用户对有不同的 lock key, 保证不会阻塞其他用户对的请求
         final String lockKey = String.format(RedisConstant.LOCK_KEY, "team-service", "join-team", loginUserId);
-        int counter = 0;
-        Boolean result = null;
+        Boolean result = LockUtil.opsRedissonLockRetries(lockKey, 0, 30L, TimeUnit.SECONDS, redissonClient,
+                () -> createUserTeamRelational(teamJoinRequest, loginUserId, teamId));
 
-        // 限制重试次数, 防死锁
-        while (counter < 100) {
-            counter++;
-            result = LockUtil.opsRedissonLock(lockKey, 0, 30L, TimeUnit.SECONDS, redissonClient,
-                    () -> createUserTeamRelational(teamJoinRequest, loginUserId, teamId));
-        }
         if (!result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
         }
