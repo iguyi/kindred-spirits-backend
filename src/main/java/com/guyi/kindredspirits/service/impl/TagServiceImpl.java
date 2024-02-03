@@ -105,22 +105,12 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
         List<Tag> tagAll = tagMapper.selectList(tagQueryWrapper);
         Map<Long, List<Tag>> tagGroup = tagAll.stream()
                 .collect(Collectors.groupingBy(tag -> (tag.getIsParent().equals(1)) ? tag.getId() : tag.getParentId()));
-        List<List<TagVo>> resultList = new ArrayList<>();
-        tagGroup.forEach((key, value) -> {
-            List<TagVo> tempList = new ArrayList<>();
-            value.forEach(tag -> {
-                TagVo tagVo = new TagVo();
-                BeanUtils.copyProperties(tag, tagVo);
-                tempList.add(tagVo);
-            });
-            resultList.add(tempList);
-        });
-
-        return resultList;
+        return tagGroupFormat(tagGroup);
     }
 
     @Override
     public List<List<TagVo>> getTagGroup() {
+        // todo 缓存更新
         userService.getLoginUser();
 
         QueryWrapper<Tag> tagQueryWrapper = new QueryWrapper<>();
@@ -128,6 +118,16 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
         List<Tag> tagList = this.list(tagQueryWrapper);
         Map<Long, List<Tag>> simpleTagVoMap = tagList.stream()
                 .collect(Collectors.groupingBy(tag -> tag.getIsParent().equals(1) ? tag.getId() : tag.getParentId()));
+        return tagGroupFormat(simpleTagVoMap);
+    }
+
+    /**
+     * 将标签组进行格式化
+     *
+     * @param simpleTagVoMap - 按照父标签分组的标签数据
+     * @return 格式化后的标签组数据
+     */
+    private List<List<TagVo>> tagGroupFormat(Map<Long, List<Tag>> simpleTagVoMap) {
         List<List<TagVo>> resultList = new ArrayList<>();
         simpleTagVoMap.forEach((key, value) -> {
             List<TagVo> tempList = new ArrayList<>();
