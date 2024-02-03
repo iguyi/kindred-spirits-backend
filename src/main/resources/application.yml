@@ -2,48 +2,25 @@ server:
   port: 8080
   servlet:
     context-path: /kindredspirits
-    session:
-      cookie:
-        domain: localhost  # 设置种 cookie 的范围
 spring:
   profiles:
-    active: test
+    active: dev
   application:
     name: kindred-spirits-backend
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: zsh654321
-    url: jdbc:mysql://localhost:3306/kindred-spirits?serverTimezone=Asia/Shanghai
-    hikari:
-      minimum-idle: 3
-      maximum-pool-size: 10
-      max-lifetime: 30000   #不能小于30秒，否则默认回到1800秒
   session:
     timeout: 86400  # 分钟
     store-type: redis
   jackson:
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
-  # redis 配置
-  redis:
-    port: 6379
-    host: localhost
-    database: 6
-    password: ''
   mvc:
     pathmatch:
       matching-strategy: ANT_PATH_MATCHER
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false  # 关闭驼峰转下划线
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 开启日志
   global-config:
     db-config:
       logic-delete-field: isDelete # 全局逻辑删除的实体字段名(since 3.3.0,配置后可以忽略不配置步骤2)
       logic-delete-value: 1 # 逻辑已删除值(默认为 1)
       logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
-project:
-  userAvatarPath: D:\CodeRepository\project\kindred-spirits\kindred-spirits-frontend\public\avatar\user # 用户头像存放地址
-  teamAvatarPath: D:\CodeRepository\project\kindred-spirits\kindred-spirits-frontend\public\avatar\team # 队伍查询存放地址
-  urlPrefix: http://localhost:3000/public/avatar/ # 头像请求路径
