@@ -33,6 +33,11 @@ public class RedissonConfig {
      */
     private int database;
 
+    /**
+     * Redis 密码
+     */
+    private String password;
+
     @Bean
     public RedissonClient redissonClient() {
         // 创建配置对象
@@ -41,6 +46,10 @@ public class RedissonConfig {
         config.useSingleServer()
                 .setAddress(redisAddress)
                 .setDatabase(database);
+
+        if (!"".equals(password)) {
+            config.useSingleServer().setPassword(password);
+        }
 
         // 创建实例
         return Redisson.create(config);
