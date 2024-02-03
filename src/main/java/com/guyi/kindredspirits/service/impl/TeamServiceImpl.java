@@ -277,7 +277,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         Boolean result = LockUtil.opsRedissonLockRetries(lockKey, 0, 30L, TimeUnit.SECONDS, redissonClient,
                 () -> createUserTeamRelational(teamJoinRequest, loginUserId, teamId));
 
-        if (!result) {
+        if (result == null || !result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
         }
         return true;
