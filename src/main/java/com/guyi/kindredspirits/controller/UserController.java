@@ -46,9 +46,6 @@ public class UserController {
     @Resource
     private UserService userService;
 
-    @Resource
-    private HttpServletRequest httpServletRequest;
-
     /**
      * 注册用户
      *
@@ -56,7 +53,8 @@ public class UserController {
      * @return 新用户 id
      */
     @PostMapping("/register")
-    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
+    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest,
+                                           HttpServletRequest httpServletRequest) {
         if (userRegisterRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -128,9 +126,9 @@ public class UserController {
      * @return 符合要求的用户
      */
     @GetMapping("/search")
-    public BaseResponse<List<UserVo>> searchUser(String searchCondition) {
+    public BaseResponse<List<UserVo>> searchUser(String searchCondition, HttpServletRequest httpServletRequest) {
         // 用户是否登录
-        userService.getLoginUser();
+        userService.getLoginUser(httpServletRequest);
         List<User> userList = userService.searchUser(searchCondition);
         List<UserVo> result = userList.stream().map(user -> {
             user.setTags(userService.getTagListJson(user));
@@ -173,9 +171,9 @@ public class UserController {
      * @return 对应 id 的用户的响应信息
      */
     @GetMapping("/search/id")
-    public BaseResponse<UserVo> getUserById(Long id) {
+    public BaseResponse<UserVo> getUserById(Long id, HttpServletRequest httpServletRequest) {
         // 用户是否登录
-        userService.getLoginUser();
+        userService.getLoginUser(httpServletRequest);
         User user = userService.getById(id);
         user.setTags(userService.getTagListJson(user));
         UserVo res = new UserVo();
@@ -321,11 +319,13 @@ public class UserController {
      * @return 更新密码的结果
      */
     @PostMapping("/update/pwd")
-    public BaseResponse<Boolean> updatePwd(@RequestBody UpdatePwdRequest updatePwdRequest, HttpSession httpSession) {
+    public BaseResponse<Boolean> updatePwd(@RequestBody UpdatePwdRequest updatePwdRequest, HttpSession httpSession,
+                                           HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (updatePwdRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
-        Boolean result = userService.updatePwd(updatePwdRequest);
+        Boolean result = userService.updatePwd(loginUser, updatePwdRequest);
         if (!result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "密码修改失败");
         }
