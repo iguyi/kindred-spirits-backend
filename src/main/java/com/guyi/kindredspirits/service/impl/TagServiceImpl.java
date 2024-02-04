@@ -11,7 +11,6 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.TagAddRequest;
 import com.guyi.kindredspirits.model.vo.TagVo;
 import com.guyi.kindredspirits.service.TagService;
-import com.guyi.kindredspirits.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -33,9 +32,6 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
 
     @Resource
     private TagMapper tagMapper;
-
-    @Resource
-    private UserService userService;
 
     @Override
     public boolean addSingleTag(TagAddRequest tagSingle, User loginUser) {
@@ -111,8 +107,6 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
     @Override
     public List<List<TagVo>> getTagGroup() {
         // todo 缓存更新
-        userService.getLoginUser();
-
         QueryWrapper<Tag> tagQueryWrapper = new QueryWrapper<>();
         tagQueryWrapper.select("id", "tagName", "isParent", "parentId", "weights");
         List<Tag> tagList = this.list(tagQueryWrapper);
