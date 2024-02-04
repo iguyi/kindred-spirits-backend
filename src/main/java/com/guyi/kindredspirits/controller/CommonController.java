@@ -49,9 +49,6 @@ public class CommonController {
     private String urlPrefix;
 
     @Resource
-    private HttpServletRequest httpServletRequest;
-
-    @Resource
     private UserService userService;
 
     @Resource
@@ -64,11 +61,8 @@ public class CommonController {
      * @return 1-上传成功
      */
     @PostMapping("/avatar/user")
-    public BaseResponse<Integer> userAvatar(@RequestBody MultipartFile avatar) {
+    public BaseResponse<Integer> userAvatar(@RequestBody MultipartFile avatar, HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
-        if (loginUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
-        }
 
         try {
             // 写文件
@@ -100,8 +94,9 @@ public class CommonController {
      * @return 1-上传成功
      */
     @PostMapping("/avatar/team")
-    public BaseResponse<Integer> teamAvatar(@RequestBody MultipartFile avatar, Long teamId) {
-        User loginUser = userService.getLoginUser();
+    public BaseResponse<Integer> teamAvatar(@RequestBody MultipartFile avatar, Long teamId,
+                                            HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
 
         if (teamId == null || teamId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
