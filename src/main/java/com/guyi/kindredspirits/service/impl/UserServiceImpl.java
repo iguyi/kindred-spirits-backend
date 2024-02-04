@@ -44,8 +44,7 @@ import static com.guyi.kindredspirits.common.contant.BaseConstant.RETRIES_MAX_NU
  */
 @Service
 @Slf4j
-public class UserServiceImpl extends ServiceImpl<UserMapper, User>
-        implements UserService {
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     @Resource
     private UserMapper userMapper;
@@ -55,9 +54,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private RedissonClient redissonClient;
-
-    @Resource
-    private HttpServletRequest httpServletRequest;
 
     /**
      * 盐值，混淆密码
@@ -254,11 +250,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
     }
 
-    @Override
-    public User getLoginUser() {
-        return getLoginUser(this.httpServletRequest);
-    }
-
     /**
      * 从 Session 中获取当前登录用户信息, 并判断是否登录
      *
@@ -437,7 +428,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     public List<User> searchUser(String searchCondition) {
-        this.getLoginUser();
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper
                 .eq("id", searchCondition)
@@ -449,10 +439,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public Boolean updatePwd(UpdatePwdRequest updatePwdRequest) {
-        // 判断用户是否登录, 并获取登录用户数据
-        User loginUser = this.getLoginUser();
-
+    public Boolean updatePwd(User loginUser, UpdatePwdRequest updatePwdRequest) {
         if (updatePwdRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
