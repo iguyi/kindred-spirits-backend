@@ -110,34 +110,38 @@ public interface TeamService extends IService<Team> {
     /**
      * 查看自己队伍的详细信息
      *
-     * @param teamId - 队伍 id
+     * @param loginUser - 当前登录用户
+     * @param teamId    - 队伍 id
      * @return 队伍详细信息
      */
-    TeamAllVo checkTeam(Long teamId);
+    TeamAllVo checkTeam(User loginUser, Long teamId);
 
     /**
      * 将指定成员提出队伍
      *
+     * @param loginUser              - 当前登录用户
      * @param operationMemberRequest - 队长将成员踢出队伍请求封装类对象
      * @return 操作结果
      */
-    Boolean kickOut(OperationMemberRequest operationMemberRequest);
+    Boolean kickOut(User loginUser, OperationMemberRequest operationMemberRequest);
 
     /**
      * 队长位置转让
      *
+     * @param loginUser              - 当前登录用户
      * @param operationMemberRequest - 队长位置转让请求封装类
      * @return 操作结果
      */
-    Boolean abdicator(OperationMemberRequest operationMemberRequest);
+    Boolean abdicator(User loginUser, OperationMemberRequest operationMemberRequest);
 
     /**
      * 刷新入队链接
      *
-     * @param teamId - 队伍 id
+     * @param loginUser - 当前登录用户
+     * @param teamId    - 队伍 id
      * @return 队伍的新入队链接
      */
-    String refreshLink(Long teamId);
+    String refreshLink(User loginUser, Long teamId);
 
     /**
      * 根据队伍邀请码加入队伍

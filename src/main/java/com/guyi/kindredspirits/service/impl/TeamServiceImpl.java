@@ -433,7 +433,8 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         // 判断队伍是否存在
         Long teamId = teamDeleteRequest.getTeamId();
         Team team = getTeamById(teamId);
-        if (!loginUserId.equals(team.getLeaderId())) {  // 不是队长, 无权限
+        if (!loginUserId.equals(team.getLeaderId())) {
+            // 不是队长, 无权限
             throw new BusinessException(ErrorCode.NO_AUTH, "只有队长可以解散队伍");
         }
         // 删除队伍相关信息
@@ -532,7 +533,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Override
     public List<Team> searchTeam(String searchCondition) {
-        userService.getLoginUser();
         if (StringUtils.isBlank(searchCondition)) {
             throw new BusinessException(ErrorCode.NULL_ERROR, ErrorCode.NULL_ERROR.getMsg());
         }
@@ -549,11 +549,11 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     }
 
     @Override
-    public TeamAllVo checkTeam(Long teamId) {
+    public TeamAllVo checkTeam(User loginUser, Long teamId) {
         if (teamId == null || teamId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
-        User loginUser = userService.getLoginUser();
+
         Long loginUserId = loginUser.getId();
 
         // 查询该目标队伍的 "用户-队伍" 关系
@@ -605,9 +605,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Boolean kickOut(OperationMemberRequest operationMemberRequest) {
+    public Boolean kickOut(User loginUser, OperationMemberRequest operationMemberRequest) {
         // 校验
-        Team team = operationParamCheck(operationMemberRequest);
+        Team team = operationParamCheck(loginUser, operationMemberRequest);
         Long teamId = team.getId();
         Long memberId = operationMemberRequest.getMemberId();
 
@@ -630,9 +630,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     }
 
     @Override
-    public Boolean abdicator(OperationMemberRequest operationMemberRequest) {
+    public Boolean abdicator(User loginUser, OperationMemberRequest operationMemberRequest) {
         // 校验
-        Team team = operationParamCheck(operationMemberRequest);
+        Team team = operationParamCheck(loginUser, operationMemberRequest);
         Long memberId = operationMemberRequest.getMemberId();
 
         // 位置转让
@@ -641,13 +641,12 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     }
 
     @Override
-    public String refreshLink(Long teamId) {
+    public String refreshLink(User loginUser, Long teamId) {
         if (teamId == null || teamId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
 
         // 刷新入队链接者必须是队长
-        User loginUser = userService.getLoginUser();
         Long loginUserId = loginUser.getId();
         QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
         teamQueryWrapper.select("id", "teamLink").eq("id", teamId).eq("leaderId", loginUserId);
@@ -741,7 +740,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
      * @param operationMemberRequest - 队长操作队伍成员请求封装类对象
      * @return 队长、被操作队员的所在队伍
      */
-    private Team operationParamCheck(OperationMemberRequest operationMemberRequest) {
+    private Team operationParamCheck(User loginUser, OperationMemberRequest operationMemberRequest) {
         // 参数校验
         if (operationMemberRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
@@ -751,9 +750,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (memberId == null || teamId == null || memberId < 1 || teamId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
-
-        // 用户登录校验
-        User loginUser = userService.getLoginUser();
 
         // 查询队伍信息
         Team team = this.getById(teamId);

@@ -125,11 +125,12 @@ public class TempController {
      * @return 队伍详细信息
      */
     @GetMapping("/check")
-    public BaseResponse<TeamAllVo> checkTeam(Long teamId) {
+    public BaseResponse<TeamAllVo> checkTeam(Long teamId, HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (teamId == null || teamId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
-        return ResultUtils.success(teamService.checkTeam(teamId));
+        return ResultUtils.success(teamService.checkTeam(loginUser, teamId));
     }
 
     /**
@@ -296,11 +297,13 @@ public class TempController {
      * @return 操作结果
      */
     @PostMapping("/kick")
-    public BaseResponse<Boolean> kickOut(@RequestBody OperationMemberRequest operationMemberRequest) {
+    public BaseResponse<Boolean> kickOut(@RequestBody OperationMemberRequest operationMemberRequest,
+                                         HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (operationMemberRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
-        return ResultUtils.success(teamService.kickOut(operationMemberRequest));
+        return ResultUtils.success(teamService.kickOut(loginUser, operationMemberRequest));
     }
 
     /**
@@ -310,11 +313,13 @@ public class TempController {
      * @return 操作结果
      */
     @PostMapping("/abdicator")
-    public BaseResponse<Boolean> abdicator(@RequestBody OperationMemberRequest operationMemberRequest) {
+    public BaseResponse<Boolean> abdicator(@RequestBody OperationMemberRequest operationMemberRequest,
+                                           HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (operationMemberRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
-        return ResultUtils.success(teamService.abdicator(operationMemberRequest));
+        return ResultUtils.success(teamService.abdicator(loginUser, operationMemberRequest));
     }
 
     /**
@@ -324,11 +329,12 @@ public class TempController {
      * @return 队伍的新入队链接
      */
     @GetMapping("/link")
-    public BaseResponse<String> refreshLink(Long teamId) {
+    public BaseResponse<String> refreshLink(Long teamId, HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (teamId == null || teamId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
-        return ResultUtils.success(teamService.refreshLink(teamId));
+        return ResultUtils.success(teamService.refreshLink(loginUser, teamId));
     }
 
 }
