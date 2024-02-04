@@ -106,8 +106,8 @@ public class TempController {
      * @return 符合要求的队伍
      */
     @GetMapping("/search")
-    public BaseResponse<List<TeamVo>> searchTeam(String searchCondition) {
-        userService.getLoginUser();
+    public BaseResponse<List<TeamVo>> searchTeam(String searchCondition, HttpServletRequest httpServletRequest) {
+        userService.getLoginUser(httpServletRequest);
 
         List<Team> teamList = teamService.searchTeam(searchCondition);
         List<TeamVo> result = teamList.stream().map(team -> {
@@ -229,11 +229,14 @@ public class TempController {
      * @return true - 退出队伍成功; false - 退出队伍失败
      */
     @PostMapping("/quit")
-    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitOrDeleteRequest teamQuitRequest) {
+    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitOrDeleteRequest teamQuitRequest,
+                                          HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+
         if (teamQuitRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
-        User loginUser = userService.getLoginUser();
+
         boolean result = teamService.quitTeam(teamQuitRequest, loginUser);
         return ResultUtils.success(result);
     }
