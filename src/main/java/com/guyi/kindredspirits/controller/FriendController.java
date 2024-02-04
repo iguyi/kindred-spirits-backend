@@ -84,8 +84,8 @@ public class FriendController {
      * @return 好友列表
      */
     @GetMapping("/list")
-    public BaseResponse<List<UserVo>> getFriendList() {
-        User loginUser = userService.getLoginUser();
+    public BaseResponse<List<UserVo>> getFriendList(HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
