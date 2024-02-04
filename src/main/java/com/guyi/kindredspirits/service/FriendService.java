@@ -5,10 +5,9 @@ import com.guyi.kindredspirits.model.domain.Friend;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.MessageRequest;
 import com.guyi.kindredspirits.model.request.ProcessFriendApplyRequest;
-import com.guyi.kindredspirits.model.vo.FriendVo;
 import com.guyi.kindredspirits.model.request.UpdateRelationRequest;
+import com.guyi.kindredspirits.model.vo.FriendVo;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -21,10 +20,11 @@ public interface FriendService extends IService<Friend> {
     /**
      * 好友申请
      *
+     * @param loginUser      - 当前登录用户
      * @param messageRequest - 消息封装类: sender 向 receiver 进行好友申请
      * @return 好友申请的消息存储成功，返回 true; 否则, 返回 false
      */
-    Boolean applyFriend(MessageRequest messageRequest);
+    Boolean applyFriend(User loginUser, MessageRequest messageRequest);
 
     /**
      * 处理好友申请
@@ -46,19 +46,19 @@ public interface FriendService extends IService<Friend> {
     /**
      * 查看好友信息
      *
-     * @param friendId           - 好友 id
-     * @param httpServletRequest - 客户端请求
+     * @param loginUser - 当前登录用户
+     * @param friendId  - 好友 id
      * @return 对应好友信息
      */
-    FriendVo showFriend(Long friendId, HttpServletRequest httpServletRequest);
+    FriendVo showFriend(User loginUser, Long friendId);
 
     /**
      * 更新和好友的关系
      *
+     * @param loginUser             - 当前登录用户
      * @param updateRelationRequest - 更新好友状态请求封装
-     * @param httpServletRequest    - 客户端请求
      * @return 更新结果
      */
-    Boolean updateRelation(UpdateRelationRequest updateRelationRequest, HttpServletRequest httpServletRequest);
+    Boolean updateRelation(User loginUser, UpdateRelationRequest updateRelationRequest);
 
 }
