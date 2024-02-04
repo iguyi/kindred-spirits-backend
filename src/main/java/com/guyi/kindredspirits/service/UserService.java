@@ -79,13 +79,6 @@ public interface UserService extends IService<User> {
     /**
      * 从 Session 中获取当前登录用户信息, 并判断是否登录
      *
-     * @return 当前登录用户
-     */
-    User getLoginUser();
-
-    /**
-     * 从 Session 中获取当前登录用户信息, 并判断是否登录
-     *
      * @param httpServletRequest - httpServletRequest
      * @return 当前登录用户
      */
@@ -141,9 +134,10 @@ public interface UserService extends IService<User> {
     /**
      * 用户更新密码
      *
+     * @param loginUser        - 当前登录用户
      * @param updatePwdRequest - 请求封装类
      * @return 更新密码的结果
      */
-    Boolean updatePwd(UpdatePwdRequest updatePwdRequest);
+    Boolean updatePwd(User loginUser, UpdatePwdRequest updatePwdRequest);
 
 }
