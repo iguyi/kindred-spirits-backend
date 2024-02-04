@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,14 +45,11 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
     @Resource
     private FriendMapper friendMapper;
 
-    @Resource
-    private HttpServletRequest httpServletRequest;
-
     /**
      * sender 向 receiverId 进行好友申请
      */
     @Override
-    public Boolean applyFriend(MessageRequest messageRequest) {
+    public Boolean applyFriend(User loginUser, MessageRequest messageRequest) {
         // 校验接收者的 id 是否正确
         if (messageRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
@@ -61,12 +57,6 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         Long receiverId = messageRequest.getReceiverId();
         if (receiverId == null || receiverId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
-        }
-
-        // 消息发送者是否为当前登录用户
-        User loginUser = userService.getLoginUser(httpServletRequest);
-        if (loginUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
 
         Integer messageType = messageRequest.getMessageType();
@@ -85,7 +75,8 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
         Long loginUserId = loginUser.getId();
         friendQueryWrapper
-                .and(queryWrapper -> queryWrapper.eq("activeUserId", loginUserId)
+                .and(queryWrapper -> queryWrapper
+                        .eq("activeUserId", loginUserId)
                         .eq("passiveUserId", receiverId)
                         .or(wrapper -> wrapper
                                 .eq("activeUserId", receiverId)
@@ -229,8 +220,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
     }
 
     @Override
-    public FriendVo showFriend(Long friendId, HttpServletRequest httpServletRequest) {
-        User loginUser = userService.getLoginUser(httpServletRequest);
+    public FriendVo showFriend(User loginUser, Long friendId) {
         if (friendId == null || friendId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
@@ -238,7 +228,8 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         Long loginUserId = loginUser.getId();
         QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
         friendQueryWrapper
-                .eq("passiveUserId", loginUserId).eq("activeUserId", friendId)
+                .eq("passiveUserId", loginUserId)
+                .eq("activeUserId", friendId)
                 .or(queryWrapper -> queryWrapper
                         .eq("passiveUserId", friendId)
                         .eq("activeUserId", loginUserId)
@@ -262,7 +253,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
     }
 
     @Override
-    public Boolean updateRelation(UpdateRelationRequest updateRelationRequest, HttpServletRequest httpServletRequest) {
+    public Boolean updateRelation(User loginUser, UpdateRelationRequest updateRelationRequest) {
         if (updateRelationRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
@@ -274,7 +265,6 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
 
-        User loginUser = userService.getLoginUser(httpServletRequest);
         Long loginUserId = loginUser.getId();
 
         QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
