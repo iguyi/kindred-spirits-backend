@@ -24,7 +24,6 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,9 +34,6 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements ChatService {
-
-    @Resource
-    private HttpServletRequest httpServletRequest;
 
     @Resource
     private UserService userService;
@@ -67,19 +63,17 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
     }
 
     @Override
-    public List<ChatVo> getPrivateChat(ChatHistoryRequest chatHistoryRequest) {
+    public List<ChatVo> getPrivateChat(User loginUser, ChatHistoryRequest chatHistoryRequest) {
         // 完成参数校验并获取当前登录用户 id、好友 id
-        Long loginUserId = parameterValidation(chatHistoryRequest);
+        Long loginUserId = parameterValidation(loginUser, chatHistoryRequest);
         Long friendId = chatHistoryRequest.getFriendId();
 
         // 查询对应的聊天记
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
         chatQueryWrapper.and(privateChatQuery -> privateChatQuery
-                .eq("senderId", loginUserId)
-                .eq("receiverId", friendId)
+                .eq("senderId", loginUserId).eq("receiverId", friendId)
                 .or()
-                .eq("senderId", friendId)
-                .eq("receiverId", loginUserId)
+                .eq("senderId", friendId).eq("receiverId", loginUserId)
         ).eq("chatType", ChatTypeEnum.PRIVATE_CHAT.getType());
         List<Chat> chatList = this.list(chatQueryWrapper);
 
@@ -96,9 +90,9 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
     }
 
     @Override
-    public List<ChatVo> getTeamChat(ChatHistoryRequest chatHistoryRequest) {
+    public List<ChatVo> getTeamChat(User loginUser, ChatHistoryRequest chatHistoryRequest) {
         // 校验
-        parameterValidation(chatHistoryRequest);
+        parameterValidation(loginUser, chatHistoryRequest);
 
         // 获取队伍 id
         Long teamId = chatHistoryRequest.getTeamId();
@@ -122,9 +116,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
     }
 
     @Override
-    public List<ChatRoomVo> getChatRoomList() {
-        // 权限校验
-        User loginUser = userService.getLoginUser(httpServletRequest);
+    public List<ChatRoomVo> getChatRoomList(User loginUser) {
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
@@ -246,11 +238,11 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
     /**
      * 完成参数校验并获取登录用户 id
      *
+     * @param loginUser          - 当前登录用户
      * @param chatHistoryRequest - 获取聊天记录请求
      */
-    private Long parameterValidation(ChatHistoryRequest chatHistoryRequest) {
+    private Long parameterValidation(User loginUser, ChatHistoryRequest chatHistoryRequest) {
         // 登录用户消息校验
-        User loginUser = userService.getLoginUser(httpServletRequest);
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
