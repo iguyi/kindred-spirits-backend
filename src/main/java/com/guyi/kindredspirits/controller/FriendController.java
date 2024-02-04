@@ -42,11 +42,14 @@ public class FriendController {
      * @return 好友申请的消息存储成功，返回 true; 否则, 返回 false
      */
     @PostMapping("/apply")
-    public BaseResponse<Boolean> applyFriend(@RequestBody MessageRequest messageRequest) {
+    public BaseResponse<Boolean> applyFriend(@RequestBody MessageRequest messageRequest,
+                                             HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (messageRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
         }
-        Boolean result = friendService.applyFriend(messageRequest);
+
+        Boolean result = friendService.applyFriend(loginUser, messageRequest);
         if (result) {
             return ResultUtils.success(true);
         }
@@ -112,10 +115,12 @@ public class FriendController {
      */
     @GetMapping("/show")
     public BaseResponse<FriendVo> showFriend(Long friendId, HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+
         if (friendId == null || friendId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
-        return ResultUtils.success(friendService.showFriend(friendId, httpServletRequest));
+        return ResultUtils.success(friendService.showFriend(loginUser, friendId));
     }
 
     /**
@@ -128,10 +133,12 @@ public class FriendController {
     @PostMapping("/update/relation")
     public BaseResponse<Boolean> updateRelation(@RequestBody UpdateRelationRequest updateRelationRequest,
                                                 HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
+
         if (updateRelationRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
-        return ResultUtils.success(friendService.updateRelation(updateRelationRequest, httpServletRequest));
+        return ResultUtils.success(friendService.updateRelation(loginUser, updateRelationRequest));
     }
 
 }
