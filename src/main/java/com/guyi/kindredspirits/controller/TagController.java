@@ -110,7 +110,8 @@ public class TagController {
      * @return - 分组后的标签列表请求响应封装对象列表
      */
     @GetMapping("/simple/list")
-    public BaseResponse<List<List<TagVo>>> getTagGroup() {
+    public BaseResponse<List<List<TagVo>>> getTagGroup(HttpServletRequest httpServletRequest) {
+        userService.getLoginUser(httpServletRequest);
         return ResultUtils.success(tagService.getTagGroup());
     }
 
