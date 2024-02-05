@@ -130,6 +130,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         UserTeam userTeam = new UserTeam();
         userTeam.setUserId(userId);
         userTeam.setTeamId(teamId);
+        userTeam.setJoinTime(new Date());
         saveResult = userTeamService.save(userTeam);
         if (!saveResult) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍创建失败!");
