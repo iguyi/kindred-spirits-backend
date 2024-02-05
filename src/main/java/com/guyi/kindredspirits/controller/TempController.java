@@ -148,7 +148,6 @@ public class TempController {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
-        // todo 获取登录用户和判断是否是管理员冗余了
         User loginUser = userService.getLoginUser(httpServletRequest);
         Long loginUserId = loginUser.getId();
         boolean isAdmin = userService.isAdmin(httpServletRequest);
