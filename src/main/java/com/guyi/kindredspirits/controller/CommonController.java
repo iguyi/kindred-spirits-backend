@@ -82,6 +82,7 @@ public class CommonController {
 
             return ResultUtils.success(result);
         } catch (Exception e) {
+            log.error("用户头像上传错误\n", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
         }
     }
@@ -130,6 +131,7 @@ public class CommonController {
 
             return ResultUtils.success(1);
         } catch (Exception e) {
+            log.error("队伍头像上传错误\n", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
         }
     }
