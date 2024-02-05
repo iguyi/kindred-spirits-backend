@@ -17,6 +17,7 @@ import com.guyi.kindredspirits.model.request.UserRegisterRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.UserService;
+import com.guyi.kindredspirits.util.redis.RecreationCache;
 import com.guyi.kindredspirits.util.redis.RedisQueryReturn;
 import com.guyi.kindredspirits.util.redis.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -241,7 +242,6 @@ public class UserController {
     /**
      * 推荐相似用户
      * todo 暂时是随机返回, 缓存也需要分页查询
-     * todo 查询缓存后, 要判断数量对不对啊！
      * todo 排除已经是好友的用户
      *
      * @param pageSize           - 每页的数据量, >0
@@ -263,11 +263,32 @@ public class UserController {
         RedisQueryReturn<List<User>> redisQueryReturn = RedisUtil.getValue(redisKey, userListType);
         List<User> userList = redisQueryReturn.getData();
         if (userList != null) {
+            if (redisQueryReturn.isExpiration()) {
+                // 缓存数据过期, 重构缓存
+                RecreationCache.recreation(() -> {
+                    this.pageRecommends(pageSize, pageNum, loginUser, redisKey);
+                });
+            }
             // 数据存在缓存, 直接返回缓存中的数据
             return ResultUtils.success(userList);
         }
 
         // 缓存中不存在数据, 从数据查询数据, 并将其写入缓存
+        return ResultUtils.success(pageRecommends(pageSize, pageNum, loginUser, redisKey));
+    }
+
+    /**
+     * 从数据库中获取推荐相似用户数据, 并写入缓存
+     *
+     * @param pageSize  - 每页的数据量, >0
+     * @param pageNum   - 页码, >0
+     * @param loginUser - 当前登录用户
+     * @param redisKey  - Redis Key
+     * @return 和当前用户相似的用户
+     */
+    private List<User> pageRecommends(long pageSize, long pageNum, User loginUser, String redisKey) {
+        List<User> userList;
+        // 从数据查询数据
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         Page<User> userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
         userList = userPage.getRecords();
@@ -279,13 +300,13 @@ public class UserController {
                 })
                 .collect(Collectors.toList());
 
-        // 15 小时 + 随机时间
+        // 将数据写入缓存, 有效时间 15 小时 + 随机时间
         long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
         boolean result = RedisUtil.setValue(redisKey, userList, timeout, TimeUnit.MINUTES);
         if (!result) {
             log.error("缓存设置失败");
         }
-        return ResultUtils.success(userList);
+        return userList;
     }
 
     /**
