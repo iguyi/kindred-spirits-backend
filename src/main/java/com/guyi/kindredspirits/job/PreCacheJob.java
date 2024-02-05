@@ -73,9 +73,7 @@ public class PreCacheJob {
             userQueryWrapper = new QueryWrapper<>();
             userQueryWrapper
                     .select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone", "email")
-                    .ne("id", mainUser.getId())
-                    // todo IS NOT NULL 会一起索引失效问题
-                    .isNotNull("tags");
+                    .ne("id", mainUser.getId());
             List<User> userList = userService.list(userQueryWrapper);
 
             Map<String, List<Integer>> loginUserTagMap = userService.getTagWeightList(mainUser.getTags());
