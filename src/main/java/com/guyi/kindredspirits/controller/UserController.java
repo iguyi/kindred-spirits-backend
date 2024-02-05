@@ -128,14 +128,16 @@ public class UserController {
     @GetMapping("/search")
     public BaseResponse<List<UserVo>> searchUser(String searchCondition, HttpServletRequest httpServletRequest) {
         // 用户是否登录
-        userService.getLoginUser(httpServletRequest);
+        User loginUser = userService.getLoginUser(httpServletRequest);
         List<User> userList = userService.searchUser(searchCondition);
-        List<UserVo> result = userList.stream().map(user -> {
-            user.setTags(userService.getTagListJson(user));
-            UserVo userVo = new UserVo();
-            BeanUtils.copyProperties(user, userVo);
-            return userVo;
-        }).collect(Collectors.toList());
+        List<UserVo> result = userList.stream()
+                .filter(user -> !user.getId().equals(loginUser.getId()))
+                .map(user -> {
+                    user.setTags(userService.getTagListJson(user));
+                    UserVo userVo = new UserVo();
+                    BeanUtils.copyProperties(user, userVo);
+                    return userVo;
+                }).collect(Collectors.toList());
         return ResultUtils.success(result);
     }
 
