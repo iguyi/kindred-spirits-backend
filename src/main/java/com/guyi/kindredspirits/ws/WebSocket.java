@@ -25,6 +25,7 @@ import javax.servlet.http.HttpSession;
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -178,6 +179,8 @@ public class WebSocket {
                 SESSION_POOL.remove(userId);
                 WEB_SOCKETS.remove(this);
             }
+
+            session.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -422,6 +425,24 @@ public class WebSocket {
     @Resource
     public void setUserTeamService(UserTeamService userTeamService) {
         WebSocket.userTeamService = userTeamService;
+    }
+
+    /**
+     * 将队伍成员会话从指定队伍中移除
+     *
+     * @param teamId   - 队伍 id
+     * @param memberId - 队伍成员 id
+     */
+    public static void removeTeamMemberChatConnect(String teamId, String memberId) {
+        if (TEAM_SESSIONS.containsKey(teamId)) {
+            ConcurrentHashMap<String, WebSocket> teamSessions = TEAM_SESSIONS.get(teamId);
+            WebSocket removeWebSocket = teamSessions.remove(memberId);
+            try {
+                removeWebSocket.session.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 }
