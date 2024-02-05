@@ -290,7 +290,6 @@ public class UserController {
 
     /**
      * 获取最匹配的用户
-     * todo 排除自己
      * todo 排除已经是好友的用户
      *
      * @param num - 推荐的数量
