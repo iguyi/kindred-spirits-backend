@@ -1,17 +1,21 @@
 package com.guyi.kindredspirits.ws;
 
 import cn.hutool.json.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.guyi.kindredspirits.common.contant.BaseConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
 import com.guyi.kindredspirits.config.HttpSessionConfig;
 import com.guyi.kindredspirits.model.domain.Chat;
+import com.guyi.kindredspirits.model.domain.Friend;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.domain.UserTeam;
+import com.guyi.kindredspirits.model.enums.FriendRelationStatusEnum;
 import com.guyi.kindredspirits.model.request.ChatRequest;
 import com.guyi.kindredspirits.model.vo.ChatVo;
 import com.guyi.kindredspirits.model.vo.WebSocketVo;
 import com.guyi.kindredspirits.service.ChatService;
+import com.guyi.kindredspirits.service.FriendService;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.service.UserTeamService;
 import com.guyi.kindredspirits.util.JsonUtil;
@@ -87,6 +91,8 @@ public class WebSocket {
     private static final String ZERO_ID = "0";
 
     private static UserService userService;
+
+    private static FriendService friendService;
 
     private static ChatService chatService;
 
@@ -227,10 +233,26 @@ public class WebSocket {
                 return;
             }
 
-            // 获取消息接收者消息
+            // 获取消息接收者信息
             User receiverUser = userService.getById(receiverId);
             if (receiverUser == null) {
                 sendError(userId, "The target does not exist. ");
+            }
+
+            QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
+            friendQueryWrapper
+                    .eq("activeUserId", senderId).eq("passiveUserId", receiverId)
+                    .or()
+                    .eq("activeUserId", receiverId).eq("passiveUserId", senderId);
+            Friend friend = friendService.getOne(friendQueryWrapper);
+            if (friend == null) {
+                sendError(userId, "你们还未曾相识");
+                return;
+            }
+
+            if (friend.getRelationStatus() != FriendRelationStatusEnum.NORMAL.getValue()) {
+                sendError(userId, "好友关系已被解除");
+                return;
             }
 
             // 发送私聊消息
@@ -415,6 +437,11 @@ public class WebSocket {
     @Resource
     public void setUserService(UserService userService) {
         WebSocket.userService = userService;
+    }
+
+    @Resource
+    public void setFriendService(FriendService friendService) {
+        WebSocket.friendService = friendService;
     }
 
     @Resource
