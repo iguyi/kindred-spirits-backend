@@ -233,7 +233,7 @@ public class UserController {
         }
         List<User> userList = userService.searchUsersByTags(tagNameList);
         List<User> result = userList.stream()
-                .filter(user -> user.getId().equals(loginUser.getId()))
+                .filter(user -> !user.getId().equals(loginUser.getId()))
                 .collect(Collectors.toList());
         return ResultUtils.success(result);
     }
