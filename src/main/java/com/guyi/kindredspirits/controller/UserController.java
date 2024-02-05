@@ -243,7 +243,6 @@ public class UserController {
      * todo 暂时是随机返回, 缓存也需要分页查询
      * todo 查询缓存后, 要判断数量对不对啊！
      * todo 排除已经是好友的用户
-     * todo 排除自己
      *
      * @param pageSize           - 每页的数据量, >0
      * @param pageNum            - 页码, >0
@@ -272,10 +271,13 @@ public class UserController {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         Page<User> userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
         userList = userPage.getRecords();
-        userList = userList.stream().map(user -> {
-            user.setTags(userService.getTagListJson(user));
-            return userService.getSafetyUser(user);
-        }).collect(Collectors.toList());
+        userList = userList.stream()
+                .filter(user -> !user.getId().equals(loginUser.getId()))
+                .map(user -> {
+                    user.setTags(userService.getTagListJson(user));
+                    return userService.getSafetyUser(user);
+                })
+                .collect(Collectors.toList());
 
         // 15 小时 + 随机时间
         long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
