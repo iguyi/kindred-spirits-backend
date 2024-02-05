@@ -119,6 +119,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     //  将新用户的 userAccount 写入缓存
                     RedisUtil.setValue(RedisConstant.MAX_ID_USER_ACCOUNT_KEY, newUserAccountValue,
                             10L, TimeUnit.MINUTES);
+                    newUser = this.getById(newUser.getId());
+                    newUser = this.getSafetyUser(newUser);
                     return newUser;
                 }
             } catch (Exception e) {
