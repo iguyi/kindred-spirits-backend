@@ -220,16 +220,22 @@ public class UserController {
     /**
      * 根据标签查询用户
      *
-     * @param tagNameList - 用户标签列表
+     * @param tagNameList        - 用户标签列表
+     * @param httpServletRequest - 客户端请求
      * @return 符合要求的用户
      */
     @GetMapping("/search/tags")
-    public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList) {
+    public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList,
+                                                      HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
         List<User> userList = userService.searchUsersByTags(tagNameList);
-        return ResultUtils.success(userList);
+        List<User> result = userList.stream()
+                .filter(user -> user.getId().equals(loginUser.getId()))
+                .collect(Collectors.toList());
+        return ResultUtils.success(result);
     }
 
     /**
