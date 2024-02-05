@@ -22,6 +22,7 @@ import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.service.UserTeamService;
 import com.guyi.kindredspirits.util.EntityUtil;
 import com.guyi.kindredspirits.util.lock.LockUtil;
+import com.guyi.kindredspirits.ws.WebSocket;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -413,6 +414,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             team.setNum(num - 1);
             boolean updateResult = this.updateById(team);
             if (removeResult && updateResult) {
+                WebSocket.removeTeamMemberChatConnect(teamId.toString(), loginUserId.toString());
                 return true;
             }
 
