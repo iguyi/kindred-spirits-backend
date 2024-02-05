@@ -140,4 +140,14 @@ public interface UserService extends IService<User> {
      */
     Boolean updatePwd(User loginUser, UpdatePwdRequest updatePwdRequest);
 
+    /**
+     * 推荐相似用户
+     *
+     * @param pageSize  - 每页的数据量, >0
+     * @param pageNum   - 页码, >0
+     * @param loginUser - 当前登录用户
+     * @return 用户列表
+     */
+    List<User> recommends(long pageSize, long pageNum, User loginUser);
+
 }

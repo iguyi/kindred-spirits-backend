@@ -1,13 +1,9 @@
 package com.guyi.kindredspirits.controller;
 
-import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.google.gson.reflect.TypeToken;
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.ResultUtils;
-import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.User;
@@ -17,9 +13,6 @@ import com.guyi.kindredspirits.model.request.UserRegisterRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.UserService;
-import com.guyi.kindredspirits.util.redis.RecreationCache;
-import com.guyi.kindredspirits.util.redis.RedisQueryReturn;
-import com.guyi.kindredspirits.util.redis.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -29,9 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import java.lang.reflect.Type;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -246,7 +237,7 @@ public class UserController {
      *
      * @param pageSize           - 每页的数据量, >0
      * @param pageNum            - 页码, >0
-     * @param httpServletRequest - httpServletRequest
+     * @param httpServletRequest - 客户端请求
      * @return 和当前用户相似的用户
      */
     @GetMapping("/recommend")
@@ -257,56 +248,8 @@ public class UserController {
         }
 
         // 查询缓存
-        final String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, loginUser.getId());
-        Type userListType = new TypeToken<List<User>>() {
-        }.getType();
-        RedisQueryReturn<List<User>> redisQueryReturn = RedisUtil.getValue(redisKey, userListType);
-        List<User> userList = redisQueryReturn.getData();
-        if (userList != null) {
-            if (redisQueryReturn.isExpiration()) {
-                // 缓存数据过期, 重构缓存
-                RecreationCache.recreation(() -> {
-                    this.pageRecommends(pageSize, pageNum, loginUser, redisKey);
-                });
-            }
-            // 数据存在缓存, 直接返回缓存中的数据
-            return ResultUtils.success(userList);
-        }
-
-        // 缓存中不存在数据, 从数据查询数据, 并将其写入缓存
-        return ResultUtils.success(pageRecommends(pageSize, pageNum, loginUser, redisKey));
-    }
-
-    /**
-     * 从数据库中获取推荐相似用户数据, 并写入缓存
-     *
-     * @param pageSize  - 每页的数据量, >0
-     * @param pageNum   - 页码, >0
-     * @param loginUser - 当前登录用户
-     * @param redisKey  - Redis Key
-     * @return 和当前用户相似的用户
-     */
-    private List<User> pageRecommends(long pageSize, long pageNum, User loginUser, String redisKey) {
-        List<User> userList;
-        // 从数据查询数据
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        Page<User> userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
-        userList = userPage.getRecords();
-        userList = userList.stream()
-                .filter(user -> !user.getId().equals(loginUser.getId()))
-                .map(user -> {
-                    user.setTags(userService.getTagListJson(user));
-                    return userService.getSafetyUser(user);
-                })
-                .collect(Collectors.toList());
-
-        // 将数据写入缓存, 有效时间 15 小时 + 随机时间
-        long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
-        boolean result = RedisUtil.setValue(redisKey, userList, timeout, TimeUnit.MINUTES);
-        if (!result) {
-            log.error("缓存设置失败");
-        }
-        return userList;
+        List<User> result = userService.recommends(pageSize, pageNum, loginUser);
+        return ResultUtils.success(result);
     }
 
     /**

@@ -4,6 +4,7 @@ import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.reflect.TypeToken;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.contant.BaseConstant;
 import com.guyi.kindredspirits.common.contant.RedisConstant;
@@ -15,6 +16,7 @@ import com.guyi.kindredspirits.model.request.UpdatePwdRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.*;
+import com.guyi.kindredspirits.util.redis.RecreationCache;
 import com.guyi.kindredspirits.util.redis.RedisQueryReturn;
 import com.guyi.kindredspirits.util.redis.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -483,6 +486,59 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String encryptNewPwd = DigestUtils.md5DigestAsHex((SALT + newPwd).getBytes());
         user.setUserPassword(encryptNewPwd);
         return this.updateById(user);
+    }
+
+    @Override
+    public List<User> recommends(long pageSize, long pageNum, User loginUser) {
+        // 查询缓存
+        final String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, loginUser.getId());
+        Type userListType = new TypeToken<List<User>>() {
+        }.getType();
+        RedisQueryReturn<List<User>> redisQueryReturn = RedisUtil.getValue(redisKey, userListType);
+        List<User> userList = redisQueryReturn.getData();
+        if (userList != null) {
+            if (redisQueryReturn.isExpiration()) {
+                // 缓存数据过期, 重构缓存
+                RecreationCache.recreation(() -> {
+                    this.pageRecommends(pageSize, pageNum, loginUser, redisKey);
+                });
+            }
+            // 数据存在缓存, 直接返回缓存中的数据
+            return userList;
+        }
+        return this.pageRecommends(pageSize, pageNum, loginUser, redisKey);
+    }
+
+    /**
+     * 从数据库中获取推荐相似用户数据, 并写入缓存
+     *
+     * @param pageSize  - 每页的数据量, >0
+     * @param pageNum   - 页码, >0
+     * @param loginUser - 当前登录用户
+     * @param redisKey  - Redis Key
+     * @return 和当前用户相似的用户
+     */
+    private List<User> pageRecommends(long pageSize, long pageNum, User loginUser, String redisKey) {
+        List<User> userList;
+        // 从数据查询数据
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        Page<User> userPage = this.page(new Page<>(pageNum, pageSize), queryWrapper);
+        userList = userPage.getRecords();
+        userList = userList.stream()
+                .filter(user -> !user.getId().equals(loginUser.getId()))
+                .map(user -> {
+                    user.setTags(this.getTagListJson(user));
+                    return this.getSafetyUser(user);
+                })
+                .collect(Collectors.toList());
+
+        // 将数据写入缓存, 有效时间 15 小时 + 随机时间
+        long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
+        boolean result = RedisUtil.setValue(redisKey, userList, timeout, TimeUnit.MINUTES);
+        if (!result) {
+            log.error("缓存设置失败");
+        }
+        return userList;
     }
 
 }
