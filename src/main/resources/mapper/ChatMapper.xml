@@ -23,4 +23,7 @@
         chatType,createTime,updateTime,
         isDelete
     </sql>
+    <select id="countByTeamId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM chat WHERE `teamId`=#{teamId};
+    </select>
 </mapper>
