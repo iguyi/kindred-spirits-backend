@@ -7,7 +7,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
+import com.guyi.kindredspirits.mapper.ChatMapper;
 import com.guyi.kindredspirits.mapper.TeamMapper;
+import com.guyi.kindredspirits.model.domain.Chat;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.domain.UserTeam;
@@ -57,6 +59,12 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Resource
     private RedissonClient redissonClient;
+
+    /**
+     * 不使用 ChatService 是为了避免循环依赖
+     */
+    @Resource
+    private ChatMapper chatMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -386,18 +394,8 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         // 队伍人数校验
         Integer num = team.getNum();
         if (num == 1) {
-            // 队伍只有 1 人, 删除队伍相关信息
-            boolean removeTeamResult = this.removeById(teamId);
-            if (!removeTeamResult) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
-            }
-            userTeamQueryWrapper = new QueryWrapper<>();
-            userTeamQueryWrapper.eq("teamId", teamId);
-            boolean removeUserTeamResult = userTeamService.remove(userTeamQueryWrapper);
-            if (!removeUserTeamResult) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
-            }
-            return true;
+            // 队伍只有 1 人, 解散队伍
+            return clearTeamByTeamId(teamId);
         } else {
             if (loginUserId.equals(team.getLeaderId())) {
                 // 队长不能退出
@@ -440,15 +438,35 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             // 不是队长, 无权限
             throw new BusinessException(ErrorCode.NO_AUTH, "只有队长可以解散队伍");
         }
-        // 删除队伍相关信息
+        // 清理队伍信息
+        return clearTeamByTeamId(teamId);
+    }
+
+    /**
+     * 根据队伍 id 清理和该队伍相关的信息
+     *
+     * @param teamId - 队伍 id
+     * @return true: 成功清理
+     */
+    private boolean clearTeamByTeamId(Long teamId) {
+        // 移除队伍
         boolean removeTeamResult = this.removeById(teamId);
         if (!removeTeamResult) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
         }
+        // 移除 "用户-队伍" 关系
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
         userTeamQueryWrapper.eq("teamId", teamId);
-        boolean removeUserTeamResult = userTeamService.removeById(userTeamQueryWrapper);
+        boolean removeUserTeamResult = userTeamService.remove(userTeamQueryWrapper);
         if (!removeUserTeamResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
+        }
+        // 移除聊天记录
+        QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
+        chatQueryWrapper.eq("teamId", teamId);
+        int count = chatMapper.countByTeamId(teamId);
+        int deleteNum = chatMapper.delete(chatQueryWrapper);
+        if (count != deleteNum) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "退出失败");
         }
         return true;
