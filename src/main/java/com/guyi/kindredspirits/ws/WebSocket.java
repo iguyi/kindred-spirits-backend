@@ -237,6 +237,7 @@ public class WebSocket {
             User receiverUser = userService.getById(receiverId);
             if (receiverUser == null) {
                 sendError(userId, "The target does not exist. ");
+                return;
             }
 
             QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
