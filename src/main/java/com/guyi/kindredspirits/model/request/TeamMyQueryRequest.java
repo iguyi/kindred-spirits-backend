@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 import java.io.Serializable;
 
 /**
- * 查询我管理的队伍请求封装类
+ * 查询我加入 / 我管理的队伍请求参数封装类
  *
  * @author 孤诣
  */
