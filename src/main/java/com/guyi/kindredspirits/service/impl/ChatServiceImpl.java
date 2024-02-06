@@ -43,6 +43,12 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
     @Resource
     private TeamService teamService;
 
+    /**
+     * id 列表对应的 Type 对象, 用于将 JSON 格式的 id 列表转为泛型为 Long 的 List
+     */
+    private static final Type ID_LIST_TYPE = new TypeToken<List<Long>>() {
+    }.getType();
+
     @Override
     public ChatVo getChatVo(User senderUser, User receiverUser, String chatContent, ChatTypeEnum chatTypeEnum) {
         WebSocketVo senderUserLogo = new WebSocketVo();
@@ -103,13 +109,21 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
         chatQueryWrapper.eq("teamId", teamId).eq("chatType", ChatTypeEnum.GROUP_CHAT.getType());
         List<Chat> chatList = this.list(chatQueryWrapper);
-        List<ChatVo> chatVoList = chatList.stream().map(chat -> {
-            User senderUser = userService.getById(chat.getSenderId());
-            User receiverUser = userService.getById(chat.getReceiverId());
-            ChatVo chatVo = getChatVo(senderUser, receiverUser, chat.getChatContent(), ChatTypeEnum.GROUP_CHAT);
-            chatVo.setSendTime(DateUtil.format(chat.getCreateTime(), "yyyy-MM-dd HH:mm:ss"));
-            return chatVo;
-        }).collect(Collectors.toList());
+        List<ChatVo> chatVoList = chatList.stream()
+                .filter(chat -> {
+                    // 过滤不该当前用户接收的的消息
+                    String jsonReceiverIds = chat.getReceiverIds();
+                    List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, ID_LIST_TYPE);
+                    return listReceiverIds.contains(loginUser.getId());
+                })
+                .map(chat -> {
+                    User senderUser = userService.getById(chat.getSenderId());
+                    User receiverUser = userService.getById(chat.getReceiverId());
+                    ChatVo chatVo = getChatVo(senderUser, receiverUser, chat.getChatContent(), ChatTypeEnum.GROUP_CHAT);
+                    chatVo.setSendTime(DateUtil.format(chat.getCreateTime(), "yyyy-MM-dd HH:mm:ss"));
+                    return chatVo;
+                })
+                .collect(Collectors.toList());
 
         // todo 建立缓存
         log.debug("等待建立缓存");
@@ -221,12 +235,10 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
 
         // 过滤不该当前用户接收的的消息
         Map<Long, List<Chat>> validChatGroup = new HashMap<>(chatGroup.size());
-        Type idListType = new TypeToken<List<Long>>() {
-        }.getType();
         chatGroup.forEach((key, value) -> {
             List<Chat> chats = value.stream().filter(chat -> {
                 String jsonReceiverIds = chat.getReceiverIds();
-                List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, idListType);
+                List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, ID_LIST_TYPE);
                 return listReceiverIds.contains(userId);
             }).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(chats)) {
