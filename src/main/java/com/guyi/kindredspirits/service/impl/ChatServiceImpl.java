@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.reflect.TypeToken;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
 import com.guyi.kindredspirits.exception.BusinessException;
@@ -18,12 +19,13 @@ import com.guyi.kindredspirits.model.vo.WebSocketVo;
 import com.guyi.kindredspirits.service.ChatService;
 import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
+import com.guyi.kindredspirits.util.JsonUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -123,83 +125,66 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
 
         // 获取用户 id
         Long loginUserId = loginUser.getId();
+        List<ChatRoomVo> privateChatRoomVoList = listPrivateChatRoomVos(loginUserId);
+        List<ChatRoomVo> teamChatRoomVoList = listTeamChatRoomVos(loginUserId);
 
-        // 查询我有交流过的队伍
-        List<Long> teamIdList = exchangeTeam(loginUserId);
-        boolean teamIdListIsEmpty = CollectionUtils.isEmpty(teamIdList);
-        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
-        teamQueryWrapper.select("id", "name", "avatarUrl").in("id", teamIdList);
-        List<Team> teamList = teamIdListIsEmpty ? Collections.emptyList() : teamService.list(teamQueryWrapper);
+        // 整合返回结果
+        List<ChatRoomVo> chatRoomVoList = new ArrayList<>();
+        chatRoomVoList.addAll(privateChatRoomVoList);
+        chatRoomVoList.addAll(teamChatRoomVoList);
+        sortChatRoomList(chatRoomVoList);
+        String nowDate = DateUtil.format(new Date(), "yy-MM-dd");
+        chatRoomVoList.forEach(chatRoomVo -> chatRoomVo.setSendTime(timeFormat(chatRoomVo.getSendTime(), nowDate)));
+        return chatRoomVoList;
+    }
 
-        // 获取和当前登录用户相关的所有聊天记录
+    /**
+     * 获取指定用户的历史私聊会话列表
+     *
+     * @param userId - 用户 id
+     * @return 私聊会话封装对象列表
+     */
+    private List<ChatRoomVo> listPrivateChatRoomVos(Long userId) {
+        // 查询与我相关的私聊消息
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
-        chatQueryWrapper.eq("senderId", loginUserId).or().eq("receiverId", loginUserId);
-        if (!teamIdListIsEmpty) {
-            chatQueryWrapper.or().in("teamId", teamIdList);
-        }
+        chatQueryWrapper
+                .and(queryWrapper -> queryWrapper.eq("senderId", userId).or().eq("receiverId", userId))
+                .isNull("teamId");
         List<Chat> chatList = this.list(chatQueryWrapper);
 
-        // 将聊天记录按照好友 id 或者队伍 id 进行分组
-        Map<Pair<Long, Integer>, List<Chat>> chatGroup = chatList.stream().collect(Collectors.groupingBy(chat -> {
-            if (chat.getTeamId() != null) {
-                return Pair.of(chat.getTeamId(), ChatTypeEnum.GROUP_CHAT.getType());
-            }
+        if (CollectionUtils.isEmpty(chatList)) {
+            // 没有私聊的消息
+            return Collections.emptyList();
+        }
 
+        // 按照好友 id 对私聊消息分组
+        Map<Long, List<Chat>> chatGroup = chatList.stream().collect(Collectors.groupingBy(chat -> {
             Long senderId = chat.getSenderId();
-            if (loginUserId.equals(senderId)) {
-                return Pair.of(chat.getReceiverId(), ChatTypeEnum.PRIVATE_CHAT.getType());
-            }
-            return Pair.of(chat.getSenderId(), ChatTypeEnum.PRIVATE_CHAT.getType());
+            return Objects.equals(senderId, userId) ? chat.getReceiverId() : senderId;
         }));
 
-        // 有聊天记录的好友的 id
-        List<Long> hasChatFriendIdList = new ArrayList<>();
-        chatGroup.forEach((key, value) -> {
-            if (ChatTypeEnum.PRIVATE_CHAT.getType().equals(key.getSecond())) {
-                hasChatFriendIdList.add(key.getFirst());
-            }
-        });
-
-        // 查询有聊天记录的好友的信息
+        // 查询好友信息
+        Set<Long> friendIdSet = chatGroup.keySet();
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        if (!CollectionUtils.isEmpty(hasChatFriendIdList)) {
-            userQueryWrapper.select("id", "username", "avatarUrl");
-            userQueryWrapper.in("id", hasChatFriendIdList);
-        } else {
-            userQueryWrapper.eq("id", 0);
-        }
-        final List<User> hasChatFriendList = userService.list(userQueryWrapper);
+        userQueryWrapper
+                .select("id", "username", "avatarUrl")
+                .in("id", friendIdSet);
+        List<User> friendList
+                = CollectionUtils.isEmpty(friendIdSet) ? Collections.emptyList() : userService.list(userQueryWrapper);
 
         // 整合返回结果
         List<ChatRoomVo> chatRoomVoList = new ArrayList<>();
         chatGroup.forEach((key, value) -> {
             ChatRoomVo chatRoomVo = new ChatRoomVo();
-
-            Long senderObjectId = key.getFirst();
-            chatRoomVo.setReceiverId(senderObjectId);
-
-            // 判断聊天记录类型是否为队伍聊天
-            boolean isTeamChat = (ChatTypeEnum.GROUP_CHAT.getType().equals(key.getSecond()));
-            if (isTeamChat) {
-                teamList.forEach(team -> {
-                    if (team.getId().equals(senderObjectId)) {
-                        chatRoomVo.setAvatarUrl(team.getAvatarUrl());
-                        chatRoomVo.setReceiverName(team.getName());
-                    }
-                });
-                chatRoomVo.setChatType(ChatTypeEnum.GROUP_CHAT.getType());
-            } else {
-                // 私聊
-                for (User friend : hasChatFriendList) {
-                    if (friend.getId().equals(senderObjectId)) {
-                        chatRoomVo.setAvatarUrl(friend.getAvatarUrl());
-                        chatRoomVo.setReceiverName(friend.getUsername());
-                        break;
-                    }
+            chatRoomVo.setReceiverId(key);
+            for (User friend : friendList) {
+                if (friend.getId().equals(key)) {
+                    chatRoomVo.setAvatarUrl(friend.getAvatarUrl());
+                    chatRoomVo.setReceiverName(friend.getUsername());
+                    break;
                 }
-                chatRoomVo.setChatType(ChatTypeEnum.PRIVATE_CHAT.getType());
             }
-
+            chatRoomVo.setChatType(ChatTypeEnum.PRIVATE_CHAT.getType());
             // 获取最后一条聊天记录
             Chat lastChat = value.get(value.size() - 1);
             chatRoomVo.setLastRecord(lastChat.getChatContent());
@@ -208,31 +193,78 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             chatRoomVo.setSendTime(sendDateAndTime);
             chatRoomVoList.add(chatRoomVo);
         });
-        sortChatRoomList(chatRoomVoList);
-        String nowDate = DateUtil.format(new Date(), "yy-MM-dd");
-        chatRoomVoList.forEach(chatRoomVo -> chatRoomVo.setSendTime(timeFormat(chatRoomVo.getSendTime(), nowDate)));
         return chatRoomVoList;
     }
 
     /**
-     * 获取所有与 userId 对应用户进行交流过的队伍的 id
-     * - userId 在该队伍接收过消息
-     * - userId 在该队伍发送过消息
+     * 获取指定用户的队伍会话列表
      *
      * @param userId - 用户 id
-     * @return 队伍 id 列表
+     * @return 队伍会话封装对象列表
      */
-    private List<Long> exchangeTeam(Long userId) {
+    private List<ChatRoomVo> listTeamChatRoomVos(Long userId) {
+        // 查询与我有关的队伍聊天记录
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
         chatQueryWrapper
-                .select("teamId")
-                .and(queryWrapper -> queryWrapper
-                        .eq("senderId", userId)
-                        .or().eq("receiverId", userId)
-                )
-                .isNotNull("teamId");
+                .select("id", "senderId", "teamId", "receiverIds", "chatContent", "createTime")
+                .like("receiverIds", userId);
         List<Chat> chatList = this.list(chatQueryWrapper);
-        return chatList.stream().map(Chat::getTeamId).distinct().collect(Collectors.toList());
+
+        if (CollectionUtils.isEmpty(chatList)) {
+            // 没有队伍的消息
+            return Collections.emptyList();
+        }
+
+        // 按照队伍 id 对队伍消息分组
+        Map<Long, List<Chat>> chatGroup = chatList.stream().collect(Collectors.groupingBy(Chat::getTeamId));
+        chatGroup.remove(null);
+
+        // 过滤不该当前用户接收的的消息
+        Map<Long, List<Chat>> validChatGroup = new HashMap<>(chatGroup.size());
+        Type idListType = new TypeToken<List<Long>>() {
+        }.getType();
+        chatGroup.forEach((key, value) -> {
+            List<Chat> chats = value.stream().filter(chat -> {
+                String jsonReceiverIds = chat.getReceiverIds();
+                List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, idListType);
+                return listReceiverIds.contains(userId);
+            }).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(chats)) {
+                validChatGroup.put(key, chats);
+            }
+        });
+
+        // 查询相关队伍信息
+        Set<Long> teamIdSet = validChatGroup.keySet();
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
+        teamQueryWrapper
+                .select("id", "name", "avatarUrl")
+                .in("id", teamIdSet);
+        List<Team> teamList
+                = CollectionUtils.isEmpty(teamIdSet) ? Collections.emptyList() : teamService.list(teamQueryWrapper);
+
+        // 整合返回结果
+        List<ChatRoomVo> chatRoomVoList = new ArrayList<>();
+        chatGroup.forEach((key, value) -> {
+            ChatRoomVo chatRoomVo = new ChatRoomVo();
+            chatRoomVo.setReceiverId(key);
+            for (Team team : teamList) {
+                if (Objects.equals(team.getId(), key)) {
+                    chatRoomVo.setAvatarUrl(team.getAvatarUrl());
+                    chatRoomVo.setReceiverName(team.getName());
+                    break;
+                }
+            }
+            chatRoomVo.setChatType(ChatTypeEnum.GROUP_CHAT.getType());
+            // 获取最后一条聊天记录
+            Chat lastChat = value.get(value.size() - 1);
+            chatRoomVo.setLastRecord(lastChat.getChatContent());
+            // 获取消息发送的日期、时间信息
+            String sendDateAndTime = DateUtil.format(lastChat.getCreateTime(), "yy-MM-dd HH:mm:ss");
+            chatRoomVo.setSendTime(sendDateAndTime);
+            chatRoomVoList.add(chatRoomVo);
+        });
+        return chatRoomVoList;
     }
 
     /**
