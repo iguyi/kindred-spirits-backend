@@ -503,20 +503,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Override
     public List<Team> listMyLeaderTeams(TeamMyQueryRequest teamMyQuery, User loginUser) {
-        if (teamMyQuery == null) {
-            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
-        }
-        if (loginUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
-        }
-        Long leaderId = teamMyQuery.getId();
-        Long loginUserId = loginUser.getId();
-        if (leaderId == null || leaderId <= 0 || loginUserId == null || loginUserId <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
-        }
-        if (!leaderId.equals(loginUserId)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
-        }
+        Long leaderId = teamMyQueryRequestParamsValid(teamMyQuery, loginUser);
         QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
         teamQueryWrapper.eq("leaderId", leaderId);
         return this.list(teamQueryWrapper);
@@ -524,6 +511,31 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Override
     public List<Team> listMyJoinTeams(TeamMyQueryRequest teamMyQuery, User loginUser) {
+        Long userId = teamMyQueryRequestParamsValid(teamMyQuery, loginUser);
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("userId", userId);
+        List<UserTeam> list = userTeamService.list(userTeamQueryWrapper);
+        if (CollectionUtils.isEmpty(list)) {
+            return new ArrayList<>();
+        }
+        // 去重
+        Map<Long, List<UserTeam>> tempResult = list.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+        ArrayList<Long> teamIdList = new ArrayList<>(tempResult.keySet());
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
+        teamQueryWrapper.in("id", teamIdList);
+        return this.list(teamQueryWrapper);
+    }
+
+    /**
+     * 判断 查询我加入/我管理的队伍请求 的参数是否正确: <br/>
+     * - 如果正确, 返回当前登录用户的 id. <br/>
+     * - 如果错误, 抛异常. <br/>
+     *
+     * @param teamMyQuery - 查询我加入/我管理队伍请求封装
+     * @param loginUser   - 当前登录用户
+     * @return 当前登录用户的 id
+     */
+    private Long teamMyQueryRequestParamsValid(TeamMyQueryRequest teamMyQuery, User loginUser) {
         if (teamMyQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
@@ -538,18 +550,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (!userId.equals(loginUserId)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
-        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
-        userTeamQueryWrapper.eq("userId", userId);
-        List<UserTeam> list = userTeamService.list(userTeamQueryWrapper);
-        if (CollectionUtils.isEmpty(list)) {
-            return new ArrayList<>();
-        }
-        // 去重
-        Map<Long, List<UserTeam>> tempResult = list.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
-        ArrayList<Long> teamIdList = new ArrayList<>(tempResult.keySet());
-        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
-        teamQueryWrapper.in("id", teamIdList);
-        return this.list(teamQueryWrapper);
+        return userId;
     }
 
     @Override
