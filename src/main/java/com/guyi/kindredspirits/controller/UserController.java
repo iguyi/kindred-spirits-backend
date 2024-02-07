@@ -103,10 +103,7 @@ public class UserController {
         if (currentUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN);
         }
-        Long id = currentUser.getId();
-        // TODO 校验是否合法
-        User user = userService.getById(id);
-        User safetyUser = userService.getSafetyUser(user);
+        User safetyUser = userService.getSafetyUser(currentUser);
         safetyUser.setTags(userService.getTagListJson(safetyUser));
         return ResultUtils.success(safetyUser);
     }
