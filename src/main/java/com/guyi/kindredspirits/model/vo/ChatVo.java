@@ -37,10 +37,10 @@ public class ChatVo {
 
     /**
      * 错误响应标识
-     * 0 - 正确响应的消息
-     * 1- 错误响应的消息
+     * false - 正确响应的消息
+     * true- 错误响应的消息
      */
-    private Integer errorFlag;
+    private Boolean errorFlag;
 
     /**
      * 发送时间, 格式为: yyyy-MM-dd HH:mm:ss
