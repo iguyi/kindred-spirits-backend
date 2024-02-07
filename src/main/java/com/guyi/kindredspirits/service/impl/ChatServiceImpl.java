@@ -230,7 +230,14 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         }
 
         // 按照队伍 id 对队伍消息分组
-        Map<Long, List<Chat>> chatGroup = chatList.stream().collect(Collectors.groupingBy(Chat::getTeamId));
+        Map<Long, List<Chat>> chatGroup = chatList.stream()
+                .filter(chat -> {
+                    // 前面使用模糊查询, 因此这里需要过滤调其他队伍的消息
+                    String jsonReceiverIds = chat.getReceiverIds();
+                    List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, ID_LIST_TYPE);
+                    return listReceiverIds.contains(userId);
+                })
+                .collect(Collectors.groupingBy(Chat::getTeamId));
         chatGroup.remove(null);
 
         // 过滤不该当前用户接收的的消息
