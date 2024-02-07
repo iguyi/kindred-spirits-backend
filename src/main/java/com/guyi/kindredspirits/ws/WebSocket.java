@@ -1,6 +1,5 @@
 package com.guyi.kindredspirits.ws;
 
-import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.guyi.kindredspirits.common.contant.BaseConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
@@ -202,7 +201,11 @@ public class WebSocket {
     public void onMessage(@PathParam("userId") String userId, String message) {
         if (BaseConstant.HEARTBEAT_PING.equals(message)) {
             // 心跳检测
-            sendOneMessage(userId, BaseConstant.HEARTBEAT_PONG);
+            ChatVo chatVo = new ChatVo();
+            chatVo.setChatContent(BaseConstant.HEARTBEAT_PONG);
+            // 心跳检测的类型一律是私聊, 因为是针对具体的某个用户的 WebSocket 连接
+            chatVo.setChatType(ChatTypeEnum.PRIVATE_CHAT.getType());
+            sendOneMessage(userId, JsonUtil.G.toJson(chatVo));
             return;
         }
 
@@ -263,7 +266,6 @@ public class WebSocket {
 
         if (ChatTypeEnum.GROUP_CHAT.getType().equals(chatType) && !ZERO_ID.equals(teamId.toString())) {
             // 队伍聊天
-
             // 判断用户是否在队伍内
             Long teamId = chatRequest.getTeamId();
             if (invalidId(String.valueOf(teamId)) || !userTeamService.correlation(Long.valueOf(userId), teamId)) {
@@ -416,10 +418,13 @@ public class WebSocket {
      */
     private void sendError(String receiverId, String errorTip) {
         log.error(errorTip);
-
-        JSONObject obj = new JSONObject();
-        obj.set("error", errorTip);
-        sendOneMessage(receiverId, obj.toString());
+        ChatVo chatVo = new ChatVo();
+        chatVo.setErrorFlag(true);
+        chatVo.setChatContent(errorTip);
+        // 发送错误通知消息, 一律是私聊, 因为只要告知某个发送消息失败的用户即可
+        chatVo.setChatType(ChatTypeEnum.PRIVATE_CHAT.getType());
+        String result = JsonUtil.G.toJson(chatVo);
+        sendOneMessage(receiverId, result);
     }
 
     /**
