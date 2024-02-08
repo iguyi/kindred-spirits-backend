@@ -54,8 +54,9 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         WebSocketVo senderUserLogo = new WebSocketVo();
         BeanUtils.copyProperties(senderUser, senderUserLogo);
 
-        WebSocketVo receiverUserLogo = new WebSocketVo();
+        WebSocketVo receiverUserLogo = null;
         if (receiverUser != null) {
+            receiverUserLogo = new WebSocketVo();
             BeanUtils.copyProperties(receiverUser, receiverUserLogo);
         }
 
@@ -90,21 +91,22 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         List<Chat> chatList = this.list(chatQueryWrapper);
 
         // 查询好友数据
-        User friend = userService.getById(friendId);
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.select("id", "userAccount", "username", "avatarUrl").eq("id", friendId);
+        User friend = userService.getOne(userQueryWrapper);
 
-        List<ChatVo> chatVoList = chatList.stream()
+        List<ChatVo> chatVoList = chatList.stream().sorted(
                 // 根据 id 进行排序, 避免因为使用二级索引带来的聊天记录顺序问题
-                .sorted((chat1, chat2) -> Math.toIntExact(chat1.getId() - chat2.getId()))
-                .map(chat -> {
-                    // 整合响应数据
-                    if (Objects.equals(chat.getSenderId(), loginUserId)) {
-                        // 消息发送者是当前用户
-                        return getChatVo(loginUser, friend, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
-                    }
-                    // 消息接收者是当前用户
-                    return getChatVo(friend, loginUser, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
-                })
-                .collect(Collectors.toList());
+                (chat1, chat2) -> Math.toIntExact(chat1.getId() - chat2.getId())
+        ).map(chat -> {
+            // 整合响应数据
+            if (Objects.equals(chat.getSenderId(), loginUserId)) {
+                // 消息发送者是当前用户
+                return getChatVo(loginUser, friend, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
+            }
+            // 消息接收者是当前用户
+            return getChatVo(friend, loginUser, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
+        }).collect(Collectors.toList());
 
         // todo 建立缓存
         log.debug("等待建立缓存");
@@ -124,21 +126,32 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
         chatQueryWrapper.eq("teamId", teamId).eq("chatType", ChatTypeEnum.GROUP_CHAT.getType());
         List<Chat> chatList = this.list(chatQueryWrapper);
-        List<ChatVo> chatVoList = chatList.stream()
-                .filter(chat -> {
-                    // 过滤不该当前用户接收的的消息
-                    String jsonReceiverIds = chat.getReceiverIds();
-                    List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, ID_LIST_TYPE);
-                    return listReceiverIds.contains(loginUser.getId());
-                })
-                .map(chat -> {
-                    User senderUser = userService.getById(chat.getSenderId());
-                    User receiverUser = userService.getById(chat.getReceiverId());
-                    ChatVo chatVo = getChatVo(senderUser, receiverUser, chat.getChatContent(), ChatTypeEnum.GROUP_CHAT);
-                    chatVo.setSendTime(DateUtil.format(chat.getCreateTime(), "yyyy-MM-dd HH:mm:ss"));
-                    return chatVo;
-                })
-                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(chatList)) {
+            return Collections.emptyList();
+        }
+
+        // 查询在队伍内有发过消息的用户
+        Set<Long> senderIdSet = chatList.stream().map(Chat::getSenderId).collect(Collectors.toSet());
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.select("id", "userAccount", "username", "avatarUrl").in("id", senderIdSet);
+        List<User> sendUserList = userService.list(userQueryWrapper);
+        Map<Long, List<User>> sendUserSearchMapById = sendUserList.stream().collect(Collectors.groupingBy(user -> {
+            User safetyUser = userService.getSafetyUser(user);
+            return safetyUser.getId();
+        }));
+
+        List<ChatVo> chatVoList = chatList.stream().filter(chat -> {
+            // 过滤不该当前用户接收的的消息
+            String jsonReceiverIds = chat.getReceiverIds();
+            List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, ID_LIST_TYPE);
+            return listReceiverIds.contains(loginUser.getId());
+        }).map(chat -> {
+            ChatVo chatVo = getChatVo(sendUserSearchMapById.get(chat.getSenderId()).get(0),
+                    null, chat.getChatContent(),
+                    ChatTypeEnum.GROUP_CHAT);
+            chatVo.setSendTime(DateUtil.format(chat.getCreateTime(), "yyyy-MM-dd HH:mm:ss"));
+            return chatVo;
+        }).collect(Collectors.toList());
 
         // todo 建立缓存
         log.debug("等待建立缓存");
@@ -195,8 +208,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         // 查询好友信息
         Set<Long> friendIdSet = chatGroup.keySet();
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        userQueryWrapper
-                .select("id", "username", "avatarUrl")
+        userQueryWrapper.select("id", "username", "avatarUrl")
                 .in("id", friendIdSet);
         List<User> friendList
                 = CollectionUtils.isEmpty(friendIdSet) ? Collections.emptyList() : userService.list(userQueryWrapper);
@@ -234,8 +246,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
     private List<ChatRoomVo> listTeamChatRoomVos(Long userId) {
         // 查询与我有关的队伍聊天记录
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
-        chatQueryWrapper
-                .select("id", "senderId", "teamId", "receiverIds", "chatContent", "createTime")
+        chatQueryWrapper.select("id", "senderId", "teamId", "receiverIds", "chatContent", "createTime")
                 .like("receiverIds", userId);
         List<Chat> chatList = this.list(chatQueryWrapper);
 
@@ -271,8 +282,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         // 查询相关队伍信息
         Set<Long> teamIdSet = validChatGroup.keySet();
         QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
-        teamQueryWrapper
-                .select("id", "name", "avatarUrl")
+        teamQueryWrapper.select("id", "name", "avatarUrl")
                 .in("id", teamIdSet);
         List<Team> teamList
                 = CollectionUtils.isEmpty(teamIdSet) ? Collections.emptyList() : teamService.list(teamQueryWrapper);
