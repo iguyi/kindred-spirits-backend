@@ -278,7 +278,7 @@ public class UserController {
             throw new BusinessException(ErrorCode.NULL_ERROR, "无可修改的信息");
         }
         User loginUser = userService.getLoginUser(httpServletRequest);
-        Integer result = userService.updateUser(userUpdateRequest, loginUser);
+        Integer result = userService.updateUser(userUpdateRequest, loginUser, httpServletRequest);
         return ResultUtils.success(result);
     }
 
