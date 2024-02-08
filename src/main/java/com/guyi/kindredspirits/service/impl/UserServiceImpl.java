@@ -276,12 +276,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     /**
      * 更新用户信息
      *
-     * @param userUpdateRequest - 用户的新信息
-     * @param loginUser         - 当前登录用户
+     * @param userUpdateRequest  - 用户的新信息
+     * @param loginUser          - 当前登录用户
+     * @param httpServletRequest - 客户端请求
      * @return 更改的数据总量
      */
     @Override
-    public int updateUser(UserUpdateRequest userUpdateRequest, User loginUser) {
+    public int updateUser(UserUpdateRequest userUpdateRequest, User loginUser, HttpServletRequest httpServletRequest) {
         Long userId = userUpdateRequest.getId();
         if (userId == null || userId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
@@ -301,7 +302,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         User updateUser = new User();
         BeanUtils.copyProperties(userUpdateRequest, updateUser);
-        return userMapper.updateById(updateUser);
+        // 更新用户
+        int result = userMapper.updateById(updateUser);
+
+        // 更新用户登录态
+        User updateUserAll  = userMapper.selectById(userId);
+        httpServletRequest.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, this.getSafetyUser(updateUserAll));
+        return result;
     }
 
     /**
