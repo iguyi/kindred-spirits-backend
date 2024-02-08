@@ -70,11 +70,12 @@ public interface UserService extends IService<User> {
     /**
      * 更新用户信息
      *
-     * @param userUpdateRequest - 用户的新信息
-     * @param loginUser         - 当前登录用户
+     * @param userUpdateRequest  - 用户的新信息
+     * @param loginUser          - 当前登录用户
+     * @param httpServletRequest - 客户端请求
      * @return 更改的数据总量, 正常应该是 1
      */
-    int updateUser(UserUpdateRequest userUpdateRequest, User loginUser);
+    int updateUser(UserUpdateRequest userUpdateRequest, User loginUser, HttpServletRequest httpServletRequest);
 
     /**
      * 从 Session 中获取当前登录用户信息, 并判断是否登录
