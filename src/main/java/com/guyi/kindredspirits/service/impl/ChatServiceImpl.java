@@ -80,7 +80,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             return Collections.emptyList();
         }
 
-        // 查询对应的聊天记
+        // 查询对应的聊天记录
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
         chatQueryWrapper.and(privateChatQuery -> privateChatQuery
                 .eq("senderId", loginUserId).eq("receiverId", friendId)
@@ -92,14 +92,19 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         // 查询好友数据
         User friend = userService.getById(friendId);
 
-        List<ChatVo> chatVoList = chatList.stream().map(chat -> {
-            if (Objects.equals(chat.getSenderId(), loginUserId)) {
-                // 消息发送者是当前用户
-                return getChatVo(loginUser, friend, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
-            }
-            // 消息接收者是当前用户
-            return getChatVo(friend, loginUser, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
-        }).collect(Collectors.toList());
+        List<ChatVo> chatVoList = chatList.stream()
+                // 根据 id 进行排序, 避免因为使用二级索引带来的聊天记录顺序问题
+                .sorted((chat1, chat2) -> Math.toIntExact(chat1.getId() - chat2.getId()))
+                .map(chat -> {
+                    // 整合响应数据
+                    if (Objects.equals(chat.getSenderId(), loginUserId)) {
+                        // 消息发送者是当前用户
+                        return getChatVo(loginUser, friend, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
+                    }
+                    // 消息接收者是当前用户
+                    return getChatVo(friend, loginUser, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
+                })
+                .collect(Collectors.toList());
 
         // todo 建立缓存
         log.debug("等待建立缓存");
