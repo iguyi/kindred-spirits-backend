@@ -66,6 +66,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         chatVo.setChatType(chatTypeEnum.getType());
         DateTime sendTime = DateUtil.date(System.currentTimeMillis());
         chatVo.setSendTime(DateUtil.format(sendTime, "yyyy-MM-dd HH:mm:ss"));
+        chatVo.setErrorFlag(false);
 
         return chatVo;
     }
@@ -75,6 +76,9 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         // 完成参数校验并获取当前登录用户 id、好友 id
         Long loginUserId = parameterValidation(loginUser, chatHistoryRequest);
         Long friendId = chatHistoryRequest.getFriendId();
+        if (friendId == null || friendId < 1 || Objects.equals(loginUserId, friendId)) {
+            return Collections.emptyList();
+        }
 
         // 查询对应的聊天记
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
@@ -85,10 +89,16 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         ).eq("chatType", ChatTypeEnum.PRIVATE_CHAT.getType());
         List<Chat> chatList = this.list(chatQueryWrapper);
 
+        // 查询好友数据
+        User friend = userService.getById(friendId);
+
         List<ChatVo> chatVoList = chatList.stream().map(chat -> {
-            User senderUser = userService.getById(chat.getSenderId());
-            User receiverUser = userService.getById(chat.getReceiverId());
-            return getChatVo(senderUser, receiverUser, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
+            if (Objects.equals(chat.getSenderId(), loginUserId)) {
+                // 消息发送者是当前用户
+                return getChatVo(loginUser, friend, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
+            }
+            // 消息接收者是当前用户
+            return getChatVo(friend, loginUser, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
         }).collect(Collectors.toList());
 
         // todo 建立缓存
