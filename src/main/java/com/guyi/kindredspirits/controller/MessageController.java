@@ -6,7 +6,7 @@ import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.model.domain.Message;
 import com.guyi.kindredspirits.model.domain.User;
-import com.guyi.kindredspirits.model.enums.MessageTypeEnum;
+import com.guyi.kindredspirits.common.enums.MessageTypeEnum;
 import com.guyi.kindredspirits.model.vo.MessageVo;
 import com.guyi.kindredspirits.service.MessageService;
 import com.guyi.kindredspirits.service.UserService;
