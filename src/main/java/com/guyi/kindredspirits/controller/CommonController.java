@@ -75,7 +75,7 @@ public class CommonController {
             UserUpdateRequest updateUser = new UserUpdateRequest();
             updateUser.setId(loginUser.getId());
             updateUser.setAvatarUrl(avatarUrl);
-            int result = userService.updateUser(updateUser, loginUser);
+            int result = userService.updateUser(updateUser, loginUser, httpServletRequest);
             if (result < 1) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
             }
