@@ -1,4 +1,4 @@
-package com.guyi.kindredspirits.model.enums;
+package com.guyi.kindredspirits.common.enums;
 
 /**
  * 消息类型枚举
