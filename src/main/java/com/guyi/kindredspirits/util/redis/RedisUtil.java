@@ -132,4 +132,15 @@ public class RedisUtil {
         }
     }
 
+    /**
+     * 判断 Redis Key 是否存在
+     *
+     * @param redisKey - Redis Key
+     * @return Redis Key 存在时返回 true; 反之, 返回 false
+     */
+    public static boolean hasRedisKey(String redisKey) {
+        Boolean hasKey = STRING_REDIS_TEMPLATE.hasKey(redisKey);
+        return Optional.ofNullable(hasKey).orElse(false);
+    }
+
 }
