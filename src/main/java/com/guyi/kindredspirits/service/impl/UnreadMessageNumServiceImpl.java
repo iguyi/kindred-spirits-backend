@@ -108,7 +108,11 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         sessionStateKeyList.add(redisKey);
 
         // 保存 Key
-        RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST, sessionStateKeyList, null, null);
+        boolean result =
+                RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST, sessionStateKeyList, null, null);
+        if (!result) {
+            log.error(sessionStateKeyList + "缓存失败");
+        }
     }
 
 }
