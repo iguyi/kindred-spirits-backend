@@ -55,9 +55,9 @@ public class RedisUtil {
     /**
      * 获取缓存数据
      *
-     * @param key  - 数据对应的缓存 key
+     * @param key     - 数据对应的缓存 key
      * @param typeOfD - 期望得到数据的泛型类型信息
-     * @param <D>  期望的返回值类型
+     * @param <D>     期望的返回值类型
      * @return 查询结果封装对象
      */
     public static <D> RedisQueryReturn<D> getValue(String key, Type typeOfD) {
@@ -95,7 +95,7 @@ public class RedisUtil {
      *
      * @param key     - 数据对应的缓存 key
      * @param hashKey - 数据对应缓存内的 hash key
-     * @param typeOfD    - 期望得到数据的泛型类型信息
+     * @param typeOfD - 期望得到数据的泛型类型信息
      * @param <D>     - 期望的返回值类型
      * @return 查询结果封装对象
      */
@@ -139,8 +139,26 @@ public class RedisUtil {
      * @return Redis Key 存在时返回 true; 反之, 返回 false
      */
     public static boolean hasRedisKey(String redisKey) {
+        if (redisKey == null) {
+            return false;
+        }
         Boolean hasKey = STRING_REDIS_TEMPLATE.hasKey(redisKey);
         return Optional.ofNullable(hasKey).orElse(false);
+    }
+
+    /**
+     * 判断 Redis Hash Key 是否存在
+     *
+     * @param redisKey     - Redis Key
+     * @param redisHashKey - Redis Hash Key
+     * @return Redis Hash Key 存在时返回 true; 反之, 返回 false
+     */
+    public static boolean hasRedisHashKey(String redisKey, String redisHashKey) {
+        if (!hasRedisKey(redisKey) || redisHashKey == null) {
+            return false;
+        }
+        Boolean hasHashKey = STRING_REDIS_TEMPLATE.opsForHash().hasKey(redisKey, redisHashKey);
+        return Optional.of(hasHashKey).orElse(false);
     }
 
 }
