@@ -73,7 +73,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         QueryWrapper<UnreadMessageNum> unreadMessageNumQueryWrapper = new QueryWrapper<>();
         unreadMessageNumQueryWrapper.select("id", "unreadNum")
                 .eq("userId", loginUserId)
-                .eq("chatSessionName", redisKey);
+                .eq("chatSessionName", chatSessionName);
         UnreadMessageNum target = this.getOne(unreadMessageNumQueryWrapper);
         if (target == null) {
             // 对应会话数据不存在
