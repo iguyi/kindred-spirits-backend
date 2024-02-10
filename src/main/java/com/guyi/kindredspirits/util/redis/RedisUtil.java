@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -21,7 +22,7 @@ public class RedisUtil {
     /**
      * Redis 操作模板
      */
-    private static final StringRedisTemplate STRING_REDIS_TEMPLATE;
+    public static final StringRedisTemplate STRING_REDIS_TEMPLATE;
 
     /**
      * 记录数据的 hash key
@@ -129,6 +130,38 @@ public class RedisUtil {
         } catch (Exception e) {
             log.error("{}#setHashValue() 获取 Redis 缓存出错, 错误信息如下: \n", RedisUtil.class.getName(), e);
             return null;
+        }
+    }
+
+    /**
+     * 将 data 转为 JSON 格式字符串后存入 Redis List 中
+     *
+     * @param key            - 数据对应的缓存 key
+     * @param dataList       - 数据列表
+     * @param timeout        - 逻辑过期时间
+     * @param unit           - 过期时间的单位
+     * @param <D>            - 源数据对应的泛型
+     * @return true: 缓存成功; false: 缓存失败
+     */
+    public static <D> boolean setListValue(String key, List<D> dataList, Long timeout, TimeUnit unit) {
+        if (dataList == null) {
+            return false;
+        }
+
+        try {
+            dataList.forEach(data -> {
+                String jsonObj = JsonUtil.G.toJson(data);
+                STRING_REDIS_TEMPLATE.opsForList().leftPush(key, jsonObj);
+            });
+
+            if (timeout != null && unit != null) {
+                // 设置过期时间
+                STRING_REDIS_TEMPLATE.expire(key, timeout, unit);
+            }
+            return true;
+        } catch (Exception e) {
+            log.error("{}#setListValue() 设置 Redis 缓存出错, 错误信息如下: \n", RedisUtil.class.getName(), e);
+            return false;
         }
     }
 
