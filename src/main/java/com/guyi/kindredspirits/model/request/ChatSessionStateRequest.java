@@ -1,5 +1,7 @@
 package com.guyi.kindredspirits.model.request;
 
+import lombok.Data;
+
 import java.io.Serializable;
 
 /**
@@ -7,6 +9,7 @@ import java.io.Serializable;
  *
  * @author 孤诣
  */
+@Data
 public class ChatSessionStateRequest implements Serializable {
 
     /**
