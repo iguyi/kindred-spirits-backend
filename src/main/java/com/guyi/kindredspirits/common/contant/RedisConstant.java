@@ -34,6 +34,11 @@ public interface RedisConstant {
     String MAX_ID_USER_ACCOUNT_KEY = "kindred-spirits:user:max:id";
 
     /**
+     * 对应存放 "会话状态缓存 key" 的列表的 key
+     */
+    String SESSION_STATE_KEY_LIST = String.format(RedisConstant.KEY_PRE, "unread", "session-state-key", "list");
+
+    /**
      * 缓存预热存储的数据的过期时间 - 15 个小时
      */
     Long PRECACHE_TIMEOUT = 900L;
