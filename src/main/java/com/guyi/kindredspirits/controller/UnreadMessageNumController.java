@@ -6,6 +6,7 @@ import com.guyi.kindredspirits.service.UnreadMessageNumService;
 import com.guyi.kindredspirits.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,7 +36,7 @@ public class UnreadMessageNumController {
      * @param httpServletRequest - 客户端请求
      */
     @PostMapping("/setting/session/state")
-    public void setSessionState(ChatSessionStateRequest stateRequest,
+    public void setSessionState(@RequestBody ChatSessionStateRequest stateRequest,
                                 HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (stateRequest == null) {
