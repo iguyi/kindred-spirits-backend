@@ -12,6 +12,8 @@ import com.guyi.kindredspirits.mapper.UnreadMessageNumMapper;
 import com.guyi.kindredspirits.util.redis.RedisUtil;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -101,6 +103,12 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
                 SESSION_STATE_EXPIRATION,
                 SESSION_STATE_EXPIRATION_UNIT
         );
+
+        List<String> sessionStateKeyList = new ArrayList<>();
+        sessionStateKeyList.add(redisKey);
+
+        // 保存 Key
+        RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST, sessionStateKeyList, null, null);
     }
 
 }
