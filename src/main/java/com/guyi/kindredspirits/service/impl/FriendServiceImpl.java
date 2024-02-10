@@ -10,7 +10,7 @@ import com.guyi.kindredspirits.model.domain.Friend;
 import com.guyi.kindredspirits.model.domain.Message;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.enums.FriendRelationStatusEnum;
-import com.guyi.kindredspirits.model.enums.MessageTypeEnum;
+import com.guyi.kindredspirits.common.enums.MessageTypeEnum;
 import com.guyi.kindredspirits.model.enums.UpdateFriendRelationOperationEnum;
 import com.guyi.kindredspirits.model.request.MessageRequest;
 import com.guyi.kindredspirits.model.request.ProcessFriendApplyRequest;
