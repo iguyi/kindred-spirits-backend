@@ -57,7 +57,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
                 ChatTypeEnum.PRIVATE_CHAT.equals(chantTypeEnum) ? "private" : "team",
                 loginUserId,
                 id);
-        String redisKey = String.format(RedisConstant.KEY_PRE, "message", "unread", chatSessionName);
+        String redisKey = String.format(RedisConstant.KEY_PRE, "message", "unreadNum", chatSessionName);
 
         if (RedisUtil.hasRedisKey(redisKey)) {
             // 对应会话的数据在缓存中存在, 直接改变对应状态即可
@@ -90,7 +90,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
 
         // 设置未读消息数
         RedisUtil.setHashValue(redisKey,
-                "unread",
+                "unreadNum",
                 Optional.ofNullable(target.getUnreadNum()).orElse(0),
                 SESSION_STATE_EXPIRATION,
                 SESSION_STATE_EXPIRATION_UNIT
@@ -120,7 +120,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         if (RedisUtil.hasRedisKey(sessionName)) {
             // 对应会话的数据在缓存中存在, 直接更新未读消息数
             return RedisUtil.setHashValue(sessionName,
-                    "unread",
+                    "unreadNum",
                     unreadNum,
                     SESSION_STATE_EXPIRATION,
                     SESSION_STATE_EXPIRATION_UNIT
@@ -146,7 +146,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
 
         // 设置未读消息数
         boolean cacheUnreadNum = RedisUtil.setHashValue(sessionName,
-                "unread",
+                "unreadNum",
                 unreadNum,
                 SESSION_STATE_EXPIRATION,
                 SESSION_STATE_EXPIRATION_UNIT
