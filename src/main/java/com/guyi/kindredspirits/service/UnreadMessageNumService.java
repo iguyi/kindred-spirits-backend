@@ -1,5 +1,6 @@
 package com.guyi.kindredspirits.service;
 
+import com.guyi.kindredspirits.model.cache.UnreadMessageNumCache;
 import com.guyi.kindredspirits.model.domain.UnreadMessageNum;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
@@ -29,5 +30,13 @@ public interface UnreadMessageNumService extends IService<UnreadMessageNum> {
      * @return 更新结果
      */
     boolean updateUnreadMessageNum(String sessionName, int unreadNum);
+
+    /**
+     * 根据会话名称获取 unread_message_num 对应的缓存实体类
+     *
+     * @param sessionName - 会话名称
+     * @return UnreadMessageNumCache
+     */
+    UnreadMessageNumCache getUnreadMessageNumByName(String sessionName);
 
 }
