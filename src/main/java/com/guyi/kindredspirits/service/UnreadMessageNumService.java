@@ -20,4 +20,14 @@ public interface UnreadMessageNumService extends IService<UnreadMessageNum> {
      */
     void setSessionSate(User loginUser, ChatSessionStateRequest stateRequest);
 
+
+    /**
+     * 更新未读消息数
+     *
+     * @param unreadNum   - 未读数
+     * @param sessionName - 会话名称
+     * @return 更新结果
+     */
+    boolean updateUnreadMessageNum(String sessionName, int unreadNum);
+
 }
