@@ -320,6 +320,15 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             // 获取消息发送的日期、时间信息
             String sendDateAndTime = DateUtil.format(lastChat.getCreateTime(), "yy-MM-dd HH:mm:ss");
             chatRoomVo.setSendTime(sendDateAndTime);
+            // 获取未读消息数
+            String sessionName = String.format("team-%s-%s", userId, key);
+            UnreadMessageNumCache unreadMessageNumByName
+                    = unreadMessageNumService.getUnreadMessageNumByName(sessionName);
+            if (unreadMessageNumByName == null) {
+                chatRoomVo.setUnreadMessageNum(0);
+            } else {
+                chatRoomVo.setUnreadMessageNum(unreadMessageNumByName.getUnreadNum());
+            }
             chatRoomVoList.add(chatRoomVo);
         });
         return chatRoomVoList;
