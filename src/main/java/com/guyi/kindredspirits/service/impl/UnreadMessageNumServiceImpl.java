@@ -115,6 +115,63 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         }
     }
 
+    @Override
+    public boolean updateUnreadMessageNum(String sessionName, int unreadNum) {
+        if (RedisUtil.hasRedisKey(sessionName)) {
+            // 对应会话的数据在缓存中存在, 直接更新未读消息数
+            return RedisUtil.setHashValue(sessionName,
+                    "unread",
+                    unreadNum,
+                    SESSION_STATE_EXPIRATION,
+                    SESSION_STATE_EXPIRATION_UNIT
+            );
+        }
+
+        // 数据库查询会话的数据
+        QueryWrapper<UnreadMessageNum> unreadMessageNumQueryWrapper = new QueryWrapper<>();
+        unreadMessageNumQueryWrapper.select("id", "unreadNum").eq("chatSessionName", sessionName);
+        UnreadMessageNum target = this.getOne(unreadMessageNumQueryWrapper);
+        if (target == null) {
+            // 对应会话数据不存在
+            return false;
+        }
+
+        // 设置 id
+        boolean cacheId = RedisUtil.setHashValue(sessionName,
+                "id",
+                target.getId(),
+                SESSION_STATE_EXPIRATION,
+                SESSION_STATE_EXPIRATION_UNIT
+        );
+
+        // 设置未读消息数
+        boolean cacheUnreadNum = RedisUtil.setHashValue(sessionName,
+                "unread",
+                unreadNum,
+                SESSION_STATE_EXPIRATION,
+                SESSION_STATE_EXPIRATION_UNIT
+        );
+
+        // 设置当前会话是否打开(用户是否正处于对应聊天窗口内)
+        boolean cacheIsOpen = RedisUtil.setHashValue(sessionName,
+                "isOpen",
+                false,
+                SESSION_STATE_EXPIRATION,
+                SESSION_STATE_EXPIRATION_UNIT
+        );
+
+        List<String> sessionStateKeyList = new ArrayList<>();
+        sessionStateKeyList.add(sessionName);
+
+        // 保存 Key
+        boolean result =
+                RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST, sessionStateKeyList, null, null);
+        if (!result) {
+            log.error(sessionStateKeyList + "缓存失败");
+        }
+        return cacheId && cacheUnreadNum && cacheIsOpen && result;
+    }
+
 }
 
 
