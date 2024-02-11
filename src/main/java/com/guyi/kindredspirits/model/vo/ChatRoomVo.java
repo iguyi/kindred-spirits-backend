@@ -48,6 +48,11 @@ public class ChatRoomVo implements Serializable {
      */
     private String sendTime;
 
+    /**
+     * 未读消息数
+     */
+    private Integer unreadMessageNum;
+
     private static final long serialVersionUID = 4910198001360086136L;
 
 }
