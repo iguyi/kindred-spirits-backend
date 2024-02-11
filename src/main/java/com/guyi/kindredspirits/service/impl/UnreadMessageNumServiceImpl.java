@@ -2,16 +2,21 @@ package com.guyi.kindredspirits.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.reflect.TypeToken;
 import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
+import com.guyi.kindredspirits.mapper.UnreadMessageNumMapper;
+import com.guyi.kindredspirits.model.cache.UnreadMessageNumCache;
 import com.guyi.kindredspirits.model.domain.UnreadMessageNum;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.ChatSessionStateRequest;
 import com.guyi.kindredspirits.service.UnreadMessageNumService;
-import com.guyi.kindredspirits.mapper.UnreadMessageNumMapper;
+import com.guyi.kindredspirits.util.JsonUtil;
 import com.guyi.kindredspirits.util.redis.RedisUtil;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -170,6 +175,66 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
             log.error(sessionStateKeyList + "缓存失败");
         }
         return cacheId && cacheUnreadNum && cacheIsOpen && result;
+    }
+
+    @Override
+    public UnreadMessageNumCache getUnreadMessageNumByName(String sessionName) {
+        Type unreadMessageNumType = new TypeToken<UnreadMessageNumCache>() {
+        }.getType();
+
+        if (RedisUtil.hasRedisKey(sessionName)) {
+            // 对应会话的数据在缓存中存在
+            String unreadMessageNumCacheStr = RedisUtil.STRING_REDIS_TEMPLATE.opsForValue().get(sessionName);
+            return JsonUtil.fromJson(unreadMessageNumCacheStr, unreadMessageNumType);
+        }
+
+        QueryWrapper<UnreadMessageNum> unreadMessageNumQueryWrapper = new QueryWrapper<>();
+        unreadMessageNumQueryWrapper.select("id", "unreadNum").eq("sessionName", sessionName);
+        UnreadMessageNum unreadMessageNum = this.getOne(unreadMessageNumQueryWrapper);
+        if (unreadMessageNum == null) {
+            return null;
+        }
+        UnreadMessageNumCache unreadMessageNumCache = new UnreadMessageNumCache();
+        BeanUtils.copyProperties(unreadMessageNum, unreadMessageNumCache);
+        unreadMessageNumCache.setIsOpen(false);
+
+        // 设置 id
+        RedisUtil.setHashValue(sessionName,
+                "id",
+                unreadMessageNum.getId(),
+                SESSION_STATE_EXPIRATION,
+                SESSION_STATE_EXPIRATION_UNIT
+        );
+
+        // 设置未读消息数
+        RedisUtil.setHashValue(sessionName,
+                "unreadNum",
+                unreadMessageNum.getUnreadNum(),
+                SESSION_STATE_EXPIRATION,
+                SESSION_STATE_EXPIRATION_UNIT
+        );
+
+        // 设置当前会话是否打开(用户是否正处于对应聊天窗口内)
+        RedisUtil.setHashValue(sessionName,
+                "isOpen",
+                false,
+                SESSION_STATE_EXPIRATION,
+                SESSION_STATE_EXPIRATION_UNIT
+        );
+
+        List<String> sessionStateKeyList = new ArrayList<>();
+        sessionStateKeyList.add(sessionName);
+
+        // 保存 Key
+        boolean result = RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST,
+                sessionStateKeyList,
+                null,
+                null);
+        if (!result) {
+            log.error(sessionStateKeyList + "缓存失败");
+        }
+
+        return unreadMessageNumCache;
     }
 
 }
