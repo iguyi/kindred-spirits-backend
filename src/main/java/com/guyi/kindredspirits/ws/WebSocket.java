@@ -5,6 +5,7 @@ import com.guyi.kindredspirits.common.contant.BaseConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
 import com.guyi.kindredspirits.config.HttpSessionConfig;
+import com.guyi.kindredspirits.model.cache.UnreadMessageNumCache;
 import com.guyi.kindredspirits.model.domain.Chat;
 import com.guyi.kindredspirits.model.domain.Friend;
 import com.guyi.kindredspirits.model.domain.User;
@@ -13,10 +14,7 @@ import com.guyi.kindredspirits.model.enums.FriendRelationStatusEnum;
 import com.guyi.kindredspirits.model.request.ChatRequest;
 import com.guyi.kindredspirits.model.vo.ChatVo;
 import com.guyi.kindredspirits.model.vo.WebSocketVo;
-import com.guyi.kindredspirits.service.ChatService;
-import com.guyi.kindredspirits.service.FriendService;
-import com.guyi.kindredspirits.service.UserService;
-import com.guyi.kindredspirits.service.UserTeamService;
+import com.guyi.kindredspirits.service.*;
 import com.guyi.kindredspirits.util.JsonUtil;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +28,7 @@ import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Pattern;
@@ -63,8 +62,8 @@ public class WebSocket {
      * - 内层 map 以 用户(队员) id 为 key
      * - 内存 map 的 value 是在线成员对应的 WebSocket 会话
      */
-    private static final ConcurrentHashMap<String, ConcurrentHashMap<String, WebSocket>> TEAM_SESSIONS
-            = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, ConcurrentHashMap<String, WebSocket>> TEAM_SESSIONS =
+            new ConcurrentHashMap<>();
 
     /**
      * 但前与某个客户端的连接会话，需要通过它来给客户端发送数据
@@ -96,6 +95,8 @@ public class WebSocket {
     private static ChatService chatService;
 
     private static UserTeamService userTeamService;
+
+    private static UnreadMessageNumService unreadMessageNumService;
 
     /**
      * 连接成功调用的方法
@@ -323,6 +324,9 @@ public class WebSocket {
         // 发送消息
         String finalSend = JsonUtil.G.toJson(chatVo);
         sendOneMessage(receiverUser.getId().toString(), finalSend);
+
+        // 更新消息接收者的未读消息数
+        updateUnreadNum(senderUser.getId(), receiverUser.getId(), false);
     }
 
     /**
@@ -363,11 +367,40 @@ public class WebSocket {
             try {
                 if (!key.equals(senderUserId.toString())) {
                     value.session.getAsyncRemote().sendText(sendMessage);
+                    updateUnreadNum(senderUserId, teamId, true);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
+    }
+
+    /**
+     * 更新消息接收者的未读消息数
+     *
+     * @param senderUserId - 消息发送者 id
+     * @param receiverId   - 消息接收者(用户或队伍) id
+     * @param isTeam       - 是否时队伍(聊天)对话
+     */
+    private void updateUnreadNum(Long senderUserId, Long receiverId, boolean isTeam) {
+        if (senderUserId < 1) {
+            return;
+        }
+        String sessionNamePre = isTeam ? "team-" : "private-";
+        String sessionName = sessionNamePre + receiverId + "-" + senderUserId;
+        UnreadMessageNumCache unreadMessageNumCache = unreadMessageNumService.getUnreadMessageNumByName(sessionName);
+        if (unreadMessageNumCache == null) {
+            return;
+        }
+        Boolean isOpen = Optional.ofNullable(unreadMessageNumCache.getIsOpen()).orElse(false);
+        if (isOpen) {
+            return;
+        }
+        Integer oldUnreadNum = unreadMessageNumCache.getUnreadNum();
+        boolean result = unreadMessageNumService.updateUnreadMessageNum(sessionName, oldUnreadNum + 1);
+        if (!result) {
+            log.error("会话 " + sessionName + " 的未读消息数更新失败");
+        }
     }
 
     /**
@@ -458,6 +491,11 @@ public class WebSocket {
     @Resource
     public void setUserTeamService(UserTeamService userTeamService) {
         WebSocket.userTeamService = userTeamService;
+    }
+
+    @Resource
+    public void setUnreadMessageNumService(UnreadMessageNumService unreadMessageNumService) {
+        WebSocket.unreadMessageNumService = unreadMessageNumService;
     }
 
     /**
