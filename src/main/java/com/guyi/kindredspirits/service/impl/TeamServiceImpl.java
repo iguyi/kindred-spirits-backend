@@ -1,5 +1,7 @@
 package com.guyi.kindredspirits.service.impl;
 
+import java.util.Date;
+
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -9,10 +11,7 @@ import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.ChatMapper;
 import com.guyi.kindredspirits.mapper.TeamMapper;
-import com.guyi.kindredspirits.model.domain.Chat;
-import com.guyi.kindredspirits.model.domain.Team;
-import com.guyi.kindredspirits.model.domain.User;
-import com.guyi.kindredspirits.model.domain.UserTeam;
+import com.guyi.kindredspirits.model.domain.*;
 import com.guyi.kindredspirits.model.enums.TeamStatusEnum;
 import com.guyi.kindredspirits.model.request.*;
 import com.guyi.kindredspirits.model.vo.TeamAllVo;
@@ -20,6 +19,7 @@ import com.guyi.kindredspirits.model.vo.UserSimpleVo;
 import com.guyi.kindredspirits.model.vo.UserTeamVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.TeamService;
+import com.guyi.kindredspirits.service.UnreadMessageNumService;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.service.UserTeamService;
 import com.guyi.kindredspirits.util.EntityUtil;
@@ -65,6 +65,11 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
      */
     @Resource
     private ChatMapper chatMapper;
+
+    @Resource
+    private UnreadMessageNumService unreadMessageNumService;
+
+    private static final String SESSION_NAME_TEMPLATE = "team-%s-%s";
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -141,6 +146,12 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         userTeam.setTeamId(teamId);
         userTeam.setJoinTime(new Date());
         saveResult = userTeamService.save(userTeam);
+        if (!saveResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍创建失败!");
+        }
+
+        // 创建会话未读消息记录
+        saveResult = createUnreadMessageLog(userId, String.format(SESSION_NAME_TEMPLATE, userId, teamId));
         if (!saveResult) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍创建失败!");
         }
@@ -351,13 +362,33 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         userTeam.setUserId(loginUserId);
         userTeam.setTeamId(teamId);
         userTeam.setJoinTime(new Date());
-        boolean saveResult = userTeamService.save(userTeam);
+        boolean saveUserTeamResult = userTeamService.save(userTeam);
 
-        if (updateResult && saveResult) {
+        // 创建会话未读消息记录
+        String sessionName = String.format(SESSION_NAME_TEMPLATE, loginUserId, teamId);
+        boolean saveUnreadResult = createUnreadMessageLog(loginUserId, sessionName);
+
+        if (updateResult && saveUserTeamResult && saveUnreadResult) {
             return true;
         }
 
         throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统错误");
+    }
+
+    /**
+     * 创建/加入队伍时创建对应的会话未读消息记录
+     *
+     * @param userId      - 用户 id
+     * @param sessionName - 会话名称
+     * @return 记录保存是否成功
+     */
+    private boolean createUnreadMessageLog(Long userId, String sessionName) {
+        // 创建会话未读消息记录
+        UnreadMessageNum unreadMessageNum = new UnreadMessageNum();
+        unreadMessageNum.setUserId(userId);
+        unreadMessageNum.setChatSessionName(sessionName);
+        unreadMessageNum.setUnreadNum(0);
+        return unreadMessageNumService.save(unreadMessageNum);
     }
 
     @Override
