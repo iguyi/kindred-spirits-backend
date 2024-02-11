@@ -9,6 +9,7 @@ import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.ChatMapper;
+import com.guyi.kindredspirits.model.cache.UnreadMessageNumCache;
 import com.guyi.kindredspirits.model.domain.Chat;
 import com.guyi.kindredspirits.model.domain.Team;
 import com.guyi.kindredspirits.model.domain.User;
@@ -18,6 +19,7 @@ import com.guyi.kindredspirits.model.vo.ChatVo;
 import com.guyi.kindredspirits.model.vo.WebSocketVo;
 import com.guyi.kindredspirits.service.ChatService;
 import com.guyi.kindredspirits.service.TeamService;
+import com.guyi.kindredspirits.service.UnreadMessageNumService;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.JsonUtil;
 import org.apache.commons.collections.CollectionUtils;
@@ -42,6 +44,9 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
 
     @Resource
     private TeamService teamService;
+
+    @Resource
+    private UnreadMessageNumService unreadMessageNumService;
 
     /**
      * id 列表对应的 Type 对象, 用于将 JSON 格式的 id 列表转为泛型为 Long 的 List
@@ -232,6 +237,15 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             // 获取消息发送的日期、时间信息
             String sendDateAndTime = DateUtil.format(lastChat.getCreateTime(), "yy-MM-dd HH:mm:ss");
             chatRoomVo.setSendTime(sendDateAndTime);
+            // 获取未读消息数
+            String sessionName = String.format("private-%s-%s", userId, key);
+            UnreadMessageNumCache unreadMessageNumByName
+                    = unreadMessageNumService.getUnreadMessageNumByName(sessionName);
+            if (unreadMessageNumByName == null) {
+                chatRoomVo.setUnreadMessageNum(0);
+            } else {
+                chatRoomVo.setUnreadMessageNum(unreadMessageNumByName.getUnreadNum());
+            }
             chatRoomVoList.add(chatRoomVo);
         });
         return chatRoomVoList;
