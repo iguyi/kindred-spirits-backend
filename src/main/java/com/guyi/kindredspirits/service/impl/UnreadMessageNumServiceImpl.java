@@ -123,7 +123,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         String redisKey = String.format(RedisConstant.SESSION_STATE_KEY, sessionName);
         if (RedisUtil.hasRedisKey(redisKey)) {
             // 对应会话的数据在缓存中存在, 直接更新未读消息数
-            return RedisUtil.setHashValue(sessionName,
+            return RedisUtil.setHashValue(redisKey,
                     "unreadNum",
                     unreadNum,
                     SESSION_STATE_EXPIRATION,
@@ -191,6 +191,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
             unreadMessageNumCache.setIsOpen(Boolean.valueOf(String.valueOf(map.get("isOpen"))));
             unreadMessageNumCache.setUnreadNum(Integer.valueOf(String.valueOf(map.get("unreadNum"))));
             unreadMessageNumCache.setId(Long.valueOf((String) map.get("id")));
+            return unreadMessageNumCache;
         }
 
         // 对应会话的数据不在缓存中, 需要从 MySQL 中查询
