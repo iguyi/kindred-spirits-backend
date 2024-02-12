@@ -18,6 +18,11 @@ public interface BaseConstant {
     String HEARTBEAT_PING = "PING";
 
     /**
+     * 获取未消息数 - 反馈
+     */
+    String UNREAD_NUMS = "unread";
+
+    /**
      * 心跳检测的消息 - 反馈
      */
     String HEARTBEAT_PONG = "PONG";
