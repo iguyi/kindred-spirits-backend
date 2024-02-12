@@ -367,7 +367,7 @@ public class WebSocket {
             try {
                 if (!key.equals(senderUserId.toString())) {
                     value.session.getAsyncRemote().sendText(sendMessage);
-                    updateUnreadNum(senderUserId, teamId, true);
+                    updateUnreadNum(teamId, Long.valueOf(key), true);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -394,6 +394,8 @@ public class WebSocket {
         }
         Boolean isOpen = Optional.ofNullable(unreadMessageNumCache.getIsOpen()).orElse(false);
         if (isOpen) {
+            // 未读消息数置为 0
+            unreadMessageNumService.updateUnreadMessageNum(sessionName, 0);
             return;
         }
         Integer oldUnreadNum = unreadMessageNumCache.getUnreadNum();
