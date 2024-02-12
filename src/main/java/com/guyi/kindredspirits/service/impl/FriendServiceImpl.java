@@ -4,13 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
+import com.guyi.kindredspirits.common.enums.MessageTypeEnum;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.FriendMapper;
 import com.guyi.kindredspirits.model.domain.Friend;
 import com.guyi.kindredspirits.model.domain.Message;
+import com.guyi.kindredspirits.model.domain.UnreadMessageNum;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.enums.FriendRelationStatusEnum;
-import com.guyi.kindredspirits.common.enums.MessageTypeEnum;
 import com.guyi.kindredspirits.model.enums.UpdateFriendRelationOperationEnum;
 import com.guyi.kindredspirits.model.request.MessageRequest;
 import com.guyi.kindredspirits.model.request.ProcessFriendApplyRequest;
@@ -19,6 +20,7 @@ import com.guyi.kindredspirits.model.vo.FriendVo;
 import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.FriendService;
 import com.guyi.kindredspirits.service.MessageService;
+import com.guyi.kindredspirits.service.UnreadMessageNumService;
 import com.guyi.kindredspirits.service.UserService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,9 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
     @Resource
     private FriendMapper friendMapper;
+
+    @Resource
+    private UnreadMessageNumService unreadMessageNumService;
 
     /**
      * sender 向 receiverId 进行好友申请
@@ -170,6 +175,9 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
                 if (!saveFriendResult) {
                     throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
                 }
+                // 创建未读消息记录
+                createUnreadMessageLog(senderId, loginUserId);
+                createUnreadMessageLog(loginUserId, senderId);
             }
             message.setMessageBody(username + "通过了您的好友申请");
         } else {
@@ -184,6 +192,23 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         }
 
         return true;
+    }
+
+    /**
+     * 创建会话的未读消息记录
+     *
+     * @param senderId    - 消息发送者 id
+     * @param loginUserId - 当前登录用户 id
+     */
+    private void createUnreadMessageLog(Long senderId, Long loginUserId) {
+        UnreadMessageNum unreadMessageNumMe = new UnreadMessageNum();
+        unreadMessageNumMe.setUserId(loginUserId);
+        unreadMessageNumMe.setChatSessionName(String.format("private-%s-%s", loginUserId, senderId));
+        unreadMessageNumMe.setUnreadNum(0);
+        boolean saveMe = unreadMessageNumService.save(unreadMessageNumMe);
+        if (!saveMe) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+        }
     }
 
     @Override
