@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/team")
 @Slf4j
-public class TempController {
+public class TeamController {
 
     @Resource
     private UserService userService;
