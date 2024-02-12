@@ -28,6 +28,7 @@ import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -358,6 +359,17 @@ public class WebSocket {
             return;
         }
 
+        // 获取队伍其他成员的 id
+        List<UserTeam> userTeamList = userTeamService.getMessageByTeamId(teamId);
+        List<Long> memberIdList = userTeamList.stream()
+                .map(UserTeam::getUserId)
+                .filter(userId -> !Objects.equals(senderUserId, userId))
+                .collect(Collectors.toList());
+        for (Long id : memberIdList) {
+            // 更新未读消息数
+            updateUnreadNum(teamId, id, true);
+        }
+
         ChatVo chatVo = chatService.getChatVo(senderUser, null, chatContent, ChatTypeEnum.GROUP_CHAT);
         String sendMessage = JsonUtil.G.toJson(chatVo);
 
@@ -367,7 +379,6 @@ public class WebSocket {
             try {
                 if (!key.equals(senderUserId.toString())) {
                     value.session.getAsyncRemote().sendText(sendMessage);
-                    updateUnreadNum(teamId, Long.valueOf(key), true);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
