@@ -2,7 +2,6 @@ package com.guyi.kindredspirits.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.gson.reflect.TypeToken;
 import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.common.enums.ChatTypeEnum;
 import com.guyi.kindredspirits.mapper.UnreadMessageNumMapper;
@@ -11,14 +10,13 @@ import com.guyi.kindredspirits.model.domain.UnreadMessageNum;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.ChatSessionStateRequest;
 import com.guyi.kindredspirits.service.UnreadMessageNumService;
-import com.guyi.kindredspirits.util.JsonUtil;
 import com.guyi.kindredspirits.util.redis.RedisUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -62,7 +60,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
                 ChatTypeEnum.PRIVATE_CHAT.equals(chantTypeEnum) ? "private" : "team",
                 loginUserId,
                 id);
-        String redisKey = String.format(RedisConstant.KEY_PRE, "message", "unreadNum", chatSessionName);
+        String redisKey = String.format(RedisConstant.SESSION_STATE_KEY, chatSessionName);
 
         if (RedisUtil.hasRedisKey(redisKey)) {
             // 对应会话的数据在缓存中存在, 直接改变对应状态即可
@@ -122,7 +120,8 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
 
     @Override
     public boolean updateUnreadMessageNum(String sessionName, int unreadNum) {
-        if (RedisUtil.hasRedisKey(sessionName)) {
+        String redisKey = String.format(RedisConstant.SESSION_STATE_KEY, sessionName);
+        if (RedisUtil.hasRedisKey(redisKey)) {
             // 对应会话的数据在缓存中存在, 直接更新未读消息数
             return RedisUtil.setHashValue(sessionName,
                     "unreadNum",
@@ -142,7 +141,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         }
 
         // 设置 id
-        boolean cacheId = RedisUtil.setHashValue(sessionName,
+        boolean cacheId = RedisUtil.setHashValue(redisKey,
                 "id",
                 target.getId(),
                 SESSION_STATE_EXPIRATION,
@@ -150,7 +149,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         );
 
         // 设置未读消息数
-        boolean cacheUnreadNum = RedisUtil.setHashValue(sessionName,
+        boolean cacheUnreadNum = RedisUtil.setHashValue(redisKey,
                 "unreadNum",
                 unreadNum,
                 SESSION_STATE_EXPIRATION,
@@ -158,7 +157,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         );
 
         // 设置当前会话是否打开(用户是否正处于对应聊天窗口内)
-        boolean cacheIsOpen = RedisUtil.setHashValue(sessionName,
+        boolean cacheIsOpen = RedisUtil.setHashValue(redisKey,
                 "isOpen",
                 false,
                 SESSION_STATE_EXPIRATION,
@@ -166,7 +165,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         );
 
         List<String> sessionStateKeyList = new ArrayList<>();
-        sessionStateKeyList.add(sessionName);
+        sessionStateKeyList.add(redisKey);
 
         // 保存 Key
         boolean result =
@@ -177,19 +176,26 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         return cacheId && cacheUnreadNum && cacheIsOpen && result;
     }
 
+    /**
+     * todo 缓存过期问题
+     */
     @Override
     public UnreadMessageNumCache getUnreadMessageNumByName(String sessionName) {
-        Type unreadMessageNumType = new TypeToken<UnreadMessageNumCache>() {
-        }.getType();
+        // 拼接 Redis Key
+        String redisKey = String.format(RedisConstant.SESSION_STATE_KEY, sessionName);
 
-        if (RedisUtil.hasRedisKey(sessionName)) {
+        if (RedisUtil.hasRedisKey(redisKey)) {
             // 对应会话的数据在缓存中存在
-            String unreadMessageNumCacheStr = RedisUtil.STRING_REDIS_TEMPLATE.opsForValue().get(sessionName);
-            return JsonUtil.fromJson(unreadMessageNumCacheStr, unreadMessageNumType);
+            Map<Object, Object> map = RedisUtil.STRING_REDIS_TEMPLATE.opsForHash().entries(redisKey);
+            UnreadMessageNumCache unreadMessageNumCache = new UnreadMessageNumCache();
+            unreadMessageNumCache.setIsOpen(Boolean.valueOf(String.valueOf(map.get("isOpen"))));
+            unreadMessageNumCache.setUnreadNum(Integer.valueOf(String.valueOf(map.get("unreadNum"))));
+            unreadMessageNumCache.setId(Long.valueOf((String) map.get("id")));
         }
 
+        // 对应会话的数据不在缓存中, 需要从 MySQL 中查询
         QueryWrapper<UnreadMessageNum> unreadMessageNumQueryWrapper = new QueryWrapper<>();
-        unreadMessageNumQueryWrapper.select("id", "unreadNum").eq("sessionName", sessionName);
+        unreadMessageNumQueryWrapper.select("id", "unreadNum").eq("chatSessionName", sessionName);
         UnreadMessageNum unreadMessageNum = this.getOne(unreadMessageNumQueryWrapper);
         if (unreadMessageNum == null) {
             return null;
@@ -199,7 +205,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         unreadMessageNumCache.setIsOpen(false);
 
         // 设置 id
-        RedisUtil.setHashValue(sessionName,
+        RedisUtil.setHashValue(redisKey,
                 "id",
                 unreadMessageNum.getId(),
                 SESSION_STATE_EXPIRATION,
@@ -207,7 +213,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         );
 
         // 设置未读消息数
-        RedisUtil.setHashValue(sessionName,
+        RedisUtil.setHashValue(redisKey,
                 "unreadNum",
                 unreadMessageNum.getUnreadNum(),
                 SESSION_STATE_EXPIRATION,
@@ -215,17 +221,16 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
         );
 
         // 设置当前会话是否打开(用户是否正处于对应聊天窗口内)
-        RedisUtil.setHashValue(sessionName,
+        RedisUtil.setHashValue(redisKey,
                 "isOpen",
                 false,
                 SESSION_STATE_EXPIRATION,
                 SESSION_STATE_EXPIRATION_UNIT
         );
 
-        List<String> sessionStateKeyList = new ArrayList<>();
-        sessionStateKeyList.add(sessionName);
-
         // 保存 Key
+        List<String> sessionStateKeyList = new ArrayList<>();
+        sessionStateKeyList.add(redisKey);
         boolean result = RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST,
                 sessionStateKeyList,
                 null,
