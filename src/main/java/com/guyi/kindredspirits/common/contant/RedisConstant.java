@@ -34,6 +34,13 @@ public interface RedisConstant {
     String MAX_ID_USER_ACCOUNT_KEY = "kindred-spirits:user:max:id";
 
     /**
+     * 会话状态缓存 key, 状态包括:
+     * - 未读消息数
+     * - 用户是否在聊天窗口内
+     */
+    String SESSION_STATE_KEY = "kindred-spirits:session:state:%s";
+
+    /**
      * 对应存放 "会话状态缓存 key" 的列表的 key
      */
     String SESSION_STATE_KEY_LIST = String.format(RedisConstant.KEY_PRE, "unread", "session-state-key", "list");
