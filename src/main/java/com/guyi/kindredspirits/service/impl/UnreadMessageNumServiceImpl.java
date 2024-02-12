@@ -62,59 +62,69 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
                 id);
         String redisKey = String.format(RedisConstant.SESSION_STATE_KEY, chatSessionName);
 
+        Boolean safeState = Optional.ofNullable(state).orElse(false);
         if (RedisUtil.hasRedisKey(redisKey)) {
-            // 对应会话的数据在缓存中存在, 直接改变对应状态即可
+            // 对应会话的数据在缓存中存在, 变更状态
             RedisUtil.setHashValue(redisKey,
                     "isOpen",
-                    Optional.ofNullable(state).orElse(false),
+                    safeState,
                     SESSION_STATE_EXPIRATION,
                     SESSION_STATE_EXPIRATION_UNIT);
-            return;
+        } else {
+            // 数据库查询会话的数据
+            QueryWrapper<UnreadMessageNum> unreadMessageNumQueryWrapper = new QueryWrapper<>();
+            unreadMessageNumQueryWrapper.select("id", "unreadNum")
+                    .eq("userId", loginUserId)
+                    .eq("chatSessionName", chatSessionName);
+            UnreadMessageNum target = this.getOne(unreadMessageNumQueryWrapper);
+            if (target == null) {
+                // 对应会话数据不存在
+                return;
+            }
+
+            // 设置 id
+            RedisUtil.setHashValue(redisKey,
+                    "id",
+                    target.getId(),
+                    SESSION_STATE_EXPIRATION,
+                    SESSION_STATE_EXPIRATION_UNIT
+            );
+
+            // 设置未读消息数
+            RedisUtil.setHashValue(redisKey,
+                    "unreadNum",
+                    Optional.ofNullable(target.getUnreadNum()).orElse(0),
+                    SESSION_STATE_EXPIRATION,
+                    SESSION_STATE_EXPIRATION_UNIT
+            );
+
+            // 设置当前会话是否打开(用户是否正处于对应聊天窗口内)
+            RedisUtil.setHashValue(redisKey,
+                    "isOpen",
+                    safeState,
+                    SESSION_STATE_EXPIRATION,
+                    SESSION_STATE_EXPIRATION_UNIT
+            );
+
+            List<String> sessionStateKeyList = new ArrayList<>();
+            sessionStateKeyList.add(redisKey);
+
+            // 保存 Key
+            boolean result =
+                    RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST, sessionStateKeyList, null, null);
+            if (!result) {
+                log.error(sessionStateKeyList + "缓存失败");
+            }
         }
 
-        // 数据库查询会话的数据
-        QueryWrapper<UnreadMessageNum> unreadMessageNumQueryWrapper = new QueryWrapper<>();
-        unreadMessageNumQueryWrapper.select("id", "unreadNum")
-                .eq("userId", loginUserId)
-                .eq("chatSessionName", chatSessionName);
-        UnreadMessageNum target = this.getOne(unreadMessageNumQueryWrapper);
-        if (target == null) {
-            // 对应会话数据不存在
-            return;
-        }
-
-        // 设置 id
-        RedisUtil.setHashValue(redisKey,
-                "id",
-                target.getId(),
-                SESSION_STATE_EXPIRATION,
-                SESSION_STATE_EXPIRATION_UNIT
-        );
-
-        // 设置未读消息数
-        RedisUtil.setHashValue(redisKey,
-                "unreadNum",
-                Optional.ofNullable(target.getUnreadNum()).orElse(0),
-                SESSION_STATE_EXPIRATION,
-                SESSION_STATE_EXPIRATION_UNIT
-        );
-
-        // 设置当前会话是否打开(用户是否正处于对应聊天窗口内)
-        RedisUtil.setHashValue(redisKey,
-                "isOpen",
-                Optional.ofNullable(state).orElse(false),
-                SESSION_STATE_EXPIRATION,
-                SESSION_STATE_EXPIRATION_UNIT
-        );
-
-        List<String> sessionStateKeyList = new ArrayList<>();
-        sessionStateKeyList.add(redisKey);
-
-        // 保存 Key
-        boolean result =
-                RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST, sessionStateKeyList, null, null);
-        if (!result) {
-            log.error(sessionStateKeyList + "缓存失败");
+        if (safeState) {
+            // 未读消息数设置为 0
+            RedisUtil.setHashValue(redisKey,
+                    "unreadNum",
+                    0,
+                    SESSION_STATE_EXPIRATION,
+                    SESSION_STATE_EXPIRATION_UNIT
+            );
         }
     }
 
