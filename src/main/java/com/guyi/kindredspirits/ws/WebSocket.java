@@ -12,6 +12,7 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.domain.UserTeam;
 import com.guyi.kindredspirits.model.enums.FriendRelationStatusEnum;
 import com.guyi.kindredspirits.model.request.ChatRequest;
+import com.guyi.kindredspirits.model.vo.ChatRoomVo;
 import com.guyi.kindredspirits.model.vo.ChatVo;
 import com.guyi.kindredspirits.model.vo.WebSocketVo;
 import com.guyi.kindredspirits.service.*;
@@ -206,6 +207,21 @@ public class WebSocket {
             ChatVo chatVo = new ChatVo();
             chatVo.setChatContent(BaseConstant.HEARTBEAT_PONG);
             // 心跳检测的类型一律是私聊, 因为是针对具体的某个用户的 WebSocket 连接
+            chatVo.setChatType(ChatTypeEnum.PRIVATE_CHAT.getType());
+            sendOneMessage(userId, JsonUtil.G.toJson(chatVo));
+            return;
+        }
+
+        if (BaseConstant.UNREAD_NUMS.equals(message)) {
+            // 返回未读消息数
+            User loginUser = (User) this.httpSession.getAttribute(UserConstant.USER_LOGIN_STATE);
+            if (loginUser == null) {
+                return;
+            }
+            List<ChatRoomVo> chatRoomList = chatService.getChatRoomList(loginUser);
+            String chantContentJson = JsonUtil.G.toJson(chatRoomList);
+            ChatVo chatVo = new ChatVo();
+            chatVo.setChatContent(chantContentJson);
             chatVo.setChatType(ChatTypeEnum.PRIVATE_CHAT.getType());
             sendOneMessage(userId, JsonUtil.G.toJson(chatVo));
             return;
