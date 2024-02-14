@@ -26,6 +26,7 @@ public class LockUtil {
      * @param timeUnit       - 时间单位
      * @param redissonClient - Redisson 客户端
      * @param callback       - 回调函数, 用于定义需要执行的任务
+     * @return 任务执行结果
      */
     public static <T> T opsRedissonLock(String lockKey, long waitTime, long leaseTime, TimeUnit timeUnit,
                                         RedissonClient redissonClient, LockCallback<T> callback) {
@@ -46,6 +47,33 @@ public class LockUtil {
             }
         }
         return executeResult;
+    }
+
+    /**
+     * Redisson 实现 Redis 分布式锁, 只尝试获取锁 1 次
+     *
+     * @param lockKey        - 锁对应的 key
+     * @param leaseTime      - 持有锁的时间
+     * @param timeUnit       - 时间单位
+     * @param redissonClient - Redisson 客户端
+     * @param runnable       - 回调函数
+     */
+    public static void opsRedissonLock(String lockKey, long waitTime, long leaseTime, TimeUnit timeUnit,
+                                       RedissonClient redissonClient, Runnable runnable) {
+
+        RLock lock = redissonClient.getLock(lockKey);
+        try {
+            if (lock.tryLock(waitTime, leaseTime, timeUnit)) {
+                runnable.run();
+            }
+        } catch (InterruptedException e) {
+            log.debug("{}#opsRedissonLock 发生异常, 异常信息如下: \n", LockUtil.class.getName(), e);
+        } finally {
+            // 只释放当前线程加的锁
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
     }
 
     /**
