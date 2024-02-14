@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 将 Redis 缓存中的数据存入 MySQL 中
@@ -31,7 +32,7 @@ public class SaveCacheJob {
     private UnreadMessageNumService unreadMessageNumService;
 
     /**
-     * 将 Redis 缓存中的未读消息数消息写入 MySQL
+     * 将 Redis 缓存中的未读消息数消息写入 MySQL 的定时任务
      * 每 5 分钟执行一次
      */
     @Scheduled(cron = "0 0/5 * * * *")
@@ -45,6 +46,11 @@ public class SaveCacheJob {
                 saveSessionState());
     }
 
+    /**
+     * 将 Redis 缓存中的未读消息数消息写入 MySQL
+     *
+     * @return 可运行对象
+     */
     public Runnable saveSessionState() {
         return () -> {
             // 判断 key 是否存在
@@ -60,7 +66,9 @@ public class SaveCacheJob {
                 return;
             }
             // 去重
-            Set<String> sessionNameSet = new HashSet<>(sessionNameList);
+            Set<String> sessionNameSet = sessionNameList.stream()
+                    .map(sessionName -> sessionName.replace("\"", ""))
+                    .collect(Collectors.toSet());
             List<UnreadMessageNum> unreadMessageNumList = new ArrayList<>();
             for (String sessionName : sessionNameSet) {
                 if (RedisUtil.hasRedisKey(sessionName)) {
@@ -72,13 +80,18 @@ public class SaveCacheJob {
                     unreadMessageNumList.add(unreadMessageNum);
                 }
             }
+            // 批量保存数据
+            unreadMessageNumService.saveOrUpdateBatch(unreadMessageNumList, unreadMessageNumList.size());
 
             // 更新 session name 的 key 列表
-            unreadMessageNumService.saveOrUpdateBatch(unreadMessageNumList, unreadMessageNumList.size());
-            RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST,
-                    new ArrayList<>(sessionNameSet),
-                    null,
-                    null);
+            Boolean result = RedisUtil.STRING_REDIS_TEMPLATE.delete(RedisConstant.SESSION_STATE_KEY_LIST);
+            result = Optional.ofNullable(result).orElse(false);
+            if (result) {
+                RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST,
+                        new ArrayList<>(sessionNameSet),
+                        null,
+                        null);
+            }
         };
     }
 
