@@ -32,7 +32,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
     /**
      * 聊天会话状态的过期时间
      */
-    private static final Long SESSION_STATE_EXPIRATION = 10L;
+    private static final Long SESSION_STATE_EXPIRATION = 11L;
 
     /**
      * 聊天会话状态的过期时间的单位
