@@ -32,7 +32,18 @@ public class SaveCacheJob {
     private UnreadMessageNumService unreadMessageNumService;
 
     /**
-     * 将 Redis 缓存中的未读消息数消息写入 MySQL 的定时任务
+     * 最近一次保存到 MySQL 中的会话状态. <br/>
+     * 外层 Map: <br/>
+     * - key: sessionName <br/>
+     * - value: 具体数据<br/><br/>
+     * 内层 Map: <br/>
+     * - key: hashKey <br/>
+     * - value: hashValue
+     */
+    private static final Map<String, Map<Object, Object>> OLD_SESSION_STATE = new HashMap<>();
+
+    /**
+     * 将 Redis 缓存中的未读消息数消息写入 MySQL 的定时任务<br/>
      * 每 5 分钟执行一次
      */
     @Scheduled(cron = "0 0/5 * * * *")
@@ -74,10 +85,17 @@ public class SaveCacheJob {
                 if (RedisUtil.hasRedisKey(sessionName)) {
                     // 将数据存入 MySQL
                     Map<Object, Object> dataMap = RedisUtil.STRING_REDIS_TEMPLATE.opsForHash().entries(sessionName);
+                    // 避免不必要的数据更新
+                    if (OLD_SESSION_STATE.containsKey(sessionName)) {
+                        if (Objects.equals(OLD_SESSION_STATE.get(sessionName), dataMap)) {
+                            continue;
+                        }
+                    }
                     UnreadMessageNum unreadMessageNum = new UnreadMessageNum();
                     unreadMessageNum.setId(Long.parseLong((String) dataMap.get("id")));
                     unreadMessageNum.setUnreadNum(Integer.valueOf((String) dataMap.get("unreadNum")));
                     unreadMessageNumList.add(unreadMessageNum);
+                    OLD_SESSION_STATE.put(sessionName, dataMap);
                 }
             }
             // 批量保存数据
