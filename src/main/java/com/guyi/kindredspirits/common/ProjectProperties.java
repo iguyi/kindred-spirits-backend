@@ -28,8 +28,13 @@ public class ProjectProperties {
     private String urlPrefix;
 
     /**
-     * 默认头像访问地址
+     * 用户默认头像访问地址
      */
     private String defaultUserAvatarPath;
+
+    /**
+     * 队伍默认头像访问地址
+     */
+    private String defaultTeamAvatarPath;
 
 }
