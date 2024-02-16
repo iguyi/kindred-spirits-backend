@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.reflect.TypeToken;
 import com.guyi.kindredspirits.common.ErrorCode;
+import com.guyi.kindredspirits.common.ProjectProperties;
 import com.guyi.kindredspirits.common.contant.BaseConstant;
 import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
@@ -58,6 +59,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource
     private RedissonClient redissonClient;
 
+    @Resource
+    private ProjectProperties projectProperties;
+
     /**
      * 盐值，混淆密码
      */
@@ -79,6 +83,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 为新用户生成随机昵称
         String username = UserConstant.DEFAULT_USERNAME_PRE + RandomUtil.randomString(6);
         newUser.setUsername(username);
+        // 补充头像消息
+        newUser.setAvatarUrl(projectProperties.getDefaultUserAvatarPath());
 
         // 密码加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
