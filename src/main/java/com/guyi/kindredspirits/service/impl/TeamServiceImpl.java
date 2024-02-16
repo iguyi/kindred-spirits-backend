@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
+import com.guyi.kindredspirits.common.ProjectProperties;
 import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.ChatMapper;
@@ -71,6 +72,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     private static final String SESSION_NAME_TEMPLATE = "team-%s-%s";
 
+    @Resource
+    private ProjectProperties projectProperties;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public long addTeam(Team team, User loginUser) {
@@ -132,6 +136,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         team.setId(null);
         team.setUserId(userId);
         team.setLeaderId(userId);
+        team.setAvatarUrl(projectProperties.getDefaultTeamAvatarPath());
         // 生成入队邀请码
         String newTeamLink = IdUtil.simpleUUID();
         team.setTeamLink(newTeamLink);
