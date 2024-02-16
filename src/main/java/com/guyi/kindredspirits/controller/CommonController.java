@@ -3,6 +3,7 @@ package com.guyi.kindredspirits.controller;
 import cn.hutool.core.util.IdUtil;
 import com.guyi.kindredspirits.common.BaseResponse;
 import com.guyi.kindredspirits.common.ErrorCode;
+import com.guyi.kindredspirits.common.ProjectProperties;
 import com.guyi.kindredspirits.common.ResultUtils;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.model.domain.Team;
@@ -10,10 +11,11 @@ import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
@@ -29,24 +31,10 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/common")
 @Slf4j
-@ConfigurationProperties("project")
-@Data
 public class CommonController {
 
-    /**
-     * 用户头像存放位置
-     */
-    private String userAvatarPath;
-
-    /**
-     * 队伍头像存放位置
-     */
-    private String teamAvatarPath;
-
-    /**
-     * 头像对应 url 前缀
-     */
-    private String urlPrefix;
+    @Resource
+    private ProjectProperties projectProperties;
 
     @Resource
     private UserService userService;
@@ -68,10 +56,10 @@ public class CommonController {
             // 写文件
             String originalFilename = avatar.getOriginalFilename();
             String fileName = getFileName(originalFilename);
-            avatar.transferTo(new File(userAvatarPath, fileName));
+            avatar.transferTo(new File(projectProperties.getUserAvatarPath(), fileName));
 
             // 更新用户信息
-            String avatarUrl = urlPrefix + "/user/" + fileName;
+            String avatarUrl = projectProperties.getUrlPrefix() + "/user/" + fileName;
             UserUpdateRequest updateUser = new UserUpdateRequest();
             updateUser.setId(loginUser.getId());
             updateUser.setAvatarUrl(avatarUrl);
@@ -117,12 +105,12 @@ public class CommonController {
             // 写文件
             String originalFilename = avatar.getOriginalFilename();
             String fileName = getFileName(originalFilename);
-            avatar.transferTo(new File(teamAvatarPath, fileName));
+            avatar.transferTo(new File(projectProperties.getTeamAvatarPath(), fileName));
 
             // 更新队伍信息
             Team updateTeam = new Team();
             updateTeam.setId(teamId);
-            updateTeam.setAvatarUrl(urlPrefix + "/team/" + fileName);
+            updateTeam.setAvatarUrl(projectProperties.getUrlPrefix() + "/team/" + fileName);
             boolean updateResult = teamService.updateById(updateTeam);
 
             if (!updateResult) {
