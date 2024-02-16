@@ -23,6 +23,8 @@ mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 开启日志
 project:
+  defaultUserAvatarPath: http://localhost:3000/public/avatar/user/default_avatar.jpg  # 默认用户头像访问地址
+  defaultTeamAvatarPath: http://localhost:3000/public/avatar/team/default_avatar.jpg  # 默认队伍头像访问地址
   userAvatarPath: D:\CodeRepository\project\kindred-spirits\kindred-spirits-frontend\public\avatar\user # 用户头像存放地址
   teamAvatarPath: D:\CodeRepository\project\kindred-spirits\kindred-spirits-frontend\public\avatar\team # 队伍查询存放地址
   urlPrefix: http://localhost:3000/public/avatar/ # 头像请求路径
