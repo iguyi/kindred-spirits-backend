@@ -100,7 +100,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         userQueryWrapper.select("id", "userAccount", "username", "avatarUrl").eq("id", friendId);
         User friend = userService.getOne(userQueryWrapper);
 
-        List<ChatVo> chatVoList = chatList.stream().sorted(
+        return chatList.stream().sorted(
                 // 根据 id 进行排序, 避免因为使用二级索引带来的聊天记录顺序问题
                 (chat1, chat2) -> Math.toIntExact(chat1.getId() - chat2.getId())
         ).map(chat -> {
@@ -112,11 +112,6 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             // 消息接收者是当前用户
             return getChatVo(friend, loginUser, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
         }).collect(Collectors.toList());
-
-        // todo 建立缓存
-        log.debug("等待建立缓存");
-
-        return chatVoList;
     }
 
     @Override
@@ -145,7 +140,7 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             return safetyUser.getId();
         }));
 
-        List<ChatVo> chatVoList = chatList.stream().filter(chat -> {
+        return chatList.stream().filter(chat -> {
             // 过滤不该当前用户接收的的消息
             String jsonReceiverIds = chat.getReceiverIds();
             List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, ID_LIST_TYPE);
@@ -157,11 +152,6 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             chatVo.setSendTime(DateUtil.format(chat.getCreateTime(), "yyyy-MM-dd HH:mm:ss"));
             return chatVo;
         }).collect(Collectors.toList());
-
-        // todo 建立缓存
-        log.debug("等待建立缓存");
-
-        return chatVoList;
     }
 
     @Override
