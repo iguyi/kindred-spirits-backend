@@ -90,6 +90,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
         newUser.setUserPassword(encryptPassword);
 
+        // 生成用户账号
         String lockKey = String.format(RedisConstant.KEY_PRE, "user", "register", "lock");
         RLock lock = redissonClient.getLock(lockKey);
         for (int i = 0; i < RETRIES_MAX_NUMBER; i++) {
