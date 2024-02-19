@@ -98,6 +98,12 @@ public class SaveCacheJob {
                     OLD_SESSION_STATE.put(sessionName, dataMap);
                 }
             }
+
+            if (unreadMessageNumList.isEmpty()) {
+                // 没有需要保存的数据
+                return;
+            }
+
             // 批量保存数据
             unreadMessageNumService.saveOrUpdateBatch(unreadMessageNumList, unreadMessageNumList.size());
 
