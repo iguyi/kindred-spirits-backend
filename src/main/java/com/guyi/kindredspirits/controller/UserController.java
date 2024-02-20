@@ -12,6 +12,7 @@ import com.guyi.kindredspirits.model.request.UserLoginRequest;
 import com.guyi.kindredspirits.model.request.UserRegisterRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
 import com.guyi.kindredspirits.model.vo.UserVo;
+import com.guyi.kindredspirits.service.FriendService;
 import com.guyi.kindredspirits.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +38,9 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private FriendService friendService;
 
     /**
      * 注册用户
@@ -228,9 +232,7 @@ public class UserController {
     }
 
     /**
-     * 推荐相似用户
-     * todo 暂时是随机返回, 缓存也需要分页查询
-     * todo 排除已经是好友的用户
+     * 推荐相似用户, 普通匹配模式
      *
      * @param pageSize           - 每页的数据量, >0
      * @param pageNum            - 页码, >0
@@ -238,14 +240,19 @@ public class UserController {
      * @return 和当前用户相似的用户
      */
     @GetMapping("/recommend")
-    public BaseResponse<List<User>> recommends(long pageSize, long pageNum, HttpServletRequest httpServletRequest) {
+    public BaseResponse<List<UserVo>> recommends(long pageSize, long pageNum, HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (pageSize < 1 || pageNum < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
 
+        // 获取好友 id 列表
+        List<User> friendList = friendService.getFriendList(loginUser);
+        List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
+        friendIdList.add(loginUser.getId());
+
         // 查询缓存
-        List<User> result = userService.recommends(pageSize, pageNum, loginUser);
+        List<UserVo> result = userService.recommends(pageSize, pageNum, loginUser, friendIdList);
         return ResultUtils.success(result);
     }
 
