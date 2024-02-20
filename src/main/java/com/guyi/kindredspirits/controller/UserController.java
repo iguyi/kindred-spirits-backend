@@ -264,12 +264,18 @@ public class UserController {
      * @return 和当前登录用户最匹配的 num 个其他用户
      */
     @GetMapping("/match")
-    public BaseResponse<List<User>> matchUsers(long num, HttpServletRequest httpServletRequest) {
+    public BaseResponse<List<UserVo>> matchUsers(long num, HttpServletRequest httpServletRequest) {
         if (num <= 0 || num > UserConstant.MATCH_NUM) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
         User loginUser = userService.getLoginUser(httpServletRequest);
-        return ResultUtils.success(userService.matchUsers(num, loginUser));
+
+        // 获取好友 id 列表
+        List<User> friendList = friendService.getFriendList(loginUser);
+        List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
+        friendIdList.add(loginUser.getId());
+
+        return ResultUtils.success(userService.matchUsers(num, loginUser, friendIdList));
     }
 
     /**
