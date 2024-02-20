@@ -15,6 +15,7 @@ import com.guyi.kindredspirits.mapper.UserMapper;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.UpdatePwdRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
+import com.guyi.kindredspirits.model.vo.UserVo;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.*;
 import com.guyi.kindredspirits.util.redis.RecreationCache;
@@ -313,7 +314,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         int result = userMapper.updateById(updateUser);
 
         // 更新用户登录态
-        User updateUserAll  = userMapper.selectById(userId);
+        User updateUserAll = userMapper.selectById(userId);
         httpServletRequest.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, this.getSafetyUser(updateUserAll));
         return result;
     }
@@ -505,56 +506,66 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public List<User> recommends(long pageSize, long pageNum, User loginUser) {
-        // 查询缓存
+    public List<UserVo> recommends(long pageSize, long pageNum, User loginUser, List<Long> friendIdList) {
+        // 缓存 key 和 hashKey, 其中 hashKey 为页码
         final String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, loginUser.getId());
-        Type userListType = new TypeToken<List<User>>() {
-        }.getType();
-        RedisQueryReturn<List<User>> redisQueryReturn = RedisUtil.getValue(redisKey, userListType);
-        List<User> userList = redisQueryReturn.getData();
-        if (userList != null) {
-            if (redisQueryReturn.isExpiration()) {
-                // 缓存数据过期, 重构缓存
-                RecreationCache.recreation(() -> {
-                    this.pageRecommends(pageSize, pageNum, loginUser, redisKey);
-                });
+        final String redisHashKey = String.valueOf(pageNum);
+        if (RedisUtil.hasRedisHashKey(redisKey, redisHashKey)) {
+            // 缓存存在目标数据, 从缓存中查询数据
+            Type userVoListType = new TypeToken<List<UserVo>>() {
+            }.getType();
+            RedisQueryReturn<List<UserVo>> redisQueryReturn =
+                    RedisUtil.getHashValue(redisKey, redisHashKey, userVoListType);
+            redisQueryReturn = Optional.ofNullable(redisQueryReturn).orElse(new RedisQueryReturn<>());
+            List<UserVo> userVoList = redisQueryReturn.getData();
+            if (CollectionUtils.isEmpty(userVoList)) {
+                if (redisQueryReturn.isExpiration()) {
+                    // 缓存数据过期, 异步更新缓存
+                    RecreationCache.recreation(() -> {
+                        this.pageRecommends(pageSize, pageNum, redisKey, friendIdList);
+                    });
+                }
+                // 数据存在缓存, 过滤好友后直接返回缓存中的数据
+                return userVoList.stream()
+                        .filter(userVo -> !friendIdList.contains(userVo.getId()))
+                        .collect(Collectors.toList());
             }
-            // 数据存在缓存, 直接返回缓存中的数据
-            return userList;
         }
-        return this.pageRecommends(pageSize, pageNum, loginUser, redisKey);
+        return this.pageRecommends(pageSize, pageNum, redisKey, friendIdList);
     }
 
     /**
      * 从数据库中获取推荐相似用户数据, 并写入缓存
      *
-     * @param pageSize  - 每页的数据量, >0
-     * @param pageNum   - 页码, >0
-     * @param loginUser - 当前登录用户
-     * @param redisKey  - Redis Key
+     * @param pageSize     - 每页的数据量, >0
+     * @param pageNum      - 页码, >0
+     * @param redisKey     - Redis Key
+     * @param friendIdList - 好友 id 列表
      * @return 和当前用户相似的用户
      */
-    private List<User> pageRecommends(long pageSize, long pageNum, User loginUser, String redisKey) {
-        List<User> userList;
-        // 从数据查询数据
+    private List<UserVo> pageRecommends(long pageSize, long pageNum, String redisKey, List<Long> friendIdList) {
+        // 从数据库分页查询数据, friendIdList 中一定包含自己的 id
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.notIn("id", friendIdList);
         Page<User> userPage = this.page(new Page<>(pageNum, pageSize), queryWrapper);
-        userList = userPage.getRecords();
-        userList = userList.stream()
-                .filter(user -> !user.getId().equals(loginUser.getId()))
+        List<User> userList = userPage.getRecords();
+        List<UserVo> userVoList = userList.stream()
                 .map(user -> {
                     user.setTags(this.getTagListJson(user));
-                    return this.getSafetyUser(user);
+                    UserVo userVo = new UserVo();
+                    BeanUtils.copyProperties(user, userVo);
+                    return userVo;
                 })
                 .collect(Collectors.toList());
 
-        // 将数据写入缓存, 有效时间 15 小时 + 随机时间
-        long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
-        boolean result = RedisUtil.setValue(redisKey, userList, timeout, TimeUnit.MINUTES);
+        // 将数据写入缓存, 有效时间 15 小时 + 随机时间(0~5小时)
+        long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(5 * 60L);
+        String redisHashKey = String.valueOf(pageNum);
+        boolean result = RedisUtil.setHashValue(redisKey, redisHashKey, userVoList, timeout, TimeUnit.MINUTES);
         if (!result) {
             log.error("缓存设置失败");
         }
-        return userList;
+        return userVoList;
     }
 
 }
