@@ -321,25 +321,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     /**
      * 获取最匹配的用户
-     * todo 排除已经是好友的用户
+     * todo 设置缓存
      *
      * @param num       - 推荐的数量
      * @param loginUser - 当前登录用户
      * @return 和当前登录用户最匹配的 num 个其他用户
      */
     @Override
-    public List<User> matchUsers(long num, User loginUser) {
+    public List<UserVo> matchUsers(long num, User loginUser, List<Long> friendIdList) {
         // 获取当前登录用户的标签数据
         String loginUserTags = loginUser.getTags();
         if (StringUtils.isBlank(loginUserTags)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "当前登录用户未设置标签");
         }
 
-        // 查询 loginUserTags 不为空且不是当前登录用户的所有其他用户
+        // 查询 loginUserTags 不为空且与当前登录用户无关的所有其他用户
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone"
                 , "email");
-        userQueryWrapper.ne("id", loginUser.getId());
+        userQueryWrapper.notIn("id", friendIdList);
         userQueryWrapper.isNotNull("tags");
         List<User> userList = this.list(userQueryWrapper);
 
@@ -351,15 +351,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 continue;
             }
             Map<String, List<Integer>> otherUserTagMap = getTagWeightList(user.getTags());
+            // 计算相似度
             double similarity = AlgorithmUtil.similarity(loginUserTagMap, otherUserTagMap);
             linkedUtil.add(user, similarity);
         }
         List<User> userListResult = linkedUtil.getList();
-        userListResult.forEach(user -> {
+        return userListResult.stream().map(user -> {
             user.setTags(this.getTagListJson(user));
-            this.getSafetyUser(user);
-        });
-        return userListResult;
+            UserVo userVo = new UserVo();
+            BeanUtils.copyProperties(user, userVo);
+            return userVo;
+        }).collect(Collectors.toList());
     }
 
     @Override
