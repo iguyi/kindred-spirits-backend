@@ -258,7 +258,6 @@ public class UserController {
 
     /**
      * 获取最匹配的用户
-     * todo 排除已经是好友的用户
      *
      * @param num - 推荐的数量
      * @return 和当前登录用户最匹配的 num 个其他用户
