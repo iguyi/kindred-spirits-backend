@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.model.request.UpdatePwdRequest;
 import com.guyi.kindredspirits.model.request.UserUpdateRequest;
+import com.guyi.kindredspirits.model.vo.UserVo;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -144,11 +145,12 @@ public interface UserService extends IService<User> {
     /**
      * 推荐相似用户
      *
-     * @param pageSize  - 每页的数据量, >0
-     * @param pageNum   - 页码, >0
-     * @param loginUser - 当前登录用户
+     * @param pageSize     - 每页的数据量, >0
+     * @param pageNum      - 页码, >0
+     * @param loginUser    - 当前登录用户
+     * @param friendIdList - 好友 id 列表
      * @return 用户列表
      */
-    List<User> recommends(long pageSize, long pageNum, User loginUser);
+    List<UserVo> recommends(long pageSize, long pageNum, User loginUser, List<Long> friendIdList);
 
 }
