@@ -105,11 +105,12 @@ public interface UserService extends IService<User> {
     /**
      * 获取最匹配的用户
      *
-     * @param num       - 推荐的数量
-     * @param loginUser - 当前登录用户
+     * @param num          - 推荐的数量
+     * @param loginUser    - 当前登录用户
+     * @param friendIdList - 好友 id 列表
      * @return 和当前登录用户最匹配的 num 个其他用户
      */
-    List<User> matchUsers(long num, User loginUser);
+    List<UserVo> matchUsers(long num, User loginUser, List<Long> friendIdList);
 
     /**
      * user 中原始的 tags 数据转换为 ["tag-1", "tag-2"] 的格式。
