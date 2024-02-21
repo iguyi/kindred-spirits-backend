@@ -56,9 +56,11 @@ public interface UserService extends IService<User> {
      * 根据标签搜索用户 -- 内存查询
      *
      * @param tagNameList - 标签列表, 被搜索用户需要有的标签
+     * @param pageNum - 页码, >0
+     * @param pageSize - 每页的数据量, >0
      * @return 符合要求的用户
      */
-    List<User> searchUsersByTags(List<String> tagNameList);
+    List<User> searchUsersByTags(List<String> tagNameList, Long pageSize, Long pageNum);
 
     /**
      * 根据标签搜索用户 -- SQL 查询
