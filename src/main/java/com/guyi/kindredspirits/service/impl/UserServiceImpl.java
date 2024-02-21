@@ -449,7 +449,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public List<User> searchUser(List<Long> friendIdList, String searchCondition, long pageSize, long pageNum) {
+    public List<User> searchUser(List<Long> friendIdList, String searchCondition, Long pageSize, Long pageNum) {
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.notIn("id", friendIdList)
                 .and(queryWrapper -> queryWrapper.eq("id", searchCondition)
