@@ -135,7 +135,7 @@ public interface UserService extends IService<User> {
      * @param pageNum         - 页码, >0
      * @return 符合要求的用户
      */
-    List<User> searchUser(List<Long> friendIdList, String searchCondition, long pageSize, long pageNum);
+    List<User> searchUser(List<Long> friendIdList, String searchCondition, Long pageSize, Long pageNum);
 
     /**
      * 用户更新密码
