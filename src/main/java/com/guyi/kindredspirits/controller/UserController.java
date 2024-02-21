@@ -120,7 +120,12 @@ public class UserController {
      * @return 符合要求的用户
      */
     @GetMapping("/search")
-    public BaseResponse<List<UserVo>> searchUser(String searchCondition, long pageSize, long pageNum, HttpServletRequest httpServletRequest) {
+    public BaseResponse<List<UserVo>> searchUser(String searchCondition, Long pageSize, Long pageNum,
+                                                 HttpServletRequest httpServletRequest) {
+        if (pageSize == null || pageNum == null || pageNum * pageSize <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.FORBIDDEN.getDescription());
+        }
+        
         // 用户是否登录
         User loginUser = userService.getLoginUser(httpServletRequest);
 
