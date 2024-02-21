@@ -125,7 +125,7 @@ public class UserController {
         if (pageSize == null || pageNum == null || pageNum * pageSize <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.FORBIDDEN.getDescription());
         }
-        
+
         // 用户是否登录
         User loginUser = userService.getLoginUser(httpServletRequest);
 
@@ -230,15 +230,31 @@ public class UserController {
      * @return 符合要求的用户
      */
     @GetMapping("/search/tags")
-    public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList,
+    public BaseResponse<List<UserVo>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList,
+                                                      Long pageSize, Long pageNum,
                                                       HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
-        List<User> userList = userService.searchUsersByTags(tagNameList);
-        List<User> result = userList.stream()
-                .filter(user -> !user.getId().equals(loginUser.getId()))
+        if (pageSize == null || pageNum == null || pageNum * pageSize <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.FORBIDDEN.getDescription());
+        }
+
+        // 获取好友 id 列表
+        List<User> friendList = friendService.getFriendList(loginUser);
+        List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
+        friendIdList.add(loginUser.getId());
+
+        // 获取数据
+        List<User> userList = userService.searchUsersByTagsBySql(friendIdList, tagNameList, pageSize, pageNum);
+        List<UserVo> result = userList.stream()
+                .map(user -> {
+                    UserVo userVo = new UserVo();
+                    BeanUtils.copyProperties(user, userVo);
+                    return userVo;
+                })
                 .collect(Collectors.toList());
         return ResultUtils.success(result);
     }
