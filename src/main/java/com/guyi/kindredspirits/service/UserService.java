@@ -129,10 +129,13 @@ public interface UserService extends IService<User> {
     /**
      * 自由搜索用户
      *
+     * @param friendIdList    - 好友 id 列表(包含自己)
      * @param searchCondition - 搜索条件(关键词)
+     * @param pageSize        - 每页的数据量, >0
+     * @param pageNum         - 页码, >0
      * @return 符合要求的用户
      */
-    List<User> searchUser(String searchCondition);
+    List<User> searchUser(List<Long> friendIdList, String searchCondition, long pageSize, long pageNum);
 
     /**
      * 用户更新密码
