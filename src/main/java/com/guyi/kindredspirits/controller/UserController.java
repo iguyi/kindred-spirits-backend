@@ -115,14 +115,21 @@ public class UserController {
     /**
      * 自由搜索用户
      *
-     * @param searchCondition - 搜索条件(关键词)
+     * @param searchCondition    - 搜索条件(关键词)
+     * @param httpServletRequest - 客户端请求
      * @return 符合要求的用户
      */
     @GetMapping("/search")
-    public BaseResponse<List<UserVo>> searchUser(String searchCondition, HttpServletRequest httpServletRequest) {
+    public BaseResponse<List<UserVo>> searchUser(String searchCondition, long pageSize, long pageNum, HttpServletRequest httpServletRequest) {
         // 用户是否登录
         User loginUser = userService.getLoginUser(httpServletRequest);
-        List<User> userList = userService.searchUser(searchCondition);
+
+        // 获取好友 ID 列表, 包括自己
+        List<User> friendList = friendService.getFriendList(loginUser);
+        List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
+        friendIdList.add(loginUser.getId());
+
+        List<User> userList = userService.searchUser(friendIdList, searchCondition, pageSize, pageNum);
         List<UserVo> result = userList.stream()
                 .filter(user -> !user.getId().equals(loginUser.getId()))
                 .map(user -> {
