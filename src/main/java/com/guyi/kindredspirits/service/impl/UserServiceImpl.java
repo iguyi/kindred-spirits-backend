@@ -214,7 +214,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 将所有数据写入内存, 然后在内存中筛选数据、分页, 适合数据量小的场景.
      */
     @Override
-    public List<User> searchUsersByTags(List<Long> friendIdList, List<String> tagNameList, Long pageSize, Long pageNum) {
+    public List<User> searchUsersByTags(List<Long> friendIdList, List<String> tagNameList, Long pageSize,
+                                        Long pageNum) {
         if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
@@ -245,34 +246,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     /**
-     * 根据标签搜索用户 -- SQL 查询
+     * 根据标签搜索用户 -- SQL 查询<br/>
+     * 数据库分页查询, 适合数据量较大的场景.
      *
      * @param tagNameList: 标签列表, 被搜索用户需要有的标签
      * @return 符合要求的用户
      */
     @Override
-    public List<User> searchUsersByTagsBySql(List<String> tagNameList) {
-        /*
-        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        userQueryWrapper.notIn("id", friendIdList)
-                .and(queryWrapper -> queryWrapper.eq("id", searchCondition)
-                        .or().eq("userAccount", searchCondition)
-                        .or().like("username", searchCondition)
-                        .or().like("tags", searchCondition)
-                        .or().like("profile", searchCondition));
-        Page<User> userPage = this.page(new Page<>(pageNum, pageSize), userQueryWrapper);
-        return userPage.getRecords();
-         */
+    public List<User> searchUsersByTagsBySql(List<Long> friendIdList, List<String> tagNameList, Long pageSize,
+                                             Long pageNum) {
         if (CollectionUtils.isEmpty(tagNameList)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "没有条件");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getDescription());
         }
+
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        // like '%Java%' and like '%Python%'
+        userQueryWrapper.notIn("id", friendIdList);
         for (String tagName : tagNameList) {
+            // like '%Java%' and like '%Python%'
             userQueryWrapper = userQueryWrapper.like("tags", tagName);
         }
-        List<User> userList = userMapper.selectList(userQueryWrapper);
-        return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
+        Page<User> userPage = this.page(new Page<>(pageNum, pageSize), userQueryWrapper);
+        List<User> records = userPage.getRecords();
+        return records.stream().peek(user -> user.setTags(this.getTagListJson(user))).collect(Collectors.toList());
     }
 
     /**
