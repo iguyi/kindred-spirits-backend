@@ -449,15 +449,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public List<User> searchUser(String searchCondition) {
+    public List<User> searchUser(List<Long> friendIdList, String searchCondition, long pageSize, long pageNum) {
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        userQueryWrapper
-                .eq("id", searchCondition)
-                .or().eq("userAccount", searchCondition)
-                .or().like("username", searchCondition)
-                .or().like("tags", searchCondition)
-                .or().like("profile", searchCondition);
-        return this.list(userQueryWrapper);
+        userQueryWrapper.notIn("id", friendIdList)
+                .and(queryWrapper -> queryWrapper.eq("id", searchCondition)
+                        .or().eq("userAccount", searchCondition)
+                        .or().like("username", searchCondition)
+                        .or().like("tags", searchCondition)
+                        .or().like("profile", searchCondition));
+        Page<User> userPage = this.page(new Page<>(pageNum, pageSize), userQueryWrapper);
+        return userPage.getRecords();
     }
 
     @Override
