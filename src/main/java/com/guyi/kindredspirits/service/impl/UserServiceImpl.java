@@ -210,22 +210,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     /**
-     * 根据标签搜索用户 -- 内存查询
-     *
-     * @param tagNameList: 标签列表, 被搜索用户需要有的标签
-     * @return 符合要求的用户
+     * 根据标签搜索用户 -- 内存查询<br/>
+     * 将所有数据写入内存, 然后在内存中筛选数据、分页, 适合数据量小的场景.
      */
     @Override
-    public List<User> searchUsersByTags(List<String> tagNameList) {
+    public List<User> searchUsersByTags(List<Long> friendIdList, List<String> tagNameList, Long pageSize, Long pageNum) {
         if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
-        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         // 查询所有用户
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.notIn("id", friendIdList);
         List<User> userList = userMapper.selectList(userQueryWrapper);
 
-        // 在内存中查询
-        return userList.stream().filter(user -> {
+        // 在内存中过滤
+        List<User> searchResultAll = userList.stream().filter(user -> {
             String tagsStr = user.getTags();
             if (StringUtils.isBlank(tagsStr)) {
                 return false;
@@ -241,6 +240,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
             return false;
         }).map(this::getSafetyUser).collect(Collectors.toList());
+        long initIndex = (pageNum-1) * pageSize;
+        return searchResultAll.subList((int) initIndex, (int) (initIndex + pageSize));
     }
 
     /**
@@ -251,6 +252,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     public List<User> searchUsersByTagsBySql(List<String> tagNameList) {
+        /*
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.notIn("id", friendIdList)
+                .and(queryWrapper -> queryWrapper.eq("id", searchCondition)
+                        .or().eq("userAccount", searchCondition)
+                        .or().like("username", searchCondition)
+                        .or().like("tags", searchCondition)
+                        .or().like("profile", searchCondition));
+        Page<User> userPage = this.page(new Page<>(pageNum, pageSize), userQueryWrapper);
+        return userPage.getRecords();
+         */
         if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "没有条件");
         }
