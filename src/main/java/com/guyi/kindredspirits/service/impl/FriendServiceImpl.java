@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -238,7 +239,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         // 查询所有好友的详细信息
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         if (friendIdList.size() == 0) {
-            return null;
+            return new ArrayList<>();
         }
         userQueryWrapper.in("id", friendIdList);
         return userService.list(userQueryWrapper);
