@@ -45,8 +45,8 @@ public class LinkedUtil {
         }
         Node current = head;
         while (current != null) {
-            // similarity 越小, 离 head 越近
-            if (current.similarity > newNode.similarity) {
+            // similarity 越大, 离 head 越近
+            if (current.similarity < newNode.similarity) {
                 // 插队
                 Node currentLast = current.last;
                 if (currentLast == null) {
