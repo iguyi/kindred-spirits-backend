@@ -347,7 +347,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userQueryWrapper.select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone"
                 , "email");
         userQueryWrapper.notIn("id", friendIdList);
-        userQueryWrapper.isNotNull("tags");
+        userQueryWrapper.isNotNull("tags").ne("tags", "{}");
         List<User> userList = this.list(userQueryWrapper);
 
         Map<String, List<Integer>> loginUserTagMap = getTagWeightList(loginUserTags);
