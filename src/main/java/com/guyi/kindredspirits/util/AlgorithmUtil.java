@@ -10,6 +10,16 @@ import java.util.*;
 public class AlgorithmUtil {
 
     /**
+     * 用户初始权值权值
+     */
+    private static final double USER_WEIGHT_INIT = 0.0;
+
+    /**
+     * 初始点积
+     */
+    private static final double DOT_PRODUCT_INIT = 0.0;
+
+    /**
      * 最短编辑距离算法 - 标签
      *
      * @param current - 当前用户的标签列表
@@ -57,36 +67,41 @@ public class AlgorithmUtil {
     public static double similarity(Map<String, List<Integer>> currentUserTag,
                                     Map<String, List<Integer>> otherUserTag) {
         // 当前用户权值
-        double currentUserWeight = 0.0;
+        double currentUserWeight = USER_WEIGHT_INIT;
 
         // 其他用户权值
-        double otherUserWeight = 0.0;
+        double otherUserWeight = USER_WEIGHT_INIT;
 
         // 点积
-        double dotProduct = 0.0;
+        double dotProduct = DOT_PRODUCT_INIT;
 
-        Set<String> otherItemSuperTagIds = otherUserTag.keySet();
-        for (String otherItemSuperTagId : otherItemSuperTagIds) {
-            // 只有同一标签类型同时存在于当前用户和其他用户时, 才作为参考
-            if (!currentUserTag.containsKey(otherItemSuperTagId)) {
+        // 用户的特征向量, 有各自标签的权重组合而成
+        List<Double> currentUserVector = new ArrayList<>();
+        List<Double> otherUserVector = new ArrayList<>();
+
+        // 根据用户标签生成特征向量
+        Set<String> currentItemSuperTagIds = currentUserTag.keySet();
+        for (String currentItemSuperTagId : currentItemSuperTagIds) {
+            double currentUserVectorItem = calculateParentTagWeight(currentUserTag.get(currentItemSuperTagId));
+            currentUserVector.add(currentUserVectorItem);
+
+            if (!otherUserTag.containsKey(currentItemSuperTagId)) {
+                otherUserVector.add(0.0);
                 continue;
             }
-
-            // 获取两个用户对应当前类型标签(父标签)下的所有子标签
-            List<Integer> currentItemTagWeightsList = currentUserTag.get(otherItemSuperTagId);
-            List<Integer> otherItemTagWeightsList = otherUserTag.get(otherItemSuperTagId);
-
-            // 计算(顶层)父标签权值 - 点积
-            double currentUserProduct = calculateParentTagWeight(currentItemTagWeightsList);
-            double otherUserValuesProduct = calculateParentTagWeight(otherItemTagWeightsList);
-            dotProduct += currentUserProduct * otherUserValuesProduct;
-
-            // 计算用户权值
-            currentUserWeight += Math.pow(currentUserProduct, 2);
-            otherUserWeight += Math.pow(otherUserValuesProduct, 2);
+            double otherUserVectorItem = calculateParentTagWeight(otherUserTag.get(currentItemSuperTagId));
+            otherUserVector.add(otherUserVectorItem);
         }
 
         // 计算结果并返回
+        int size = currentUserVector.size();
+        for (int i = 0; i < size; i++) {
+            Double currentUserVectorItem = currentUserVector.get(i);
+            Double otherUserVectorItem = otherUserVector.get(i);
+            dotProduct += (currentUserVectorItem * otherUserVectorItem);
+            currentUserWeight += Math.pow(currentUserVectorItem, 2);
+            otherUserWeight += Math.pow(otherUserVectorItem, 2);
+        }
         return dotProduct / Math.max(Math.sqrt(currentUserWeight) * Math.sqrt(otherUserWeight), 0.00000001);
     }
 
@@ -98,7 +113,7 @@ public class AlgorithmUtil {
      */
     private static double calculateParentTagWeight(List<Integer> tagWeights) {
         // 初始权重
-        double weight = 0.0;
+        double weight = USER_WEIGHT_INIT;
 
         for (Integer tagWeight : tagWeights) {
             weight += tagWeight;
