@@ -47,6 +47,13 @@ public class AlgorithmUtil {
         return d[n][m];
     }
 
+    /**
+     * 余弦相似度
+     *
+     * @param currentUserTag - 当前用户的标签
+     * @param otherUserTag   - 其他用户的标签
+     * @return 相似度
+     */
     public static double similarity(Map<String, List<Integer>> currentUserTag,
                                     Map<String, List<Integer>> otherUserTag) {
         // 当前用户权值
@@ -59,11 +66,13 @@ public class AlgorithmUtil {
         double dotProduct = 0.0;
 
         Set<String> otherItemSuperTagIds = otherUserTag.keySet();
-        for (String otherItemSuperTagId: otherItemSuperTagIds) {
+        for (String otherItemSuperTagId : otherItemSuperTagIds) {
+            // 只有同一标签类型同时存在于当前用户和其他用户时, 才作为参考
             if (!currentUserTag.containsKey(otherItemSuperTagId)) {
                 continue;
             }
 
+            // 获取两个用户对应当前类型标签(父标签)下的所有子标签
             List<Integer> currentItemTagWeightsList = currentUserTag.get(otherItemSuperTagId);
             List<Integer> otherItemTagWeightsList = otherUserTag.get(otherItemSuperTagId);
 
@@ -77,6 +86,7 @@ public class AlgorithmUtil {
             otherUserWeight += Math.pow(otherUserValuesProduct, 2);
         }
 
+        // 计算结果并返回
         return dotProduct / Math.max(Math.sqrt(currentUserWeight) * Math.sqrt(otherUserWeight), 0.00000001);
     }
 
