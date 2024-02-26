@@ -79,11 +79,16 @@ public class AlgorithmUtil {
         List<Double> currentUserVector = new ArrayList<>();
         List<Double> otherUserVector = new ArrayList<>();
 
+        // 向量元素之和, 用于避免在两个用户的特征向量都是只有一个影响因素的情况下出现相似度恒等于 1 的问题
+        double currentUserVectorSum = 0.0;
+        double otherUserVectorSum = 0.0;
+
         // 根据用户标签生成特征向量
         Set<String> currentItemSuperTagIds = currentUserTag.keySet();
         for (String currentItemSuperTagId : currentItemSuperTagIds) {
             double currentUserVectorItem = calculateParentTagWeight(currentUserTag.get(currentItemSuperTagId));
             currentUserVector.add(currentUserVectorItem);
+            currentUserVectorSum += currentUserVectorItem;
 
             if (!otherUserTag.containsKey(currentItemSuperTagId)) {
                 otherUserVector.add(0.0);
@@ -91,16 +96,22 @@ public class AlgorithmUtil {
             }
             double otherUserVectorItem = calculateParentTagWeight(otherUserTag.get(currentItemSuperTagId));
             otherUserVector.add(otherUserVectorItem);
+            otherUserVectorSum += otherUserVectorItem;
         }
+        currentUserVector.add(currentUserVectorSum / currentUserVector.size());
+        otherUserVector.add(otherUserVectorSum / otherUserVector.size());
 
         // 计算结果并返回
         int size = currentUserVector.size();
         for (int i = 0; i < size; i++) {
             Double currentUserVectorItem = currentUserVector.get(i);
             Double otherUserVectorItem = otherUserVector.get(i);
-            dotProduct += (currentUserVectorItem * otherUserVectorItem);
-            currentUserWeight += Math.pow(currentUserVectorItem, 2);
-            otherUserWeight += Math.pow(otherUserVectorItem, 2);
+            // 根据比重调整计算参数
+            double a = currentUserVectorItem * (currentUserVectorItem / currentUserVectorSum);
+            double b = otherUserVectorItem * (otherUserVectorItem / otherUserVectorSum);
+            dotProduct += (a * b);
+            currentUserWeight += Math.pow(a, 2);
+            otherUserWeight += Math.pow(b, 2);
         }
         return dotProduct / Math.max(Math.sqrt(currentUserWeight) * Math.sqrt(otherUserWeight), 0.00000001);
     }
