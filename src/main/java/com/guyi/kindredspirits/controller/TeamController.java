@@ -16,6 +16,7 @@ import com.guyi.kindredspirits.service.TeamService;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.service.UserTeamService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -102,14 +103,22 @@ public class TeamController {
     /**
      * 自由搜索队伍 - 主要用于用户查找队伍
      *
-     * @param searchCondition - 搜索条件(关键词)
+     * @param searchCondition    - 搜索条件(关键词)
+     * @param pageSize-          每页数据量大小, (0, 20]
+     * @param pageNum            - 页码, >0
+     * @param httpServletRequest - 客户端请求
      * @return 符合要求的队伍
      */
     @GetMapping("/search")
-    public BaseResponse<List<TeamVo>> searchTeam(String searchCondition, HttpServletRequest httpServletRequest) {
+    public BaseResponse<List<TeamVo>> searchTeam(String searchCondition, long pageSize, long pageNum,
+                                                 HttpServletRequest httpServletRequest) {
+        // 参数校验
+        if (StringUtils.isBlank(searchCondition)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
+        }
         userService.getLoginUser(httpServletRequest);
 
-        List<Team> teamList = teamService.searchTeam(searchCondition);
+        List<Team> teamList = teamService.searchTeam(searchCondition, pageSize, pageNum);
         List<TeamVo> result = teamList.stream().map(team -> {
             TeamVo teamVo = new TeamVo();
             BeanUtils.copyProperties(team, teamVo);
