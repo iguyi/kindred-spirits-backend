@@ -216,7 +216,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         teamQueryWrapper.and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
 
         // 分页查询相关队伍
-        // List<Team> teamList = this.list(teamQueryWrapper);
         Page<Team> teamPage = new Page<>(teamQuery.getPageNum(), teamQuery.getPageSize());
         List<Team> teamList = this.page(teamPage, teamQueryWrapper).getRecords();
         if (CollectionUtils.isEmpty(teamList)) {
@@ -531,9 +530,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 .map(UserTeam::getTeamId)
                 .collect(Collectors.toList());
 
-        Team team = new Team();
-        BeanUtils.copyProperties(teamQuery, team);
-        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>(team);
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
         if (currentUserInTeamIds.size() > 0) {
             // 过滤 "加入的队伍"
             teamQueryWrapper.notIn("id", currentUserInTeamIds);
