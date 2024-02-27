@@ -241,7 +241,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
             return false;
         }).map(this::getSafetyUser).collect(Collectors.toList());
-        long initIndex = (pageNum-1) * pageSize;
+        long initIndex = (pageNum - 1) * pageSize;
         return searchResultAll.subList((int) initIndex, (int) (initIndex + pageSize));
     }
 
@@ -328,14 +328,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     /**
      * 获取最匹配的用户
-     * todo 设置缓存
      *
      * @param num       - 推荐的数量
      * @param loginUser - 当前登录用户
      * @return 和当前登录用户最匹配的 num 个其他用户
      */
     @Override
-    public List<UserVo> matchUsers(long num, User loginUser, List<Long> friendIdList) {
+    public List<UserVo> matchUsers(long num, long pageNum, User loginUser, List<Long> friendIdList) {
         // 获取当前登录用户的标签数据
         String loginUserTags = loginUser.getTags();
         if (StringUtils.isBlank(loginUserTags)) {
@@ -344,11 +343,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 查询 loginUserTags 不为空且与当前登录用户无关的所有其他用户
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        userQueryWrapper.select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone"
-                , "email");
-        userQueryWrapper.notIn("id", friendIdList);
-        userQueryWrapper.isNotNull("tags").ne("tags", "{}");
-        List<User> userList = this.list(userQueryWrapper);
+        userQueryWrapper
+                .select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone", "email")
+                .notIn("id", friendIdList)
+                .isNotNull("tags").ne("tags", "{}");
+        long pageSize = num * 50;
+        List<User> userList = this.page(new Page<>(pageNum, pageSize), userQueryWrapper).getRecords();
 
         Map<String, List<Integer>> loginUserTagMap = getTagWeightList(loginUserTags);
         LinkedUtil linkedUtil = new LinkedUtil(num);
