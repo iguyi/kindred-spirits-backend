@@ -165,8 +165,8 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Override
     public List<UserTeamVo> listTeams(TeamQueryRequest teamQuery, boolean isAdmin) {
-        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
         // 组合查询条件
+        QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
         if (teamQuery != null) {
             Long id = teamQuery.getId();
             if (id != null && id > 0) {
@@ -174,7 +174,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             }
             String searchText = teamQuery.getSearchText();
             if (StringUtils.isBlank(searchText)) {
-                teamQueryWrapper.and(qw -> qw.like("name", searchText).or().like("description", searchText));
+                teamQueryWrapper.and(qw -> qw
+                        .like("name", searchText)
+                        .or().like("description", searchText));
             }
             String name = teamQuery.getName();
             if (StringUtils.isNotBlank(name)) {
@@ -210,25 +212,27 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         // 不展示已过期队伍
         teamQueryWrapper.and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
+
+        // 分页查询相关队伍
         List<Team> teamList = this.list(teamQueryWrapper);
-        // 关联查询队伍查询信息
         if (CollectionUtils.isEmpty(teamList)) {
             return new ArrayList<>();
         }
 
-        // todo 需要改成队伍所有成员
-        // 关联查询创建人信息
+        // 构建返回内容
         List<UserTeamVo> userTeamVoList = new ArrayList<>();
         for (Team team : teamList) {
+            // 脱敏
+            UserTeamVo userTeamVo = new UserTeamVo();
+            BeanUtils.copyProperties(team, userTeamVo);
+
+            // 队伍创始人 id
             Long userId = team.getUserId();
             if (userId == null) {
                 continue;
             }
-            // todo 根据队伍id 查询 user_team, 拿到成员 id, 到 user 表查询成员信息(建议 SQL 方式)
+            // 查询队伍创始人信息
             User user = userService.getById(userId);
-            // 脱敏
-            UserTeamVo userTeamVo = new UserTeamVo();
-            BeanUtils.copyProperties(team, userTeamVo);
             if (user != null) {
                 UserVo userVo = new UserVo();
                 BeanUtils.copyProperties(user, userVo);
