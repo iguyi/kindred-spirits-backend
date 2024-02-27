@@ -595,7 +595,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     }
 
     @Override
-    public List<Team> searchTeam(String searchCondition) {
+    public List<Team> searchTeam(String searchCondition, long pageSize, long pageNum) {
         if (StringUtils.isBlank(searchCondition)) {
             throw new BusinessException(ErrorCode.NULL_ERROR, ErrorCode.NULL_ERROR.getMsg());
         }
@@ -608,7 +608,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                         .or().like("description", searchCondition)
                 )
                 .and(qw -> qw.gt("expireTime", new Date()).or().isNull("expireTime"));
-        return this.list(teamQueryWrapper);
+        return this.page(new Page<>(pageNum, pageSize), teamQueryWrapper).getRecords();
     }
 
     @Override
