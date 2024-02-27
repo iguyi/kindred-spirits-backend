@@ -145,23 +145,30 @@ public class TeamController {
      */
     @GetMapping("/list")
     public BaseResponse<List<UserTeamVo>> listTeams(TeamQueryRequest teamQuery, HttpServletRequest httpServletRequest) {
+        // 参数校验
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
         User loginUser = userService.getLoginUser(httpServletRequest);
-        Long loginUserId = loginUser.getId();
+
+        // 获取符合要求的数据
         boolean isAdmin = userService.isAdmin(httpServletRequest);
         List<UserTeamVo> userTeamList = teamService.listTeams(teamQuery, isAdmin);
+
+        // 过滤已加入的队伍
+        Long loginUserId = loginUser.getId();
         userTeamList.forEach(userTeamVo -> {
             List<UserVo> userList = userTeamVo.getUserList();
             if (userList != null) {
                 userList.forEach(userVo -> {
-                    if (loginUserId.equals(userVo.getId())) {  // 当前用户已加入该队伍
+                    if (loginUserId.equals(userVo.getId())) {
                         userTeamVo.setHasJoin(true);
                     }
                 });
             }
         });
+
+        // 返回数据
         return ResultUtils.success(userTeamList);
     }
 
