@@ -231,8 +231,8 @@ public class UserController {
      */
     @GetMapping("/search/tags")
     public BaseResponse<List<UserVo>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList,
-                                                      Long pageSize, Long pageNum,
-                                                      HttpServletRequest httpServletRequest) {
+                                                        Long pageSize, Long pageNum,
+                                                        HttpServletRequest httpServletRequest) {
         // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (CollectionUtils.isEmpty(tagNameList)) {
@@ -287,12 +287,14 @@ public class UserController {
     /**
      * 获取最匹配的用户
      *
-     * @param num - 推荐的数量
+     * @param num                - 推荐的数量, num in (0, 20]
+     * @param pageNum            - 页码, >0
+     * @param httpServletRequest - 客户端请求
      * @return 和当前登录用户最匹配的 num 个其他用户
      */
     @GetMapping("/match")
-    public BaseResponse<List<UserVo>> matchUsers(long num, HttpServletRequest httpServletRequest) {
-        if (num <= 0 || num > UserConstant.MATCH_NUM) {
+    public BaseResponse<List<UserVo>> matchUsers(long num, long pageNum, HttpServletRequest httpServletRequest) {
+        if (num <= 0 || num > UserConstant.MATCH_NUM || pageNum <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
         User loginUser = userService.getLoginUser(httpServletRequest);
@@ -302,7 +304,7 @@ public class UserController {
         List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
         friendIdList.add(loginUser.getId());
 
-        return ResultUtils.success(userService.matchUsers(num, loginUser, friendIdList));
+        return ResultUtils.success(userService.matchUsers(num, pageNum, loginUser, friendIdList));
     }
 
     /**
