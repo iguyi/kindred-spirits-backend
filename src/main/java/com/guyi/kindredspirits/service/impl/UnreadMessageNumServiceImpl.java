@@ -187,7 +187,9 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
     }
 
     /**
-     * todo 缓存过期问题
+     * 缓存问题通过定时任务解决
+     *
+     * @see com.guyi.kindredspirits.job.FlushCacheJob#doClearCacheUnreadMessageNum
      */
     @Override
     public UnreadMessageNumCache getUnreadMessageNumByName(String sessionName) {
