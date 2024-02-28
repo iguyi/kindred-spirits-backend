@@ -204,26 +204,13 @@ public class WebSocket {
     public void onMessage(@PathParam("userId") String userId, String message) {
         if (BaseConstant.HEARTBEAT_PING.equals(message)) {
             // 心跳检测
-            ChatVo chatVo = new ChatVo();
-            chatVo.setChatContent(BaseConstant.HEARTBEAT_PONG);
-            // 心跳检测的类型一律是私聊, 因为是针对具体的某个用户的 WebSocket 连接
-            chatVo.setChatType(ChatTypeEnum.PRIVATE_CHAT.getType());
-            sendOneMessage(userId, JsonUtil.G.toJson(chatVo));
+            heartbeatHandler(userId);
             return;
         }
 
         if (BaseConstant.UNREAD_NUMS.equals(message)) {
             // 返回未读消息数
-            User loginUser = (User) this.httpSession.getAttribute(UserConstant.USER_LOGIN_STATE);
-            if (loginUser == null) {
-                return;
-            }
-            List<ChatRoomVo> chatRoomList = chatService.getChatRoomList(loginUser);
-            String chantContentJson = JsonUtil.G.toJson(chatRoomList);
-            ChatVo chatVo = new ChatVo();
-            chatVo.setChatContent(chantContentJson);
-            chatVo.setChatType(ChatTypeEnum.PRIVATE_CHAT.getType());
-            sendOneMessage(userId, JsonUtil.G.toJson(chatVo));
+            getUnreadMessage(userId);
             return;
         }
 
@@ -297,6 +284,36 @@ public class WebSocket {
         }
 
         sendError(userId, "参数错误");
+    }
+
+    /**
+     * 获取未读消息情况
+     * @param userId - 消息发送者 id
+     */
+    private void getUnreadMessage(String userId) {
+        User loginUser = (User) this.httpSession.getAttribute(UserConstant.USER_LOGIN_STATE);
+        if (loginUser == null) {
+            return;
+        }
+        List<ChatRoomVo> chatRoomList = chatService.getChatRoomList(loginUser);
+        String chantContentJson = JsonUtil.G.toJson(chatRoomList);
+        ChatVo chatVo = new ChatVo();
+        chatVo.setChatContent(chantContentJson);
+        chatVo.setChatType(ChatTypeEnum.PRIVATE_CHAT.getType());
+        sendOneMessage(userId, JsonUtil.G.toJson(chatVo));
+    }
+
+    /**
+     * 心跳检测处理器
+     *
+     * @param userId - 消息发送者 id
+     */
+    private void heartbeatHandler(String userId) {
+        ChatVo chatVo = new ChatVo();
+        chatVo.setChatContent(BaseConstant.HEARTBEAT_PONG);
+        // 心跳检测的类型一律是私聊, 因为是针对具体的某个用户的 WebSocket 连接
+        chatVo.setChatType(ChatTypeEnum.PRIVATE_CHAT.getType());
+        sendOneMessage(userId, JsonUtil.G.toJson(chatVo));
     }
 
     /**
