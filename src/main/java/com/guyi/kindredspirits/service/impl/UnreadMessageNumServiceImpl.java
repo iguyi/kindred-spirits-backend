@@ -56,10 +56,8 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
 
         // 获取开启会话的用户和会话名称
         Long loginUserId = loginUser.getId();
-        String chatSessionName = String.format("%s-%s-%s",
-                ChatTypeEnum.PRIVATE_CHAT.equals(chantTypeEnum) ? "private" : "team",
-                loginUserId,
-                id);
+        String chatSessionNamePre = ChatTypeEnum.PRIVATE_CHAT.equals(chantTypeEnum) ? "private" : "team";
+        String chatSessionName = String.format("%s-%s-%s", chatSessionNamePre, loginUserId, id);
         String redisKey = String.format(RedisConstant.SESSION_STATE_KEY, chatSessionName);
 
         Boolean safeState = Optional.ofNullable(state).orElse(false);
@@ -87,31 +85,29 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
                     "id",
                     target.getId(),
                     SESSION_STATE_EXPIRATION,
-                    SESSION_STATE_EXPIRATION_UNIT
-            );
+                    SESSION_STATE_EXPIRATION_UNIT);
 
             // 设置未读消息数
             RedisUtil.setHashValue(redisKey,
                     "unreadNum",
                     Optional.ofNullable(target.getUnreadNum()).orElse(0),
                     SESSION_STATE_EXPIRATION,
-                    SESSION_STATE_EXPIRATION_UNIT
-            );
+                    SESSION_STATE_EXPIRATION_UNIT);
 
             // 设置当前会话是否打开(用户是否正处于对应聊天窗口内)
             RedisUtil.setHashValue(redisKey,
                     "isOpen",
                     safeState,
                     SESSION_STATE_EXPIRATION,
-                    SESSION_STATE_EXPIRATION_UNIT
-            );
-
-            List<String> sessionStateKeyList = new ArrayList<>();
-            sessionStateKeyList.add(redisKey);
+                    SESSION_STATE_EXPIRATION_UNIT);
 
             // 保存 Key
-            boolean result =
-                    RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST, sessionStateKeyList, null, null);
+            List<String> sessionStateKeyList = new ArrayList<>();
+            sessionStateKeyList.add(redisKey);
+            boolean result = RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST,
+                    sessionStateKeyList,
+                    null,
+                    null);
             if (!result) {
                 log.error(sessionStateKeyList + "缓存失败");
             }
@@ -123,8 +119,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
                     "unreadNum",
                     0,
                     SESSION_STATE_EXPIRATION,
-                    SESSION_STATE_EXPIRATION_UNIT
-            );
+                    SESSION_STATE_EXPIRATION_UNIT);
         }
     }
 
@@ -137,8 +132,7 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
                     "unreadNum",
                     unreadNum,
                     SESSION_STATE_EXPIRATION,
-                    SESSION_STATE_EXPIRATION_UNIT
-            );
+                    SESSION_STATE_EXPIRATION_UNIT);
         }
 
         // 数据库查询会话的数据
@@ -155,34 +149,25 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
                 "id",
                 target.getId(),
                 SESSION_STATE_EXPIRATION,
-                SESSION_STATE_EXPIRATION_UNIT
-        );
+                SESSION_STATE_EXPIRATION_UNIT);
 
         // 设置未读消息数
         boolean cacheUnreadNum = RedisUtil.setHashValue(redisKey,
                 "unreadNum",
                 unreadNum,
                 SESSION_STATE_EXPIRATION,
-                SESSION_STATE_EXPIRATION_UNIT
-        );
+                SESSION_STATE_EXPIRATION_UNIT);
 
         // 设置当前会话是否打开(用户是否正处于对应聊天窗口内)
         boolean cacheIsOpen = RedisUtil.setHashValue(redisKey,
                 "isOpen",
                 false,
                 SESSION_STATE_EXPIRATION,
-                SESSION_STATE_EXPIRATION_UNIT
-        );
-
-        List<String> sessionStateKeyList = new ArrayList<>();
-        sessionStateKeyList.add(redisKey);
+                SESSION_STATE_EXPIRATION_UNIT);
 
         // 保存 Key
-        boolean result =
-                RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST, sessionStateKeyList, null, null);
-        if (!result) {
-            log.error(sessionStateKeyList + "缓存失败");
-        }
+        boolean result = saveSessionStateKey(redisKey);
+
         return cacheId && cacheUnreadNum && cacheIsOpen && result;
     }
 
@@ -222,37 +207,43 @@ public class UnreadMessageNumServiceImpl extends ServiceImpl<UnreadMessageNumMap
                 "id",
                 unreadMessageNum.getId(),
                 SESSION_STATE_EXPIRATION,
-                SESSION_STATE_EXPIRATION_UNIT
-        );
+                SESSION_STATE_EXPIRATION_UNIT);
 
         // 设置未读消息数
         RedisUtil.setHashValue(redisKey,
                 "unreadNum",
                 unreadMessageNum.getUnreadNum(),
                 SESSION_STATE_EXPIRATION,
-                SESSION_STATE_EXPIRATION_UNIT
-        );
+                SESSION_STATE_EXPIRATION_UNIT);
 
         // 设置当前会话是否打开(用户是否正处于对应聊天窗口内)
         RedisUtil.setHashValue(redisKey,
                 "isOpen",
                 false,
                 SESSION_STATE_EXPIRATION,
-                SESSION_STATE_EXPIRATION_UNIT
-        );
+                SESSION_STATE_EXPIRATION_UNIT);
 
         // 保存 Key
+        saveSessionStateKey(redisKey);
+
+        return unreadMessageNumCache;
+    }
+
+    /**
+     * 保存被缓存的 Session State 的 Redis Key.
+     *
+     * @param redisKey Session State 对应的 Redis Key
+     * @return 保存结果
+     */
+    private boolean saveSessionStateKey(String redisKey) {
         List<String> sessionStateKeyList = new ArrayList<>();
         sessionStateKeyList.add(redisKey);
-        boolean result = RedisUtil.setListValue(RedisConstant.SESSION_STATE_KEY_LIST,
-                sessionStateKeyList,
-                null,
-                null);
+        String sessionStateKeyListKey = RedisConstant.SESSION_STATE_KEY_LIST;
+        boolean result = RedisUtil.setListValue(sessionStateKeyListKey, sessionStateKeyList, null, null);
         if (!result) {
             log.error(sessionStateKeyList + "缓存失败");
         }
-
-        return unreadMessageNumCache;
+        return result;
     }
 
 }
