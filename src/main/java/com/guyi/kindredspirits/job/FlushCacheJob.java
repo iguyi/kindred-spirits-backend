@@ -13,8 +13,8 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 缓存刷新
@@ -55,33 +55,36 @@ public class FlushCacheJob {
             return;
         }
 
+        // "\sessionStateKey\"" --> "sessionStateKey"
+        sessionStateKeyList = sessionStateKeyList.stream()
+                .map(sessionStateKey -> sessionStateKey.replace("\"", ""))
+                .collect(Collectors.toList());
+
         // 记录被清理的会话
         List<String> clearSessionStateKeyList = new ArrayList<>();
 
         // 清理过期的会话缓存
         sessionStateKeyList.forEach(sessionStateKey -> {
-            if (!RedisUtil.hasRedisKey(sessionStateKey)) {
-                return;
-            }
-            Map<Object, Object> map = RedisUtil.STRING_REDIS_TEMPLATE.opsForHash().entries(sessionStateKey);
-            long expirationTime = Long.parseLong(map.get("expiration_time").toString());
-            if (expirationTime - currentTimeMillis <= 0) {
-                Boolean result = RedisUtil.STRING_REDIS_TEMPLATE.delete(sessionStateKey);
-                result = Optional.ofNullable(result).orElse(false);
-                if (result) {
-                    clearSessionStateKeyList.add(sessionStateKey);
+            if (RedisUtil.hasRedisKey(sessionStateKey)) {
+                Map<Object, Object> map = RedisUtil.STRING_REDIS_TEMPLATE.opsForHash().entries(sessionStateKey);
+                long expirationTime = Long.parseLong(map.get("expiration_time").toString());
+                if (expirationTime - currentTimeMillis <= 0) {
+                    Boolean result = RedisUtil.STRING_REDIS_TEMPLATE.delete(sessionStateKey);
+                    if (result != null && result) {
+                        clearSessionStateKeyList.add(sessionStateKey);
+                    }
                 }
             }
         });
 
-        // 更新缓存中存在 session 的情况
-        if (clearSessionStateKeyList.isEmpty()) {
-            return;
-        }
-        sessionStateKeyList.removeAll(clearSessionStateKeyList);
-        boolean result = RedisUtil.setListValue(sessionStateKeyListKey, sessionStateKeyList, null, null);
-        if (!result) {
-            log.error("FlushCacheJob.clearCacheUnreadMessageNum 对 {} 的缓存失败了", sessionStateKeyList);
+        if (!clearSessionStateKeyList.isEmpty()) {
+            // 在有消息过期的情况下, 更新缓存中存在 session 的情况
+            RedisUtil.STRING_REDIS_TEMPLATE.delete(sessionStateKeyListKey);
+            sessionStateKeyList.removeAll(clearSessionStateKeyList);
+            boolean result = RedisUtil.setListValue(sessionStateKeyListKey, sessionStateKeyList, null, null);
+            if (!result) {
+                log.error("FlushCacheJob.clearCacheUnreadMessageNum 对 {} 的缓存失败了", sessionStateKeyList);
+            }
         }
     }
 
