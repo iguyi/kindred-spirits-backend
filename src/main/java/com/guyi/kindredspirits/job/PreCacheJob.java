@@ -20,6 +20,7 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,16 +42,22 @@ public class PreCacheJob {
     private RedissonClient redissonClient;
 
     /**
-     * 预热热点用户。
-     * 每天 23:59:00 执行。
+     * 预热热点用户。<br/>
+     * 每天 23:59:00 执行, 只有一台服务器会执行。
      */
     @Scheduled(cron = "0 59 23 * * *")
     public void doCacheRecommendUser() {
-        // 获取锁对象
         final String lockKey = String.format(RedisConstant.KEY_PRE, "precache-job", "do-cache", "lock");
-
-        LockUtil.opsRedissonLock(lockKey, 0, RedisConstant.SCHEDULED_LOCK_LEASE_TIME, TimeUnit.SECONDS,
-                redissonClient, this::cacheRecommendUser);
+        Boolean result = LockUtil.opsRedissonLock(lockKey,
+                0,
+                RedisConstant.SCHEDULED_LOCK_LEASE_TIME,
+                TimeUnit.SECONDS,
+                redissonClient,
+                this::cacheRecommendUser);
+        result = Optional.ofNullable(result).orElse(false);
+        if (!result) {
+            log.error("doCacheRecommendUser 缓存预热失败");
+        }
     }
 
     /**
