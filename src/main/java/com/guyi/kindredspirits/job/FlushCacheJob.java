@@ -1,8 +1,6 @@
 package com.guyi.kindredspirits.job;
 
 import com.guyi.kindredspirits.common.contant.RedisConstant;
-import com.guyi.kindredspirits.mapper.UserMapper;
-import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.lock.LockUtil;
 import com.guyi.kindredspirits.util.redis.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -26,12 +24,6 @@ import java.util.concurrent.TimeUnit;
 @Component
 @Slf4j
 public class FlushCacheJob {
-
-    @Resource
-    private UserMapper userMapper;
-
-    @Resource
-    private UserService userService;
 
     @Resource
     private RedissonClient redissonClient;
