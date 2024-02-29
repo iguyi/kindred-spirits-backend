@@ -17,6 +17,12 @@ public enum ChatTypeEnum {
      */
     GROUP_CHAT(2, "群聊");
 
+    /**
+     * 根据 type 获取对应的 ChatTypeEnum 枚举对象
+     *
+     * @param type - 类型对应的数字
+     * @return ChatTypeEnum
+     */
     public static ChatTypeEnum getEnumByType(Integer type) {
         if (type == null) {
             return null;
