@@ -52,34 +52,43 @@ public class TeamController {
      */
     @PostMapping("/add")
     public BaseResponse<Long> addTemp(@RequestBody TeamAddRequest teamAddRequest, HttpServletRequest httpServletRequest) {
+        // 参数校验
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (teamAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
-        User loginUser = userService.getLoginUser(httpServletRequest);
+
+        // 创建队伍
         Team team = new Team();
         BeanUtils.copyProperties(teamAddRequest, team);
         long tempId = teamService.addTeam(team, loginUser);
+
         return ResultUtils.success(tempId);
     }
 
     /**
      * 更新队伍信息
      *
-     * @param teamUpdateRequest - 队伍的新信息
+     * @param teamUpdateRequest  - 队伍的新信息
+     * @param httpServletRequest - 客户端请求
      * @return 队伍信息更新情况
      */
     @PostMapping("/update")
     public BaseResponse<Boolean> updateTemp(@RequestBody TeamUpdateRequest teamUpdateRequest,
                                             HttpServletRequest httpServletRequest) {
+        // 参数校验
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (teamUpdateRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
-        User loginUser = userService.getLoginUser(httpServletRequest);
+
+        // 更新队伍
         boolean updateResult = teamService.updateTeam(teamUpdateRequest, loginUser);
-        if (!updateResult) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍更新失败");
+
+        if (updateResult) {
+            return ResultUtils.success(true);
         }
-        return ResultUtils.success(true);
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "队伍更新失败");
     }
 
     /**
@@ -90,14 +99,17 @@ public class TeamController {
      */
     @GetMapping("/get")
     public BaseResponse<Team> getTeamById(Long id) {
+        // 参数校验
         if (id == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
+
         Team team = teamService.getById(id);
-        if (team == null) {
-            throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
+        if (team != null) {
+            return ResultUtils.success(team);
         }
-        return ResultUtils.success(team);
+
+        return ResultUtils.error(ErrorCode.NULL_ERROR, "请求数据为空");
     }
 
     /**
@@ -113,10 +125,10 @@ public class TeamController {
     public BaseResponse<List<TeamVo>> searchTeam(String searchCondition, long pageSize, long pageNum,
                                                  HttpServletRequest httpServletRequest) {
         // 参数校验
+        userService.getLoginUser(httpServletRequest);
         if (StringUtils.isBlank(searchCondition)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
-        userService.getLoginUser(httpServletRequest);
 
         List<Team> teamList = teamService.searchTeam(searchCondition, pageSize, pageNum);
         List<TeamVo> result = teamList.stream().map(team -> {
@@ -130,7 +142,8 @@ public class TeamController {
     /**
      * 查看自己队伍的详细信息
      *
-     * @param teamId - 队伍 id
+     * @param teamId             - 队伍 id
+     * @param httpServletRequest - 客户端请求
      * @return 队伍详细信息
      */
     @GetMapping("/check")
@@ -139,6 +152,7 @@ public class TeamController {
         if (teamId == null || teamId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
+
         return ResultUtils.success(teamService.checkTeam(loginUser, teamId));
     }
 
@@ -155,10 +169,10 @@ public class TeamController {
     @GetMapping("/list")
     public BaseResponse<List<UserTeamVo>> listTeams(TeamQueryRequest teamQuery, HttpServletRequest httpServletRequest) {
         // 参数校验
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
-        User loginUser = userService.getLoginUser(httpServletRequest);
 
         // 获取符合要求的数据
         boolean isAdmin = userService.isAdmin(httpServletRequest);
@@ -182,37 +196,39 @@ public class TeamController {
     }
 
     /**
-     * 根据指定信息查询队伍
+     * 根据指定信息查询队伍<br/>
      * 筛选条件有: 队伍 id、队伍名称、队伍描述、队伍最大人数、创建人 id、队长 id、队伍状态(公开、私密、加密)
      *
-     * @param teamQuery - 队伍查询封装对象
+     * @param teamQuery          - 队伍查询封装对象
+     * @param httpServletRequest - 客户端请求
      * @return 分页返回符合要求的队伍
      */
     @GetMapping("/list/page")
     public BaseResponse<Page<Team>> listTeamsByPage(TeamQueryRequest teamQuery, HttpServletRequest httpServletRequest) {
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
-        User loginUser = userService.getLoginUser(httpServletRequest);
-        if (loginUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
-        }
+
         return ResultUtils.success(teamService.listTeamsByPage(loginUser.getId(), teamQuery));
     }
 
     /**
      * 用户加入队伍
      *
-     * @param teamJoinRequest - 对用户加入队伍的请求消息的封装
+     * @param teamJoinRequest    - 对用户加入队伍的请求消息的封装
+     * @param httpServletRequest - 客户端请求
      * @return true - 加入成功; false - 加入失败
      */
     @PostMapping("/join")
     public BaseResponse<Boolean> joinTeam(@RequestBody TeamJoinRequest teamJoinRequest,
                                           HttpServletRequest httpServletRequest) {
+        // 参数校验
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (teamJoinRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
-        User loginUser = userService.getLoginUser(httpServletRequest);
+
         boolean result = teamService.joinTeam(teamJoinRequest, loginUser);
         return ResultUtils.success(result);
     }
@@ -227,28 +243,31 @@ public class TeamController {
     @PostMapping("/join/link")
     public BaseResponse<Boolean> joinTeamByLink(@RequestBody TeamJoinRequest teamJoinRequest,
                                                 HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (teamJoinRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+
         Boolean result = teamService.joinTeamByLink(teamJoinRequest, loginUser);
-        if (result != null && !result) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
+        if (result != null && result) {
+            return ResultUtils.success(true);
         }
-        return ResultUtils.success(true);
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "系统繁忙");
     }
 
     /**
      * 退出队伍
      *
-     * @param teamQuitRequest - 对用户退出队伍的请求参数的封装
+     * @param teamQuitRequest    - 对用户退出队伍的请求参数的封装
+     * @param httpServletRequest - 客户端请求
      * @return true - 退出队伍成功; false - 退出队伍失败
      */
     @PostMapping("/quit")
     public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitOrDeleteRequest teamQuitRequest,
                                           HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
-
         if (teamQuitRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
@@ -260,48 +279,63 @@ public class TeamController {
     /**
      * 解散队伍
      *
-     * @param teamDeleteRequest - 对队长解散队伍的请求参数的封装
+     * @param teamDeleteRequest  - 对队长解散队伍的请求参数的封装
+     * @param httpServletRequest - 客户端请求
      * @return true - 解散队伍成功; false - 解散队伍失败
      */
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteTemp(@RequestBody TeamQuitOrDeleteRequest teamDeleteRequest,
                                             HttpServletRequest httpServletRequest) {
+        // 参数校验
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (teamDeleteRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求数据为空");
         }
-        User loginUser = userService.getLoginUser(httpServletRequest);
+
         boolean removeResult = teamService.deleteTeam(teamDeleteRequest, loginUser);
-        if (!removeResult) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍解散失败");
+        if (removeResult) {
+            return ResultUtils.success(true);
         }
-        return ResultUtils.success(true);
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "队伍解散失败");
     }
 
     /**
      * 获取我管理的队伍
      *
+     * @param httpServletRequest - 客户端请求
      * @return 符合要求的所有队伍
      */
     @GetMapping("/list/my/leader")
     public BaseResponse<List<Team>> listMyLeaderTeams(HttpServletRequest httpServletRequest) {
-        TeamMyQueryRequest teamMyQuery = new TeamMyQueryRequest();
+        // 登录校验
         User loginUser = userService.getLoginUser(httpServletRequest);
+
+        // 获取数据
+        TeamMyQueryRequest teamMyQuery = new TeamMyQueryRequest();
         teamMyQuery.setId(loginUser.getId());
         List<Team> teamList = teamService.listMyLeaderTeams(teamMyQuery, loginUser);
+
+        // 响应
         return ResultUtils.success(teamList);
     }
 
     /**
      * 获取我加入的队伍
      *
+     * @param httpServletRequest - 客户端请求
      * @return 符合要求的所有队伍
      */
     @GetMapping("/list/my/join")
     public BaseResponse<List<Team>> listMyJoinTeams(HttpServletRequest httpServletRequest) {
-        TeamMyQueryRequest teamMyQuery = new TeamMyQueryRequest();
+        // 登录校验
         User loginUser = userService.getLoginUser(httpServletRequest);
+
+        // 获取数据
+        TeamMyQueryRequest teamMyQuery = new TeamMyQueryRequest();
         teamMyQuery.setId(loginUser.getId());
         List<Team> teamList = teamService.listMyJoinTeams(teamMyQuery, loginUser);
+
+        // 响应
         return ResultUtils.success(teamList);
     }
 
@@ -309,15 +343,18 @@ public class TeamController {
      * 将指定成员提出队伍
      *
      * @param operationMemberRequest - 队长将成员踢出队伍请求封装类对象
+     * @param httpServletRequest     - 客户端请求
      * @return 操作结果
      */
     @PostMapping("/kick")
     public BaseResponse<Boolean> kickOut(@RequestBody OperationMemberRequest operationMemberRequest,
                                          HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (operationMemberRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
+
         return ResultUtils.success(teamService.kickOut(loginUser, operationMemberRequest));
     }
 
@@ -325,22 +362,26 @@ public class TeamController {
      * 队长位置转让
      *
      * @param operationMemberRequest - 队长位置转让请求封装类
+     * @param httpServletRequest     - 客户端请求
      * @return 操作结果
      */
     @PostMapping("/abdicator")
     public BaseResponse<Boolean> abdicator(@RequestBody OperationMemberRequest operationMemberRequest,
                                            HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (operationMemberRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
+
         return ResultUtils.success(teamService.abdicator(loginUser, operationMemberRequest));
     }
 
     /**
      * 刷新入队链接
      *
-     * @param teamId - 队伍 id
+     * @param teamId             - 队伍 id
+     * @param httpServletRequest - 客户端请求
      * @return 队伍的新入队链接
      */
     @GetMapping("/link")
@@ -349,6 +390,7 @@ public class TeamController {
         if (teamId == null || teamId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
+
         return ResultUtils.success(teamService.refreshLink(loginUser, teamId));
     }
 
