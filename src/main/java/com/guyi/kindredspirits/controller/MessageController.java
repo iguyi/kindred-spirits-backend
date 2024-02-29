@@ -38,6 +38,7 @@ public class MessageController {
     /**
      * 查询当前用户的所有消息
      *
+     * @param httpServletRequest - 客户端请求
      * @return 当前用户接收的所有消息的列表
      */
     @GetMapping("/list")
@@ -55,12 +56,10 @@ public class MessageController {
     @GetMapping("/undressed")
     public BaseResponse<Long> countUndressed(HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
+
         QueryWrapper<Message> messageQueryWrapper = new QueryWrapper<>();
-        messageQueryWrapper
-                .eq("receiverId", loginUser.getId())
-                .and(queryWrapper -> queryWrapper
-                        .eq("processed", 0)
-                        .or().isNull("processed"));
+        messageQueryWrapper.eq("receiverId", loginUser.getId())
+                .and(queryWrapper -> queryWrapper.eq("processed", 0).or().isNull("processed"));
         long count = messageService.count(messageQueryWrapper);
         return ResultUtils.success(count);
     }
@@ -74,9 +73,9 @@ public class MessageController {
     @GetMapping("/refresh")
     public BaseResponse<Boolean> refresh(HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
+        
         UpdateWrapper<Message> messageUpdateWrapper = new UpdateWrapper<>();
-        messageUpdateWrapper
-                .set("processed", 1)
+        messageUpdateWrapper.set("processed", 1)
                 .eq("receiverId", loginUser.getId())
                 .eq("messageType", MessageTypeEnum.SYSTEM_MESSAGE.getType());
         boolean result = messageService.update(messageUpdateWrapper);
