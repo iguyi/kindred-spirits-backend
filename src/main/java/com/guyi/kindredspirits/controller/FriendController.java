@@ -38,22 +38,21 @@ public class FriendController {
     /**
      * 好友申请
      *
-     * @param messageRequest - 消息封装类: sender 向 receiver 进行好友申请
+     * @param messageRequest     - 消息封装类: sender 向 receiver 进行好友申请
+     * @param httpServletRequest - 客户端请求
      * @return 好友申请的消息存储成功，返回 true; 否则, 返回 false
      */
     @PostMapping("/apply")
     public BaseResponse<Boolean> applyFriend(@RequestBody MessageRequest messageRequest,
                                              HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (messageRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
         }
 
         Boolean result = friendService.applyFriend(loginUser, messageRequest);
-        if (result) {
-            return ResultUtils.success(true);
-        }
-        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "消息发送失败");
+        return result ? ResultUtils.success(true) : ResultUtils.error(ErrorCode.SYSTEM_ERROR, "消息发送失败");
     }
 
     /**
@@ -66,35 +65,37 @@ public class FriendController {
     @PostMapping("/process/apply")
     public BaseResponse<Boolean> processFriendApply(@RequestBody ProcessFriendApplyRequest processFriendApplyRequest,
                                                     HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (processFriendApplyRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         Boolean res = friendService.agreeFriendApply(processFriendApplyRequest, loginUser);
-        if (res == null) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统异常");
-        }
-        return ResultUtils.success(true);
+        return res ? ResultUtils.success(true) : ResultUtils.error(ErrorCode.SYSTEM_ERROR, "系统异常");
     }
 
     /**
      * 查询好友列表
      *
+     * @param httpServletRequest - 客户端请求
      * @return 好友列表
      */
     @GetMapping("/list")
     public BaseResponse<List<UserVo>> getFriendList(HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
 
+        // 获取好友列表
         List<User> friendList = friendService.getFriendList(loginUser);
         if (friendList == null || friendList.size() == 0) {
             return new BaseResponse<>(0, null);
         }
 
+        // 脱敏
         List<UserVo> finalFriendList = new ArrayList<>();
         friendList.forEach(friend -> {
             friend.setTags(userService.getTagListJson(friend));
@@ -115,11 +116,12 @@ public class FriendController {
      */
     @GetMapping("/show")
     public BaseResponse<FriendVo> showFriend(Long friendId, HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
-
         if (friendId == null || friendId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
+
         return ResultUtils.success(friendService.showFriend(loginUser, friendId));
     }
 
@@ -133,11 +135,12 @@ public class FriendController {
     @PostMapping("/update/relation")
     public BaseResponse<Boolean> updateRelation(@RequestBody UpdateRelationRequest updateRelationRequest,
                                                 HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
-
         if (updateRelationRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
+
         return ResultUtils.success(friendService.updateRelation(loginUser, updateRelationRequest));
     }
 
