@@ -22,6 +22,12 @@ public enum MessageTypeEnum {
      */
     NOTICE_MESSAGE(2, "消息通知");
 
+    /**
+     * 根据 type 获取对应的 MessageTypeEnum 枚举对象
+     *
+     * @param type - 类型对应的数字
+     * @return MessageTypeEnum
+     */
     public static MessageTypeEnum getEnumByType(Integer type) {
         if (type == null) {
             return null;
