@@ -33,7 +33,7 @@ public class ResultUtils {
      * 失败
      */
     public static <T> BaseResponse<T> error(ErrorCode errorCode, String description) {
-        return new BaseResponse(errorCode.getCode(), description);
+        return new BaseResponse<>(errorCode.getCode(), null, errorCode.getMsg(), description);
     }
 
     /**
