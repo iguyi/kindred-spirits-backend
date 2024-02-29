@@ -73,7 +73,7 @@ public class MessageController {
     @GetMapping("/refresh")
     public BaseResponse<Boolean> refresh(HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
-        
+
         UpdateWrapper<Message> messageUpdateWrapper = new UpdateWrapper<>();
         messageUpdateWrapper.set("processed", 1)
                 .eq("receiverId", loginUser.getId())
