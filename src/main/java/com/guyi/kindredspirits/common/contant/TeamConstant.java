@@ -5,7 +5,7 @@ package com.guyi.kindredspirits.common.contant;
  *
  * @author 孤诣
  */
-public @interface TeamConstant {
+public interface TeamConstant {
 
     /**
      * 队伍最少人数限制
