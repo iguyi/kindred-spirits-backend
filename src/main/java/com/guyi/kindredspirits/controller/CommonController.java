@@ -45,7 +45,8 @@ public class CommonController {
     /**
      * 上传用户头像
      *
-     * @param avatar - 文件数据
+     * @param avatar             - 文件数据
+     * @param httpServletRequest - 客户端请求
      * @return 1-上传成功
      */
     @PostMapping("/avatar/user")
@@ -78,8 +79,9 @@ public class CommonController {
     /**
      * 上传队伍头像
      *
-     * @param avatar - 文件数据
-     * @param teamId - 队伍 id
+     * @param avatar             - 文件数据
+     * @param teamId             - 队伍 id
+     * @param httpServletRequest - 客户端请求
      * @return 1-上传成功
      */
     @PostMapping("/avatar/team")
@@ -112,7 +114,6 @@ public class CommonController {
             updateTeam.setId(teamId);
             updateTeam.setAvatarUrl(projectProperties.getUrlPrefix() + "/team/" + fileName);
             boolean updateResult = teamService.updateById(updateTeam);
-
             if (!updateResult) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传错误");
             }
