@@ -37,16 +37,18 @@ public class ChatController {
      * 获取私聊室的历史聊天记录
      *
      * @param chatHistoryRequest - 获取聊天记录请求
+     * @param httpServletRequest - 客户端请求
      * @return 私聊室的历史聊天记录列表
      */
     @PostMapping("/private")
     public BaseResponse<List<ChatVo>> getPrivateChat(@RequestBody ChatHistoryRequest chatHistoryRequest,
                                                      HttpServletRequest httpServletRequest) {
-        User loginUser = userService.getLoginUser(httpServletRequest);
-
+        // 参数校验
         if (chatHistoryRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
         }
+        User loginUser = userService.getLoginUser(httpServletRequest);
+
         return ResultUtils.success(chatService.getPrivateChat(loginUser, chatHistoryRequest));
     }
 
@@ -54,22 +56,25 @@ public class ChatController {
      * 获取队伍聊天室的历史聊天记录
      *
      * @param chatHistoryRequest - 获取聊天记录请求
+     * @param httpServletRequest - 客户端请求
      * @return 队伍聊天室的历史聊天记录列表
      */
     @PostMapping("/team")
     public BaseResponse<List<ChatVo>> getTeamChat(@RequestBody ChatHistoryRequest chatHistoryRequest,
                                                   HttpServletRequest httpServletRequest) {
-        User loginUser = userService.getLoginUser(httpServletRequest);
-
+        // 参数校验
         if (chatHistoryRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "请求参数为空");
         }
+        User loginUser = userService.getLoginUser(httpServletRequest);
+
         return ResultUtils.success(chatService.getTeamChat(loginUser, chatHistoryRequest));
     }
 
     /**
      * 获取历史聊天会话列表
      *
+     * @param httpServletRequest - 客户端请求
      * @return 历史聊天会话列表
      */
     @GetMapping("/room/list")
