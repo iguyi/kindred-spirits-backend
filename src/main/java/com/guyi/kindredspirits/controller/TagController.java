@@ -40,47 +40,57 @@ public class TagController {
     private UserService userService;
 
     /**
-     * 添加单个标签
+     * 创建单个标签
      *
-     * @param tagSingle - 单个标签
+     * @param tagSingle          - 单个标签
+     * @param httpServletRequest - 客户端请求
      * @return - true 表示添加成功
      */
     @PostMapping("/add/single")
-    public BaseResponse<Boolean> addSingleTag(@RequestBody TagAddRequest tagSingle
-            , HttpServletRequest httpServletRequest) {
+    public BaseResponse<Boolean> addSingleTag(@RequestBody TagAddRequest tagSingle,
+                                              HttpServletRequest httpServletRequest) {
 
-        //  用户是否登录
+        //  参数检验
         User loginUser = userService.getLoginUser(httpServletRequest);
-
-        boolean result = tagService.addSingleTag(tagSingle, loginUser);
-        if (!result) {
-            log.error("标签创建失败");
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "标签创建失败");
+        if (tagSingle == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
 
-        return new BaseResponse<>(0, true);
+        // 新增标签
+        boolean result = tagService.addSingleTag(tagSingle, loginUser);
+        if (result) {
+            return ResultUtils.success(true);
+        }
+
+        // 标签创建失败
+        log.error("标签创建失败");
+        throw new BusinessException(ErrorCode.SYSTEM_ERROR, "标签创建失败");
     }
 
     /**
-     * 获取标签的基本信息。
+     * 获取标签的基本信息。<br/>
      * 基本信息包括: id、标签名、对应顶级标签 id、权值。
      *
      * @return 根据顶级标签分组后的标签基本信息
      */
     @GetMapping("/get/all")
     public BaseResponse<List<List<TagVo>>> getAll() {
-        // 先从缓存中取数据
+        // 数据对应的 Redis Key
         String redisKey = String.format(RedisConstant.KEY_PRE, "tag", "get-all", "simple");
+
+        // 数据对应的类型信息
         Type tagVoListType = new TypeToken<List<List<TagVo>>>() {
         }.getType();
+
+        // 从缓存中获取数据
         RedisQueryReturn<List<List<TagVo>>> redisQueryReturn = RedisUtil.getValue(redisKey, tagVoListType);
 
+        // 数据处理
         List<List<TagVo>> groupTagVoList = redisQueryReturn.getData();
         if (groupTagVoList != null) {
-            // 缓存中存在数据
-
+            // 数据在缓存中存在
             if (redisQueryReturn.isExpiration()) {
-                // 缓存过期重构缓存
+                // 缓存数据过期, 需要重新构建缓存
                 RecreationCache.recreation(() -> {
                     boolean recreationResult = RedisUtil.setValue(redisKey, tagService.getAll(),
                             TagConstant.TAG_CACHE_TIMEOUT,
@@ -100,13 +110,15 @@ public class TagController {
         if (!result) {
             log.error("缓存设置失败");
         }
+
         return ResultUtils.success(groupTagVoList);
     }
 
     /**
-     * 分组获取标签的基本信息。
+     * 分组获取标签的基本信息。<br/>
      * 基本信息包括: id、标签名、对应顶级标签 id、权值。
      *
+     * @param httpServletRequest - 客户端请求
      * @return - 分组后的标签列表请求响应封装对象列表
      */
     @GetMapping("/simple/list")
