@@ -38,12 +38,14 @@ public class UnreadMessageNumController {
     @PostMapping("/setting/session/state")
     public void setSessionState(@RequestBody ChatSessionStateRequest stateRequest,
                                 HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (stateRequest == null) {
             log.error("stateRequest is null");
             return;
         }
 
+        // 设置状态
         unreadMessageNumService.setSessionSate(loginUser, stateRequest);
     }
 
