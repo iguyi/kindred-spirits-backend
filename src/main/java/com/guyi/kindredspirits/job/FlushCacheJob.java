@@ -35,8 +35,12 @@ public class FlushCacheJob {
     @Scheduled(cron = "0 0/5 * * * *")
     public void doClearCacheUnreadMessageNum() {
         final String lockKey = String.format(RedisConstant.KEY_PRE, "precache-job", "do-cache", "lock");
-        LockUtil.opsRedissonLock(lockKey, 0, RedisConstant.SCHEDULED_LOCK_LEASE_TIME, TimeUnit.SECONDS,
-                redissonClient, this::clearCacheUnreadMessageNum);
+        LockUtil.opsRedissonLock(lockKey,
+                0,
+                RedisConstant.SCHEDULED_LOCK_LEASE_TIME,
+                TimeUnit.SECONDS,
+                redissonClient,
+                this::clearCacheUnreadMessageNum);
     }
 
     /**
@@ -51,11 +55,13 @@ public class FlushCacheJob {
         List<String> sessionStateKeyList = RedisUtil.STRING_REDIS_TEMPLATE
                 .opsForList()
                 .range(sessionStateKeyListKey, 0, -1);
+
+        // 缓存中没有相关数据
         if (CollectionUtils.isEmpty(sessionStateKeyList)) {
             return;
         }
 
-        // "\sessionStateKey\"" --> "sessionStateKey"
+        // "\"sessionStateKey\"" --> "sessionStateKey"
         sessionStateKeyList = sessionStateKeyList.stream()
                 .map(sessionStateKey -> sessionStateKey.replace("\"", ""))
                 .collect(Collectors.toList());
@@ -77,8 +83,8 @@ public class FlushCacheJob {
             }
         });
 
+        // 在有消息过期的情况下, 更新缓存中存在 session 的情况
         if (!clearSessionStateKeyList.isEmpty()) {
-            // 在有消息过期的情况下, 更新缓存中存在 session 的情况
             RedisUtil.STRING_REDIS_TEMPLATE.delete(sessionStateKeyListKey);
             sessionStateKeyList.removeAll(clearSessionStateKeyList);
             boolean result = RedisUtil.setListValue(sessionStateKeyListKey, sessionStateKeyList, null, null);
