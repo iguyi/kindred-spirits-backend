@@ -177,12 +177,13 @@ public class UserController {
 
         // 查询并脱敏
         List<User> userList = userService.list(new QueryWrapper<>());
-        userList.forEach(user -> {
+        List<User> users = userList.stream().map(user -> {
             String tagListJson = userService.getTagListJson(user);
             user.setTags(tagListJson);
-        });
-        List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+            return userService.getSafetyUser(user);
+        }).collect(Collectors.toList());
 
+        // 响应
         return ResultUtils.success(users);
     }
 
