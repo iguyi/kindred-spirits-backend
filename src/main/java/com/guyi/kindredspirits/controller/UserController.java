@@ -46,11 +46,13 @@ public class UserController {
      * 注册用户
      *
      * @param userRegisterRequest - 用户注册请求封装类对象
+     * @param httpServletRequest  - 客户端请求
      * @return 新用户 id
      */
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest,
                                            HttpServletRequest httpServletRequest) {
+        // 参数校验
         if (userRegisterRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -59,9 +61,13 @@ public class UserController {
         if (StringUtils.isAnyBlank(userPassword, checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+
+        // 创建新用户
         User newUser = userService.userRegister(userPassword, checkPassword);
         User safetyUser = userService.getSafetyUser(newUser);
         httpServletRequest.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, safetyUser);
+
+        // 响应
         return ResultUtils.success(newUser.getId());
     }
 
@@ -69,11 +75,13 @@ public class UserController {
      * 用户登录
      *
      * @param userLoginRequest   - 用户登录请求封装类对象
-     * @param httpServletRequest - httpServletRequest
+     * @param httpServletRequest - 客户端请求
      * @return 脱敏后的登录用户信息
      */
     @PostMapping("/login")
-    public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest httpServletRequest) {
+    public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest,
+                                        HttpServletRequest httpServletRequest) {
+        // 参数校验
         if (userLoginRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -82,12 +90,16 @@ public class UserController {
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+
+        // 登录校验并响应
         User user = userService.userLogin(userAccount, userPassword, httpServletRequest);
         return ResultUtils.success(user);
     }
 
     /**
      * 退出登录
+     *
+     * @param httpSession - Http Session
      */
     @PostMapping("/logout")
     public void userLogout(HttpSession httpSession) {
@@ -97,7 +109,7 @@ public class UserController {
     /**
      * 获取用户登录态
      *
-     * @param httpServletRequest - httpServletRequest
+     * @param httpServletRequest - 客户端请求
      * @return 用户登录态
      */
     @GetMapping("/current")
@@ -122,18 +134,18 @@ public class UserController {
     @GetMapping("/search")
     public BaseResponse<List<UserVo>> searchUser(String searchCondition, Long pageSize, Long pageNum,
                                                  HttpServletRequest httpServletRequest) {
+        // 参数校验
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (pageSize == null || pageNum == null || pageNum * pageSize <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.FORBIDDEN.getDescription());
         }
-
-        // 用户是否登录
-        User loginUser = userService.getLoginUser(httpServletRequest);
 
         // 获取好友 ID 列表, 包括自己
         List<User> friendList = friendService.getFriendList(loginUser);
         List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
         friendIdList.add(loginUser.getId());
 
+        // 获取搜索结果
         List<User> userList = userService.searchUser(friendIdList, searchCondition, pageSize, pageNum);
         List<UserVo> result = userList.stream()
                 .filter(user -> !user.getId().equals(loginUser.getId()))
@@ -143,6 +155,8 @@ public class UserController {
                     BeanUtils.copyProperties(user, userVo);
                     return userVo;
                 }).collect(Collectors.toList());
+
+        // 响应
         return ResultUtils.success(result);
     }
 
@@ -151,7 +165,7 @@ public class UserController {
      * 查询所有用户, 仅管理员可用
      * todo 考虑分页查询
      *
-     * @param httpServletRequest - httpServletRequest
+     * @param httpServletRequest - 客户端请求
      * @return 所有用户
      */
     @GetMapping("/search/all")
@@ -160,14 +174,15 @@ public class UserController {
         if (!userService.isAdmin(httpServletRequest)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
+
         // 查询并脱敏
         List<User> userList = userService.list(new QueryWrapper<>());
         userList.forEach(user -> {
             String tagListJson = userService.getTagListJson(user);
             user.setTags(tagListJson);
         });
-
         List<User> users = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+
         return ResultUtils.success(users);
     }
 
