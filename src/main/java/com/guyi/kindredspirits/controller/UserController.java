@@ -141,9 +141,7 @@ public class UserController {
         }
 
         // 获取好友 ID 列表, 包括自己
-        List<User> friendList = friendService.getFriendList(loginUser);
-        List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
-        friendIdList.add(loginUser.getId());
+        List<Long> friendIdList = getFriendIdList(loginUser);
 
         // 获取搜索结果
         List<User> userList = userService.searchUser(friendIdList, searchCondition, pageSize, pageNum);
@@ -159,7 +157,6 @@ public class UserController {
         // 响应
         return ResultUtils.success(result);
     }
-
 
     /**
      * 查询所有用户, 仅管理员可用
@@ -257,9 +254,7 @@ public class UserController {
         }
 
         // 获取好友 id 列表
-        List<User> friendList = friendService.getFriendList(loginUser);
-        List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
-        friendIdList.add(loginUser.getId());
+        List<Long> friendIdList = getFriendIdList(loginUser);
 
         // 获取数据
         List<User> userList = userService.searchUsersByTagsBySql(friendIdList, tagNameList, pageSize, pageNum);
@@ -291,9 +286,7 @@ public class UserController {
         }
 
         // 获取好友 id 列表
-        List<User> friendList = friendService.getFriendList(loginUser);
-        List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
-        friendIdList.add(loginUser.getId());
+        List<Long> friendIdList = getFriendIdList(loginUser);
 
         // 数据查询并响应
         List<UserVo> result = userService.recommends(pageSize, pageNum, loginUser, friendIdList);
@@ -317,12 +310,23 @@ public class UserController {
         }
 
         // 获取好友 id 列表
-        List<User> friendList = friendService.getFriendList(loginUser);
-        List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
-        friendIdList.add(loginUser.getId());
+        List<Long> friendIdList = getFriendIdList(loginUser);
 
         // 数据查询并响应
         return ResultUtils.success(userService.matchUsers(num, pageNum, loginUser, friendIdList));
+    }
+
+    /**
+     * 获取好友 id 列表(包含自己)。
+     *
+     * @param loginUser - 当前登录用户
+     * @return 当前登录用户对应的好友 id 列表
+     */
+    private List<Long> getFriendIdList(User loginUser) {
+        List<User> friendList = friendService.getFriendList(loginUser);
+        List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
+        friendIdList.add(loginUser.getId());
+        return friendIdList;
     }
 
     /**
