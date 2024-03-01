@@ -189,7 +189,8 @@ public class UserController {
     /**
      * 根据用户 id 查询用户信息
      *
-     * @param id - 用户 id
+     * @param id                 - 用户 id
+     * @param httpServletRequest - 客户端请求
      * @return 对应 id 的用户的响应信息
      */
     @GetMapping("/search/id")
@@ -207,18 +208,14 @@ public class UserController {
      * 根据 username 查询用户
      * todo 考虑分页查询
      *
-     * @param username - 用户昵称
+     * @param username           - 用户昵称
+     * @param httpServletRequest - 客户端请求
      * @return 符合要求的用户列表
      */
     @GetMapping("/search/username")
     public BaseResponse<List<User>> searchUsersByUsername(String username, HttpServletRequest httpServletRequest) {
-        User loginUser = userService.getLoginUser(httpServletRequest);
-
-        if (loginUser == null) {
-            throw new BusinessException(ErrorCode.NO_AUTH, "未登录");
-        }
-
-        // 用户昵称校验
+        // 参数校验
+        userService.getLoginUser(httpServletRequest);
         if (StringUtils.isAnyBlank(username) || username.length() > UserConstant.USERNAME_MAX) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
@@ -234,6 +231,7 @@ public class UserController {
             return user;
         }).collect(Collectors.toList());
 
+        // 响应
         return ResultUtils.success(users);
     }
 
@@ -269,8 +267,9 @@ public class UserController {
                     UserVo userVo = new UserVo();
                     BeanUtils.copyProperties(user, userVo);
                     return userVo;
-                })
-                .collect(Collectors.toList());
+                }).collect(Collectors.toList());
+
+        // 响应
         return ResultUtils.success(result);
     }
 
@@ -284,6 +283,7 @@ public class UserController {
      */
     @GetMapping("/recommend")
     public BaseResponse<List<UserVo>> recommends(long pageSize, long pageNum, HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (pageSize < 1 || pageNum < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
@@ -294,7 +294,7 @@ public class UserController {
         List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
         friendIdList.add(loginUser.getId());
 
-        // 查询缓存
+        // 数据查询并响应
         List<UserVo> result = userService.recommends(pageSize, pageNum, loginUser, friendIdList);
         return ResultUtils.success(result);
     }
@@ -309,16 +309,18 @@ public class UserController {
      */
     @GetMapping("/match")
     public BaseResponse<List<UserVo>> matchUsers(long num, long pageNum, HttpServletRequest httpServletRequest) {
+        // 参数校验
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (num <= 0 || num > UserConstant.MATCH_NUM || pageNum <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
-        User loginUser = userService.getLoginUser(httpServletRequest);
 
         // 获取好友 id 列表
         List<User> friendList = friendService.getFriendList(loginUser);
         List<Long> friendIdList = friendList.stream().map(User::getId).collect(Collectors.toList());
         friendIdList.add(loginUser.getId());
 
+        // 数据查询并响应
         return ResultUtils.success(userService.matchUsers(num, pageNum, loginUser, friendIdList));
     }
 
@@ -331,10 +333,13 @@ public class UserController {
     @PostMapping("/update")
     public BaseResponse<Integer> updateUser(@RequestBody UserUpdateRequest userUpdateRequest,
                                             HttpServletRequest httpServletRequest) {
+        // 参数校验
+        User loginUser = userService.getLoginUser(httpServletRequest);
         if (userUpdateRequest == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "无可修改的信息");
         }
-        User loginUser = userService.getLoginUser(httpServletRequest);
+
+        // 数据更新并响应
         Integer result = userService.updateUser(userUpdateRequest, loginUser, httpServletRequest);
         return ResultUtils.success(result);
     }
@@ -342,23 +347,29 @@ public class UserController {
     /**
      * 用户更新密码
      *
-     * @param updatePwdRequest - 请求封装类
+     * @param updatePwdRequest   - 请求封装类
+     * @param httpServletRequest - 客户端请求
+     * @param httpSession        - Http Session
      * @return 更新密码的结果
      */
     @PostMapping("/update/pwd")
     public BaseResponse<Boolean> updatePwd(@RequestBody UpdatePwdRequest updatePwdRequest, HttpSession httpSession,
                                            HttpServletRequest httpServletRequest) {
+        // 参数校验
         User loginUser = userService.getLoginUser(httpServletRequest);
         if (updatePwdRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
+
+        // 修改密码
         Boolean result = userService.updatePwd(loginUser, updatePwdRequest);
-        if (!result) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "密码修改失败");
+        if (result) {
+            // 密码修改成功后, 用户需要重新登录
+            this.userLogout(httpSession);
+            return ResultUtils.success(true);
         }
-        // 密码修改成功后, 用户需要重新登录
-        this.userLogout(httpSession);
-        return ResultUtils.success(true);
+
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "密码修改失败");
     }
 
     /**
