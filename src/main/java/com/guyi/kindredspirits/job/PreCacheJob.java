@@ -42,18 +42,22 @@ public class PreCacheJob {
     private RedissonClient redissonClient;
 
     /**
-     * 预热热点用户。<br/>
+     * 预热热点用户的普通推荐数据。<br/>
      * 每天 23:59:00 执行, 只有一台服务器会执行。
      */
     @Scheduled(cron = "0 59 23 * * *")
     public void doCacheRecommendUser() {
+        // 缓存预热
         final String lockKey = String.format(RedisConstant.KEY_PRE, "precache-job", "do-cache", "lock");
+        // 确保只有一台服务器执行这个任务
         Boolean result = LockUtil.opsRedissonLock(lockKey,
                 0,
                 RedisConstant.SCHEDULED_LOCK_LEASE_TIME,
                 TimeUnit.SECONDS,
                 redissonClient,
                 this::cacheRecommendUser);
+
+        // 问题记录
         result = Optional.ofNullable(result).orElse(false);
         if (!result) {
             log.error("doCacheRecommendUser 缓存预热失败");
@@ -61,7 +65,7 @@ public class PreCacheJob {
     }
 
     /**
-     * 缓存为人点用户推荐的用户
+     * 缓存为热点用户的普通推荐数据
      */
     private boolean cacheRecommendUser() {
         // 查询所有热点用户数据
@@ -71,6 +75,7 @@ public class PreCacheJob {
                 .eq("isHot", UserConstant.HOT_USER_TAG);
         List<User> mainUserList = userMapper.selectList(userQueryWrapper);
 
+        // 寻找推荐用户
         for (User mainUser : mainUserList) {
             // 查询所有用户信息
             userQueryWrapper = new QueryWrapper<>();
@@ -78,8 +83,8 @@ public class PreCacheJob {
                     .select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone", "email")
                     .ne("id", mainUser.getId());
             List<User> userList = userService.list(userQueryWrapper);
-
             Map<String, List<Integer>> loginUserTagMap = userService.getTagWeightList(mainUser.getTags());
+
             List<User> cacheUserList = new ArrayList<>();
             for (User user : userList) {
                 String userTags = user.getTags();
@@ -87,9 +92,10 @@ public class PreCacheJob {
                 if (StringUtils.isBlank(userTags) || mainUser.getId().equals(user.getId())) {
                     continue;
                 }
+
+                // 匹配推荐用户
                 Map<String, List<Integer>> otherUserTagMap = userService.getTagWeightList(user.getTags());
                 double similarity = AlgorithmUtil.similarity(loginUserTagMap, otherUserTagMap);
-                // 相似度大于 0.7 才认为二者相似
                 if (similarity > 0.7) {
                     cacheUserList.add(user);
                     user.setTags(userService.getTagListJson(user));
@@ -101,9 +107,10 @@ public class PreCacheJob {
             long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
             boolean result = RedisUtil.setValue(redisKey, cacheUserList, timeout, TimeUnit.MINUTES);
             if (!result) {
-                log.error("缓存设置失败");
+                log.error("id 为 {} 的用户进行缓存预热时出现问题", mainUser.getId());
             }
         }
+
         return true;
     }
 
