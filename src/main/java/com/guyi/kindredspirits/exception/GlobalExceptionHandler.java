@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
     /**
      * 只捕获 BusinessException 类型的异常
      */
@@ -25,6 +26,9 @@ public class GlobalExceptionHandler {
         return ResultUtils.error(e.getCode(), e.getMessage(), e.getDescription());
     }
 
+    /**
+     * 处理 "运行时异常"
+     */
     @ExceptionHandler(RuntimeException.class)
     public BaseResponse<Object> runtimeException(RuntimeException e) {
         log.error("runtimeException", e);
