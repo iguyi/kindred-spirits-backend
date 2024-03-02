@@ -80,25 +80,14 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         // 合法性校验
         QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
         Long loginUserId = loginUser.getId();
-        friendQueryWrapper
-                .and(queryWrapper -> queryWrapper
-                        .eq("activeUserId", loginUserId)
-                        .eq("passiveUserId", receiverId)
-                        .or(wrapper -> wrapper
-                                .eq("activeUserId", receiverId)
-                                .eq("passiveUserId", loginUserId)
-                        )
-                )
-                .in("relationStatus", 0, 3, 4, 5, 6);
+        friendQueryWrapper.and(queryWrapper -> queryWrapper
+                .eq("activeUserId", loginUserId)
+                .eq("passiveUserId", receiverId)
+                .in("relationStatus", 0, 3, 4, 5, 6)
+                .or(wrapper -> wrapper.eq("activeUserId", receiverId).eq("passiveUserId", loginUserId)));
         long count = this.count(friendQueryWrapper);
         if (count != 0) {
-            /*
-             可能的情况:
-             - 被对方拉黑了
-             - 将对方拉黑了
-             - 互相拉黑
-             - 已经是好友了
-             */
+            // 可能情况: 被对方拉黑了、将对方拉黑了、互相拉黑了、已经是好友了
             throw new BusinessException(ErrorCode.FORBIDDEN, "禁止操作");
         }
 
@@ -109,7 +98,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         message.setSenderId(loginUserId);
         message.setMessageBody("好友申请");
         message.setProcessed(0);
-        // todo 设置缓存（ hash 结构）
+
         return messageService.save(message);
     }
 
@@ -143,22 +132,17 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
         String username = loginUser.getUsername();
         if (isAgreed) {
-            // 好友验证通过
-            // 验证二者曾经是否是好友关系
+            // 好友验证通过, 还需要验证二者曾经是否是好友关系
             QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
-            friendQueryWrapper
-                    .select("id", "relationStatus")
+            friendQueryWrapper.select("id", "relationStatus")
                     .and(queryWrapper -> queryWrapper.eq("activeUserId", loginUserId)
                             .eq("passiveUserId", senderId)
-                            .or(wrapper -> wrapper
-                                    .eq("activeUserId", senderId)
-                                    .eq("passiveUserId", loginUserId)
-                            )
-                    )
-                    .in("relationStatus", FriendRelationStatusEnum.ACTIVE_DELETE.getValue(),
+                            .or(wrapper -> wrapper.eq("activeUserId", senderId)
+                                    .eq("passiveUserId", loginUserId)))
+                    .in("relationStatus",
+                            FriendRelationStatusEnum.ACTIVE_DELETE.getValue(),
                             FriendRelationStatusEnum.PASSIVE_DELETE.getValue(),
-                            FriendRelationStatusEnum.ALL_DELETE.getValue()
-                    );
+                            FriendRelationStatusEnum.ALL_DELETE.getValue());
             Friend friend = friendMapper.selectOne(friendQueryWrapper);
             if (friend != null) {
                 // 曾经是好友, 更新关系
@@ -167,15 +151,15 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
                 friend.setRelationStatus(0);
                 this.updateById(friend);
             } else {
-                // 曾经不是好友
+                // 曾经不是好友, 建立关系
                 friend = new Friend();
                 friend.setActiveUserId(senderId);
                 friend.setPassiveUserId(loginUserId);
-                // 保存好友关系
                 boolean saveFriendResult = this.save(friend);
                 if (!saveFriendResult) {
                     throw new BusinessException(ErrorCode.SYSTEM_ERROR, "系统繁忙");
                 }
+
                 // 创建未读消息记录
                 createUnreadMessageLog(senderId, loginUserId);
                 createUnreadMessageLog(loginUserId, senderId);
@@ -214,6 +198,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
     @Override
     public List<User> getFriendList(User loginUser) {
+        // 参数校验
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN, "未登录");
         }
@@ -226,50 +211,50 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
         QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
         friendQueryWrapper.eq("activeUserId", loginUserId)
                 .eq("relationStatus", FriendRelationStatusEnum.NORMAL.getValue())
-                .or()
-                .eq("passiveUserId", loginUserId);
+                .or().eq("passiveUserId", loginUserId);
         List<Friend> friendRecordList = this.list(friendQueryWrapper);
-        List<Long> friendIdList = friendRecordList.stream()
-                .map(friendRecord -> {
-                    Long activeUserId = friendRecord.getActiveUserId();
-                    return !loginUserId.equals(activeUserId) ? activeUserId : friendRecord.getPassiveUserId();
-                })
-                .collect(Collectors.toList());
+        List<Long> friendIdList = friendRecordList.stream().map(friendRecord -> {
+            Long activeUserId = friendRecord.getActiveUserId();
+            return !loginUserId.equals(activeUserId) ? activeUserId : friendRecord.getPassiveUserId();
+        }).collect(Collectors.toList());
 
         // 查询所有好友的详细信息
-        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         if (friendIdList.size() == 0) {
+            // 没有好友
             return new ArrayList<>();
         }
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.in("id", friendIdList);
+
         return userService.list(userQueryWrapper);
     }
 
     @Override
     public FriendVo showFriend(User loginUser, Long friendId) {
+        // 参数校验
         if (friendId == null || friendId < 1) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
 
+        // 查询好友关系
         Long loginUserId = loginUser.getId();
         QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
-        friendQueryWrapper
-                .eq("passiveUserId", loginUserId)
+        friendQueryWrapper.eq("passiveUserId", loginUserId)
                 .eq("activeUserId", friendId)
-                .or(queryWrapper -> queryWrapper
-                        .eq("passiveUserId", friendId)
-                        .eq("activeUserId", loginUserId)
-                );
+                .or(queryWrapper -> queryWrapper.eq("passiveUserId", friendId)
+                        .eq("activeUserId", loginUserId));
         Friend friend = friendMapper.selectOne(friendQueryWrapper);
         if (friend == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR);
         }
 
+        // 查询好友信息
         User friendUser = userService.getById(friendId);
         friendUser.setTags(userService.getTagListJson(friendUser));
         UserVo friendUserVo = new UserVo();
         BeanUtils.copyProperties(friendUser, friendUserVo);
 
+        // 组合展示数据
         FriendVo friendVo = new FriendVo();
         BeanUtils.copyProperties(friend, friendVo);
         friendVo.setFriend(friendUserVo);
@@ -280,6 +265,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
     @Override
     public Boolean updateRelation(User loginUser, UpdateRelationRequest updateRelationRequest) {
+        // 参数校验
         if (updateRelationRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
@@ -291,16 +277,14 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
             throw new BusinessException(ErrorCode.PARAMS_ERROR, ErrorCode.PARAMS_ERROR.getMsg());
         }
 
-        Long loginUserId = loginUser.getId();
-
+        // 更新关系
         QueryWrapper<Friend> friendQueryWrapper = new QueryWrapper<>();
         friendQueryWrapper.select("id", "relationStatus");
         UpdateWrapper<Friend> friendUpdateWrapper = new UpdateWrapper<>();
-        if (isActive) {
-            return isActiveOperation(friendId, operationType, loginUserId, friendQueryWrapper, friendUpdateWrapper);
-        } else {
-            return notActiveOperation(friendId, operationType, loginUserId, friendQueryWrapper, friendUpdateWrapper);
-        }
+        Long loginUserId = loginUser.getId();
+        return isActive ?
+                isActiveOperation(friendId, operationType, loginUserId, friendQueryWrapper, friendUpdateWrapper) :
+                notActiveOperation(friendId, operationType, loginUserId, friendQueryWrapper, friendUpdateWrapper);
     }
 
     /**
@@ -324,8 +308,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
         if (UpdateFriendRelationOperationEnum.DELETE.equals(operationType)) {
             // 之前是对方加的当前用户好友, 现在当前用户将对方删除
-            friendQueryWrapper
-                    .ne("relationStatus", FriendRelationStatusEnum.PASSIVE_DELETE.getValue())
+            friendQueryWrapper.ne("relationStatus", FriendRelationStatusEnum.PASSIVE_DELETE.getValue())
                     .ne("relationStatus", FriendRelationStatusEnum.ALL_DELETE.getValue())
                     .ne("relationStatus", FriendRelationStatusEnum.ACTIVE_HATE.getValue())
                     .ne("relationStatus", FriendRelationStatusEnum.ALL_HATE.getValue());
@@ -343,8 +326,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
             }
         } else {
             // 之前是对方加的当前用户好友, 现在当前用户将对方拉黑
-            friendQueryWrapper
-                    .ne("relationStatus", FriendRelationStatusEnum.PASSIVE_HATE.getValue())
+            friendQueryWrapper.ne("relationStatus", FriendRelationStatusEnum.PASSIVE_HATE.getValue())
                     .ne("relationStatus", FriendRelationStatusEnum.ALL_HATE.getValue());
             Friend friend = friendMapper.selectOne(friendQueryWrapper);
             if (friend == null) {
@@ -383,8 +365,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
 
         if (UpdateFriendRelationOperationEnum.DELETE.equals(operationType)) {
             // 当前用户主动添加对方后, 又将对方对方删除了
-            friendQueryWrapper
-                    .ne("relationStatus", FriendRelationStatusEnum.ACTIVE_DELETE.getValue())
+            friendQueryWrapper.ne("relationStatus", FriendRelationStatusEnum.ACTIVE_DELETE.getValue())
                     .ne("relationStatus", FriendRelationStatusEnum.ALL_DELETE.getValue())
                     .ne("relationStatus", FriendRelationStatusEnum.ACTIVE_HATE.getValue())
                     .ne("relationStatus", FriendRelationStatusEnum.ALL_HATE.getValue());
@@ -402,8 +383,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
             }
         } else {
             // 当前用户主动添加对方后, 然后将对方对方拉黑了
-            friendQueryWrapper
-                    .ne("relationStatus", FriendRelationStatusEnum.ACTIVE_HATE.getValue())
+            friendQueryWrapper.ne("relationStatus", FriendRelationStatusEnum.ACTIVE_HATE.getValue())
                     .ne("relationStatus", FriendRelationStatusEnum.ALL_HATE.getValue());
             Friend friend = friendMapper.selectOne(friendQueryWrapper);
             if (friend == null) {
@@ -418,6 +398,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
                 friendUpdateWrapper.set("relationStatus", FriendRelationStatusEnum.ACTIVE_HATE.getValue());
             }
         }
+
         return this.update(friendUpdateWrapper);
     }
 
