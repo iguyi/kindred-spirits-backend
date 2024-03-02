@@ -56,15 +56,18 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
 
     @Override
     public ChatVo getChatVo(User senderUser, User receiverUser, String chatContent, ChatTypeEnum chatTypeEnum) {
+        // 消息发送者签名
         WebSocketVo senderUserLogo = new WebSocketVo();
         BeanUtils.copyProperties(senderUser, senderUserLogo);
 
+        // 消息接收者签名
         WebSocketVo receiverUserLogo = null;
         if (receiverUser != null) {
             receiverUserLogo = new WebSocketVo();
             BeanUtils.copyProperties(receiverUser, receiverUserLogo);
         }
 
+        // 整合数据
         ChatVo chatVo = new ChatVo();
         chatVo.setSenderUser(senderUserLogo);
         chatVo.setReceiverUser(receiverUserLogo);
@@ -100,18 +103,18 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         userQueryWrapper.select("id", "userAccount", "username", "avatarUrl").eq("id", friendId);
         User friend = userService.getOne(userQueryWrapper);
 
-        return chatList.stream().sorted(
-                // 根据 id 进行排序, 避免因为使用二级索引带来的聊天记录顺序问题
-                (chat1, chat2) -> Math.toIntExact(chat1.getId() - chat2.getId())
-        ).map(chat -> {
-            // 整合响应数据
-            if (Objects.equals(chat.getSenderId(), loginUserId)) {
-                // 消息发送者是当前用户
-                return getChatVo(loginUser, friend, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
-            }
-            // 消息接收者是当前用户
-            return getChatVo(friend, loginUser, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
-        }).collect(Collectors.toList());
+        // 先根据 id 进行排序, 避免因为使用二级索引带来的聊天记录顺序问题; 再对数据进行整合
+        return chatList.stream()
+                .sorted((chat1, chat2) -> Math.toIntExact(chat1.getId() - chat2.getId()))
+                .map(chat -> {
+                    // 消息发送者是当前用户
+                    if (Objects.equals(chat.getSenderId(), loginUserId)) {
+                        return getChatVo(loginUser, friend, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
+                    }
+
+                    // 消息接收者是当前用户
+                    return getChatVo(friend, loginUser, chat.getChatContent(), ChatTypeEnum.PRIVATE_CHAT);
+                }).collect(Collectors.toList());
     }
 
     @Override
@@ -119,10 +122,8 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         // 校验
         parameterValidation(loginUser, chatHistoryRequest);
 
-        // 获取队伍 id
-        Long teamId = chatHistoryRequest.getTeamId();
-
         // 查询对应聊天记录
+        Long teamId = chatHistoryRequest.getTeamId();
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
         chatQueryWrapper.eq("teamId", teamId).eq("chatType", ChatTypeEnum.GROUP_CHAT.getType());
         List<Chat> chatList = this.list(chatQueryWrapper);
@@ -147,7 +148,8 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             return listReceiverIds.contains(loginUser.getId());
         }).map(chat -> {
             ChatVo chatVo = getChatVo(sendUserSearchMapById.get(chat.getSenderId()).get(0),
-                    null, chat.getChatContent(),
+                    null,
+                    chat.getChatContent(),
                     ChatTypeEnum.GROUP_CHAT);
             chatVo.setSendTime(DateUtil.format(chat.getCreateTime(), "yyyy-MM-dd HH:mm:ss"));
             return chatVo;
@@ -184,13 +186,12 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
     private List<ChatRoomVo> listPrivateChatRoomVos(Long userId) {
         // 查询与我相关的私聊消息
         QueryWrapper<Chat> chatQueryWrapper = new QueryWrapper<>();
-        chatQueryWrapper
-                .and(queryWrapper -> queryWrapper.eq("senderId", userId).or().eq("receiverId", userId))
-                .isNull("teamId");
+        chatQueryWrapper.isNull("teamId")
+                .and(queryWrapper -> queryWrapper.eq("senderId", userId).or().eq("receiverId", userId));
         List<Chat> chatList = this.list(chatQueryWrapper);
 
+        // 没有私聊的消息
         if (CollectionUtils.isEmpty(chatList)) {
-            // 没有私聊的消息
             return Collections.emptyList();
         }
 
@@ -203,17 +204,18 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         // 查询好友信息
         Set<Long> friendIdSet = chatGroup.keySet();
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        userQueryWrapper.select("id", "username", "avatarUrl")
-                .in("id", friendIdSet);
-        List<User> friendList
-                = CollectionUtils.isEmpty(friendIdSet) ? Collections.emptyList() : userService.list(userQueryWrapper);
+        userQueryWrapper.select("id", "username", "avatarUrl").in("id", friendIdSet);
+        List<User> friendList =
+                CollectionUtils.isEmpty(friendIdSet) ? Collections.emptyList() : userService.list(userQueryWrapper);
 
-        // 整合返回结果
+        // 整合返回结果(历史私聊会话)
         List<ChatRoomVo> chatRoomVoList = new ArrayList<>();
         chatGroup.forEach((key, value) -> {
+            // 整合单个私聊会话数据
             ChatRoomVo chatRoomVo = new ChatRoomVo();
             chatRoomVo.setReceiverId(key);
             for (User friend : friendList) {
+                // 找到对应用户并设置私聊数据
                 if (friend.getId().equals(key)) {
                     chatRoomVo.setAvatarUrl(friend.getAvatarUrl());
                     chatRoomVo.setReceiverName(friend.getUsername());
@@ -229,15 +231,15 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             chatRoomVo.setSendTime(sendDateAndTime);
             // 获取未读消息数
             String sessionName = String.format("private-%s-%s", userId, key);
-            UnreadMessageNumCache unreadMessageNumByName
-                    = unreadMessageNumService.getUnreadMessageNumByName(sessionName);
-            if (unreadMessageNumByName == null) {
-                chatRoomVo.setUnreadMessageNum(0);
-            } else {
-                chatRoomVo.setUnreadMessageNum(unreadMessageNumByName.getUnreadNum());
-            }
+            UnreadMessageNumCache unreadMessageNum = unreadMessageNumService.getUnreadMessageNumByName(sessionName);
+
+            // 重设未读消息数
+            int unreadNum = unreadMessageNum == null ? 0 : unreadMessageNum.getUnreadNum();
+            chatRoomVo.setUnreadMessageNum(unreadNum);
+
             chatRoomVoList.add(chatRoomVo);
         });
+
         return chatRoomVoList;
     }
 
@@ -254,30 +256,31 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
                 .like("receiverIds", userId);
         List<Chat> chatList = this.list(chatQueryWrapper);
 
+        // 没有队伍的消息
         if (CollectionUtils.isEmpty(chatList)) {
-            // 没有队伍的消息
             return Collections.emptyList();
         }
 
         // 按照队伍 id 对队伍消息分组
-        Map<Long, List<Chat>> chatGroup = chatList.stream()
-                .filter(chat -> {
-                    // 前面使用模糊查询, 因此这里需要过滤调其他队伍的消息
-                    String jsonReceiverIds = chat.getReceiverIds();
-                    List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, ID_LIST_TYPE);
-                    return listReceiverIds.contains(userId);
-                })
-                .collect(Collectors.groupingBy(Chat::getTeamId));
+        Map<Long, List<Chat>> chatGroup = chatList.stream().filter(chat -> {
+            // 前面使用模糊查询, 因此这里需要过滤调其他队伍的消息
+            String jsonReceiverIds = chat.getReceiverIds();
+            List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, ID_LIST_TYPE);
+            return listReceiverIds.contains(userId);
+        }).collect(Collectors.groupingBy(Chat::getTeamId));
         chatGroup.remove(null);
 
-        // 过滤不该当前用户接收的的消息
+        // 数据筛选
         Map<Long, List<Chat>> validChatGroup = new HashMap<>(chatGroup.size());
         chatGroup.forEach((key, value) -> {
             List<Chat> chats = value.stream().filter(chat -> {
+                // 过滤不该当前用户接收的的消息
                 String jsonReceiverIds = chat.getReceiverIds();
                 List<Long> listReceiverIds = JsonUtil.fromJson(jsonReceiverIds, ID_LIST_TYPE);
                 return listReceiverIds.contains(userId);
             }).collect(Collectors.toList());
+
+            // 过滤空数据
             if (CollectionUtils.isNotEmpty(chats)) {
                 validChatGroup.put(key, chats);
             }
@@ -286,17 +289,18 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
         // 查询相关队伍信息
         Set<Long> teamIdSet = validChatGroup.keySet();
         QueryWrapper<Team> teamQueryWrapper = new QueryWrapper<>();
-        teamQueryWrapper.select("id", "name", "avatarUrl")
-                .in("id", teamIdSet);
-        List<Team> teamList
-                = CollectionUtils.isEmpty(teamIdSet) ? Collections.emptyList() : teamService.list(teamQueryWrapper);
+        teamQueryWrapper.select("id", "name", "avatarUrl").in("id", teamIdSet);
+        List<Team> teamList =
+                CollectionUtils.isEmpty(teamIdSet) ? Collections.emptyList() : teamService.list(teamQueryWrapper);
 
-        // 整合返回结果
+        // 整合返回结果(历史队伍会话)
         List<ChatRoomVo> chatRoomVoList = new ArrayList<>();
         chatGroup.forEach((key, value) -> {
+            // 整合单个队伍会话数据
             ChatRoomVo chatRoomVo = new ChatRoomVo();
             chatRoomVo.setReceiverId(key);
             for (Team team : teamList) {
+                // 找到对应队伍并设置聊天数据
                 if (Objects.equals(team.getId(), key)) {
                     chatRoomVo.setAvatarUrl(team.getAvatarUrl());
                     chatRoomVo.setReceiverName(team.getName());
@@ -312,15 +316,15 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
             chatRoomVo.setSendTime(sendDateAndTime);
             // 获取未读消息数
             String sessionName = String.format("team-%s-%s", userId, key);
-            UnreadMessageNumCache unreadMessageNumByName
-                    = unreadMessageNumService.getUnreadMessageNumByName(sessionName);
-            if (unreadMessageNumByName == null) {
-                chatRoomVo.setUnreadMessageNum(0);
-            } else {
-                chatRoomVo.setUnreadMessageNum(unreadMessageNumByName.getUnreadNum());
-            }
+            UnreadMessageNumCache unreadMessageNum = unreadMessageNumService.getUnreadMessageNumByName(sessionName);
+
+            // 重设未读消息数
+            int unreadNum = unreadMessageNum == null ? 0 : unreadMessageNum.getUnreadNum();
+            chatRoomVo.setUnreadMessageNum(unreadNum);
+
             chatRoomVoList.add(chatRoomVo);
         });
+
         return chatRoomVoList;
     }
 
