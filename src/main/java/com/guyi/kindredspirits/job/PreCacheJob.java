@@ -103,11 +103,38 @@ public class PreCacheJob {
             }
 
             // 写缓存, key 超时时间 = 15 小时 + 随机时间(分钟)
-            String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, mainUser.getId());
+            /*String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, mainUser.getId());
             long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
             boolean result = RedisUtil.setValue(redisKey, cacheUserList, timeout, TimeUnit.MINUTES);
             if (!result) {
                 log.error("id 为 {} 的用户进行缓存预热时出现问题", mainUser.getId());
+            }*/
+
+            final String recommendKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, mainUser.getId());
+            int size = cacheUserList.size();
+            int pageSize = 10;
+            long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(5 * 60L);
+            if (size <= pageSize) {
+                String redisHashKey = "1";
+                boolean result = RedisUtil.setHashValue(recommendKey,
+                        redisHashKey,
+                        cacheUserList,
+                        timeout,
+                        TimeUnit.MINUTES);
+                if (!result) {
+                    log.error("id 为 {} 的用户进行缓存预热时出现问题", mainUser.getId());
+                }
+                continue;
+            }
+            for (int pageNum = 1; pageNum * pageSize <= size; pageNum++) {
+                boolean result = RedisUtil.setHashValue(recommendKey,
+                        String.valueOf(pageNum),
+                        cacheUserList,
+                        timeout,
+                        TimeUnit.MINUTES);
+                if (!result) {
+                    log.error("id 为 {} 的用户进行缓存预热时出现问题, 出错的页为 {}", mainUser.getId(), pageNum);
+                }
             }
         }
 
