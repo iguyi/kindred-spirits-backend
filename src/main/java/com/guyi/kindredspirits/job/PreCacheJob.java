@@ -2,12 +2,14 @@ package com.guyi.kindredspirits.job;
 
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.google.gson.reflect.TypeToken;
 import com.guyi.kindredspirits.common.contant.RedisConstant;
 import com.guyi.kindredspirits.common.contant.UserConstant;
 import com.guyi.kindredspirits.mapper.UserMapper;
 import com.guyi.kindredspirits.model.domain.User;
 import com.guyi.kindredspirits.service.UserService;
 import com.guyi.kindredspirits.util.AlgorithmUtil;
+import com.guyi.kindredspirits.util.JsonUtil;
 import com.guyi.kindredspirits.util.lock.LockUtil;
 import com.guyi.kindredspirits.util.redis.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +19,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.lang.reflect.Type;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -62,6 +62,7 @@ public class PreCacheJob {
         if (!result) {
             log.error("doCacheRecommendUser 缓存预热失败");
         }
+        System.out.println("缓存完成");
     }
 
     /**
@@ -70,51 +71,49 @@ public class PreCacheJob {
     private boolean cacheRecommendUser() {
         // 查询所有热点用户数据
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        userQueryWrapper
-                .select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "email", "phone", "profile")
-                .eq("isHot", UserConstant.HOT_USER_TAG);
+        userQueryWrapper.select("id", "username", "avatarUrl", "tags").eq("isHot", UserConstant.HOT_USER_TAG);
         List<User> mainUserList = userMapper.selectList(userQueryWrapper);
+
+        // 查询所有用户信息
+        userQueryWrapper = new QueryWrapper<>();
+        // "id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone", "email"
+        userQueryWrapper.select("id", "username", "avatarUrl", "tags");
+        List<User> userList = userService.list(userQueryWrapper);
 
         // 寻找推荐用户
         for (User mainUser : mainUserList) {
-            // 查询所有用户信息
-            userQueryWrapper = new QueryWrapper<>();
-            userQueryWrapper
-                    .select("id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone", "email")
-                    .ne("id", mainUser.getId());
-            List<User> userList = userService.list(userQueryWrapper);
-            Map<String, List<Integer>> loginUserTagMap = userService.getTagWeightList(mainUser.getTags());
+            // 解析当前热点用户的标签数据
+            String mainTags = mainUser.getTags();
+            if (StringUtils.isBlank(mainTags)) {
+                continue;
+            }
+            Map<String, List<Integer>> mainUserTagMap = userService.getTagWeightList(mainTags);
 
             List<User> cacheUserList = new ArrayList<>();
-            for (User user : userList) {
-                String userTags = user.getTags();
+            String userListDeepCopyJson = JsonUtil.G.toJson(userList);
+            Type userListType = new TypeToken<List<User>>() {
+            }.getType();
+            List<User> userListDeepCopy = JsonUtil.fromJson(userListDeepCopyJson,userListType);
+            for (User user : userListDeepCopy) {
                 // 排除未设置标签用户和自己
-                if (StringUtils.isBlank(userTags) || mainUser.getId().equals(user.getId())) {
+                String userTags = user.getTags();
+                if (StringUtils.isBlank(userTags) || Objects.equals(mainUser.getId(), user.getId())) {
                     continue;
                 }
 
-                // 匹配推荐用户
-                Map<String, List<Integer>> otherUserTagMap = userService.getTagWeightList(user.getTags());
-                double similarity = AlgorithmUtil.similarity(loginUserTagMap, otherUserTagMap);
+                Map<String, List<Integer>> otherUserTagMap = userService.getTagWeightList(userTags);
+                double similarity = AlgorithmUtil.similarity(mainUserTagMap, otherUserTagMap);
                 if (similarity > 0.7) {
                     cacheUserList.add(user);
                     user.setTags(userService.getTagListJson(user));
                 }
             }
 
-            // 写缓存, key 超时时间 = 15 小时 + 随机时间(分钟)
-            /*String redisKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, mainUser.getId());
-            long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(15 * 60L);
-            boolean result = RedisUtil.setValue(redisKey, cacheUserList, timeout, TimeUnit.MINUTES);
-            if (!result) {
-                log.error("id 为 {} 的用户进行缓存预热时出现问题", mainUser.getId());
-            }*/
-
             final String recommendKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, mainUser.getId());
             int size = cacheUserList.size();
             int pageSize = 10;
             long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(5 * 60L);
-            if (size <= pageSize) {
+            if (size != 0 && size <= pageSize) {
                 String redisHashKey = "1";
                 boolean result = RedisUtil.setHashValue(recommendKey,
                         redisHashKey,
