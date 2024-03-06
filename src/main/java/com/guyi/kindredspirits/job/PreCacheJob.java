@@ -71,12 +71,12 @@ public class PreCacheJob {
     private boolean cacheRecommendUser() {
         // 查询所有热点用户数据
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        // "id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone", "email"
         userQueryWrapper.select("id", "username", "avatarUrl", "tags").eq("isHot", UserConstant.HOT_USER_TAG);
         List<User> mainUserList = userMapper.selectList(userQueryWrapper);
 
         // 查询所有用户信息
         userQueryWrapper = new QueryWrapper<>();
-        // "id", "userAccount", "username", "avatarUrl", "gender", "tags", "profile", "phone", "email"
         userQueryWrapper.select("id", "username", "avatarUrl", "tags");
         List<User> userList = userService.list(userQueryWrapper);
 
@@ -89,11 +89,14 @@ public class PreCacheJob {
             }
             Map<String, List<Integer>> mainUserTagMap = userService.getTagWeightList(mainTags);
 
-            List<User> cacheUserList = new ArrayList<>();
+            // 深拷贝数据
             String userListDeepCopyJson = JsonUtil.G.toJson(userList);
             Type userListType = new TypeToken<List<User>>() {
             }.getType();
-            List<User> userListDeepCopy = JsonUtil.fromJson(userListDeepCopyJson,userListType);
+            List<User> userListDeepCopy = JsonUtil.fromJson(userListDeepCopyJson, userListType);
+
+            // 选择缓存的数据
+            List<User> cacheUserList = new ArrayList<>();
             for (User user : userListDeepCopy) {
                 // 排除未设置标签用户和自己
                 String userTags = user.getTags();
@@ -107,12 +110,18 @@ public class PreCacheJob {
                     cacheUserList.add(user);
                     user.setTags(userService.getTagListJson(user));
                 }
+
+                if (cacheUserList.size() > 200) {
+                    break;
+                }
             }
 
+            // 分页缓存数据
             final String recommendKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, mainUser.getId());
             int size = cacheUserList.size();
             int pageSize = 10;
             long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(5 * 60L);
+            // 总数据量不满一页, 按一页计算
             if (size != 0 && size <= pageSize) {
                 String redisHashKey = "1";
                 boolean result = RedisUtil.setHashValue(recommendKey,
@@ -125,6 +134,7 @@ public class PreCacheJob {
                 }
                 continue;
             }
+            // 总数据量大于一页的数据量
             for (int pageNum = 1; pageNum * pageSize <= size; pageNum++) {
                 boolean result = RedisUtil.setHashValue(recommendKey,
                         String.valueOf(pageNum),
