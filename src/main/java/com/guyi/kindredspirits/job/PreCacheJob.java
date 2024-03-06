@@ -96,11 +96,12 @@ public class PreCacheJob {
             List<User> userListDeepCopy = JsonUtil.fromJson(userListDeepCopyJson, userListType);
 
             // 选择缓存的数据
+            Long mainUserId = mainUser.getId();
             List<User> cacheUserList = new ArrayList<>();
             for (User user : userListDeepCopy) {
                 // 排除未设置标签用户和自己
                 String userTags = user.getTags();
-                if (StringUtils.isBlank(userTags) || Objects.equals(mainUser.getId(), user.getId())) {
+                if (StringUtils.isBlank(userTags) || Objects.equals(mainUserId, user.getId())) {
                     continue;
                 }
 
@@ -117,37 +118,41 @@ public class PreCacheJob {
             }
 
             // 分页缓存数据
-            final String recommendKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, mainUser.getId());
+            final String recommendKey = String.format(RedisConstant.RECOMMEND_KEY_PRE, mainUserId);
             int size = cacheUserList.size();
             int pageSize = 10;
             long timeout = RedisConstant.PRECACHE_TIMEOUT + RandomUtil.randomLong(5 * 60L);
             // 总数据量不满一页, 按一页计算
             if (size != 0 && size <= pageSize) {
                 String redisHashKey = "1";
-                boolean result = RedisUtil.setHashValue(recommendKey,
-                        redisHashKey,
-                        cacheUserList,
-                        timeout,
-                        TimeUnit.MINUTES);
-                if (!result) {
-                    log.error("id 为 {} 的用户进行缓存预热时出现问题", mainUser.getId());
-                }
+                saveCacheByPage(mainUserId, cacheUserList, recommendKey, timeout, redisHashKey);
                 continue;
             }
             // 总数据量大于一页的数据量
             for (int pageNum = 1; pageNum * pageSize <= size; pageNum++) {
-                boolean result = RedisUtil.setHashValue(recommendKey,
-                        String.valueOf(pageNum),
-                        cacheUserList,
-                        timeout,
-                        TimeUnit.MINUTES);
-                if (!result) {
-                    log.error("id 为 {} 的用户进行缓存预热时出现问题, 出错的页为 {}", mainUser.getId(), pageNum);
-                }
+                int starIndex = (pageNum - 1) * pageSize;
+                List<User> userListChild = cacheUserList.subList(starIndex, starIndex + pageSize);
+                saveCacheByPage(mainUserId, userListChild, recommendKey, timeout, String.valueOf(pageNum));
             }
         }
 
         return true;
+    }
+
+    /**
+     * 按页缓存用户普通推荐数据
+     *
+     * @param mainUserId - 热点用户Id
+     * @param pageData   - 当前页对应的数据
+     * @param redisKey   - redis key
+     * @param timeout    - 超时时间, 单位: min
+     * @param pageNum    - 页码
+     */
+    private void saveCacheByPage(Long mainUserId, List<User> pageData, String redisKey, long timeout, String pageNum) {
+        boolean result = RedisUtil.setHashValue(redisKey, pageNum, pageData, timeout, TimeUnit.MINUTES);
+        if (!result) {
+            log.error("id 为 {} 的用户进行缓存预热时出现问题, 出错的页为 {}", mainUserId, pageNum);
+        }
     }
 
 }
