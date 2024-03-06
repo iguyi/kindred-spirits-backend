@@ -532,14 +532,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     RedisUtil.getHashValue(redisKey, redisHashKey, userVoListType);
             redisQueryReturn = Optional.ofNullable(redisQueryReturn).orElse(new RedisQueryReturn<>());
             List<UserVo> userVoList = redisQueryReturn.getData();
-            if (CollectionUtils.isEmpty(userVoList)) {
+
+            // 数据不为空
+            if (!CollectionUtils.isEmpty(userVoList)) {
+                // 如果缓存过期, 异步更新缓存
                 if (redisQueryReturn.isExpiration()) {
-                    // 缓存数据过期, 异步更新缓存
                     RecreationCache.recreation(() -> {
                         this.pageRecommends(pageSize, pageNum, redisKey, friendIdList);
                     });
                 }
-                // 数据存在缓存, 过滤好友后直接返回缓存中的数据
+                // 数据存在缓存, 过滤好友后直接返回缓存中的数据。无论是否过期, 本次都直接使用
                 return userVoList.stream()
                         .filter(userVo -> !friendIdList.contains(userVo.getId()))
                         .collect(Collectors.toList());
