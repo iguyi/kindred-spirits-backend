@@ -371,13 +371,13 @@ public class ChatServiceImpl extends ServiceImpl<ChatMapper, Chat> implements Ch
     }
 
     /**
-     * 根据现在的日期, 对时间进行格式化, 假设现在的日期为 2024-01-20:
-     * - "2024-01-20 12:09:01" => "12:09:01"
-     * - "2024-01-19 12:09:01" => "2024-01-19"
+     * 根据现在的日期, 对时间进行格式化, 假设现在的日期为 2024-01-20:<br/>
+     * - "2024-01-20 12:09:01" => "12:09:01"<br/>
+     * - "2024-01-19 12:09:01" => "2024-01-19"<br/>
      *
      * @param time - yy-MM-dd HH:mm:ss
      * @param date - yy-MM-dd
-     * @return HH:mm:ss 或者 yy-MM-dd
+     * @return HH:mm:ss 或者 yy-MM-dd 格式的日期字符串
      */
     private String timeFormat(String time, String date) {
         if (time.contains(date)) {
