@@ -65,13 +65,13 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
 
+        // 类型必须是【验证消息】
         Integer messageType = messageRequest.getMessageType();
         if (!MessageTypeEnum.VERIFY_MESSAGE.getType().equals(messageType)) {
-            // 类型必须是验证消息
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数错误");
         }
 
-        // 校验消息接收者是否存在
+        // 校验【消息接收者】是否存在
         User receiverUser = userService.getById(receiverId);
         if (receiverUser == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "对方不存在");
