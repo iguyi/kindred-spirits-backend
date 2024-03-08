@@ -20,6 +20,11 @@ public class AlgorithmUtil {
     private static final double DOT_PRODUCT_INIT = 0.0;
 
     /**
+     * 0.00000001, 进行余弦相似度计算时, 分母出现 0 时将使用该值替换 0
+     */
+    private static final double EPSILON = 1e-8;
+
+    /**
      * 最短编辑距离算法 - 标签
      *
      * @param current - 当前用户的标签列表
@@ -113,7 +118,7 @@ public class AlgorithmUtil {
             currentUserWeight += Math.pow(a, 2);
             otherUserWeight += Math.pow(b, 2);
         }
-        return dotProduct / Math.max(Math.sqrt(currentUserWeight) * Math.sqrt(otherUserWeight), 0.00000001);
+        return dotProduct / Math.max(Math.sqrt(currentUserWeight) * Math.sqrt(otherUserWeight), EPSILON);
     }
 
     /**
@@ -123,13 +128,7 @@ public class AlgorithmUtil {
      * @return 父标签权重
      */
     private static double calculateParentTagWeight(List<Integer> tagWeights) {
-        // 初始权重
-        double weight = USER_WEIGHT_INIT;
-
-        for (Integer tagWeight : tagWeights) {
-            weight += tagWeight;
-        }
-
-        return weight / tagWeights.size();
+        return tagWeights.stream().mapToInt(Integer::intValue).average().orElse(USER_WEIGHT_INIT);
     }
+
 }
