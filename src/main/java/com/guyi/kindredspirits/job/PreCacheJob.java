@@ -106,8 +106,8 @@ public class PreCacheJob {
                 }
 
                 Map<String, List<Integer>> otherUserTagMap = userService.getTagWeightList(userTags);
-                double similarity = AlgorithmUtil.similarity(mainUserTagMap, otherUserTagMap);
-                if (similarity > 0.7) {
+                double similarity = AlgorithmUtil.similarityPro(mainUserTagMap, otherUserTagMap);
+                if (similarity > 0.4) {
                     cacheUserList.add(user);
                     user.setTags(userService.getTagListJson(user));
                 }
