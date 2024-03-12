@@ -1,5 +1,7 @@
 package com.guyi.kindredspirits.util;
 
+import org.springframework.data.util.Pair;
+
 import java.util.*;
 
 /**
@@ -119,6 +121,82 @@ public class AlgorithmUtil {
             otherUserWeight += Math.pow(b, 2);
         }
         return dotProduct / Math.max(Math.sqrt(currentUserWeight) * Math.sqrt(otherUserWeight), EPSILON);
+    }
+
+    /**
+     * 余弦相似度
+     *
+     * @param currentUserTag - 当前用户的标签
+     * @param otherUserTag   - 其他用户的标签
+     * @return 相似度
+     */
+    public static double similarityPro(Map<String, List<Integer>> currentUserTag,
+                                       Map<String, List<Integer>> otherUserTag) {
+        /*
+         当前用户的熵值, 等于当前用户的不同顶层标签的权值之和。
+         顶层标签对于一个用户的权值 = 该用户拥有该顶层标签下的所有子标签权值之和 / 该用户拥有该顶层标签下的所有子标签权值的数目
+         */
+        double currentUserEntropy = 0.0;
+
+        /*
+         metaList 存储每一个分量的相似度。
+         metaList 的每个元素: (相似度, 对应顶层标签总权值的平均权重)
+         */
+        List<Pair<Double, Double>> metaList = new ArrayList<>();
+
+        Set<String> currentUserTagKey = currentUserTag.keySet();
+        for (String key : currentUserTagKey) {
+            // 获取当前用户的标签组
+            List<Integer> currentUserTagValue = currentUserTag.get(key);
+
+            // 计算当前标签组的熵
+            double currentUserChildEntropy = 0.0;
+            for (Integer weight : currentUserTagValue) {
+                currentUserChildEntropy += weight;
+            }
+            currentUserEntropy += currentUserChildEntropy;
+
+            // 【比较用户】未设置该组标签
+            if (!otherUserTag.containsKey(key)) {
+                metaList.add(Pair.of(0.0, currentUserChildEntropy));
+                continue;
+            }
+
+            /*
+            相似度计算过程中的相关数据
+            currentUserWeight: 当前用户权值
+            otherUserWeight: 其他用户权值
+            dotProduct: 点积
+             */
+            double currentUserWeight = USER_WEIGHT_INIT;
+            double otherUserWeight = USER_WEIGHT_INIT;
+            double dotProduct = DOT_PRODUCT_INIT;
+
+            // 当前【比较用户】存在该组标签, 则获取
+            List<Integer> otherUserTagValue = otherUserTag.get(key);
+
+            // 相关计算
+            for (Integer value : currentUserTagValue) {
+                if (otherUserTagValue.contains(value)) {
+                    dotProduct += Math.pow(value, 2);
+                    otherUserWeight += Math.pow(value, 2);
+                }
+                currentUserWeight += Math.pow(value, 2);
+            }
+            double result = dotProduct / Math.max(Math.sqrt(currentUserWeight) * Math.sqrt(otherUserWeight), EPSILON);
+
+            // 保存计算结果
+            metaList.add(Pair.of(result, currentUserChildEntropy));
+        }
+
+        // 最终相似度计算
+        double finalSimilarity = 0.0;
+        for (Pair<Double, Double> meta : metaList) {
+            // 最终相似度 = sum(各组标签相似度 / 对应组的重要度)
+            finalSimilarity += (meta.getFirst() * (meta.getSecond() / currentUserEntropy));
+        }
+
+        return Math.round(finalSimilarity * 100.0) / 100.0;
     }
 
     /**
