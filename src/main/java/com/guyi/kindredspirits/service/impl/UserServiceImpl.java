@@ -200,13 +200,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号不存在");
         }
 
-        // 脱敏
-        User safetyUser = getSafetyUser(user);
+        if (Objects.equals(user.getUserStatus(), 0)) {
+            // 脱敏
+            User safetyUser = getSafetyUser(user);
 
-        // 记录用户登录态
-        httpServletRequest.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, safetyUser);
+            // 记录用户登录态
+            httpServletRequest.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, safetyUser);
 
-        return safetyUser;
+            return safetyUser;
+        }
+
+        throw new BusinessException(ErrorCode.FORBIDDEN, "账号状态异常");
+
     }
 
     /**
