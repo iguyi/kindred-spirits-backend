@@ -359,9 +359,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
             Map<String, List<Integer>> otherUserTagMap = getTagWeightList(user.getTags());
             // 计算相似度
-            double similarity = AlgorithmUtil.similarity(loginUserTagMap, otherUserTagMap);
+            double similarity = AlgorithmUtil.similarityPro(loginUserTagMap, otherUserTagMap);
             // 最佳匹配的相似度阈值, 如果相似度低于这个值, 则丢弃
-            double matchThreshold = 0.85;
+            double matchThreshold = 0.6;
             if (similarity >= matchThreshold) {
                 linkedUtil.add(user, similarity);
             }
