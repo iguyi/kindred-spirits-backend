@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.guyi.kindredspirits.common.ErrorCode;
 import com.guyi.kindredspirits.common.ProjectProperties;
 import com.guyi.kindredspirits.common.contant.RedisConstant;
+import com.guyi.kindredspirits.common.contant.TeamConstant;
 import com.guyi.kindredspirits.exception.BusinessException;
 import com.guyi.kindredspirits.mapper.ChatMapper;
 import com.guyi.kindredspirits.mapper.TeamMapper;
@@ -46,8 +47,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
-public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
-        implements TeamService {
+public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> implements TeamService {
 
     @Resource
     private TeamMapper teamMapper;
@@ -92,17 +92,17 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         //  队伍人数校验
         int maxNum = Optional.ofNullable(team.getMaxNum()).orElse(0);
-        if (maxNum < 2 || maxNum > 20) {
+        if (maxNum < TeamConstant.MINX_NUMBER_PEOPLE || maxNum > TeamConstant.MAX_NUMBER_PEOPLE) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍人数不符合要求!");
         }
         //  队伍标题长度验证
         String name = team.getName();
-        if (StringUtils.isBlank(name) || name.length() > 10) {
+        if (StringUtils.isBlank(name) || name.length() > TeamConstant.MAX_TEAM_NAME_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍标题不符合要求!");
         }
         //  队伍描述验证
         String description = team.getDescription();
-        if (StringUtils.isNotBlank(description) && description.length() > 512) {
+        if (StringUtils.isNotBlank(description) && description.length() > TeamConstant.MAX_DESCRIPTION_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍描述不符合要求!");
         }
         //  是否公开，不传默认 0（公开）
@@ -115,7 +115,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         String password = team.getPassword();
         if (TeamStatusEnum.SECRET.equals(statusEnum)) {
             // 密码必须有，且长度 <= 32
-            if (StringUtils.isBlank(password) || password.length() > 32) {
+            if (StringUtils.isBlank(password) || password.length() > TeamConstant.MAX_PASSWORD_LENGTH) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码设置错误!");
             }
         }
@@ -129,7 +129,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         QueryWrapper<UserTeam> teamQueryWrapper = new QueryWrapper<>();
         teamQueryWrapper.eq("userId", userId);
         long hasTeamNum = userTeamService.count(teamQueryWrapper);
-        if (hasTeamNum >= 5) {
+        if (hasTeamNum >= TeamConstant.MAX_HAS_TEAM_NUM) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "所属队伍不能大于 5 个!");
         }
         //  插入队伍信息到队伍表
@@ -177,9 +177,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         String searchText = teamQuery.getSearchText();
         if (StringUtils.isBlank(searchText)) {
-            teamQueryWrapper.and(qw -> qw
-                    .like("name", searchText)
-                    .or().like("description", searchText));
+            teamQueryWrapper.and(qw -> qw.like("name", searchText).or().like("description", searchText));
         }
         String name = teamQuery.getName();
         if (StringUtils.isNotBlank(name)) {
@@ -190,7 +188,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             teamQueryWrapper.like("description", description);
         }
         Integer maxNum = teamQuery.getMaxNum();
-        if (maxNum != null && maxNum > 0 && maxNum <= 20) {
+        if (maxNum != null && maxNum > 0 && maxNum <= TeamConstant.MAX_NUMBER_PEOPLE) {
             teamQueryWrapper.eq("maxNum", maxNum);
         }
         Long userId = teamQuery.getUserId();
@@ -203,8 +201,8 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         Integer status = teamQuery.getStatus();
         TeamStatusEnum statusEnum = TeamStatusEnum.getEnumByValue(status);
+        // 默认查询公开的队伍
         if (statusEnum == null) {
-            // 默认查询公开的队伍
             statusEnum = TeamStatusEnum.PUBLIC;
         }
         //  非公开队伍需要管理员权限才能查询
@@ -329,7 +327,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
         userTeamQueryWrapper.eq("userId", loginUserId);
         List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
-        if (userTeamList.size() >= 5) {
+        if (userTeamList.size() >= TeamConstant.MAX_HAS_TEAM_NUM) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "所属队伍不能操作 5 个");
         }
         for (UserTeam userTeam : userTeamList) {
