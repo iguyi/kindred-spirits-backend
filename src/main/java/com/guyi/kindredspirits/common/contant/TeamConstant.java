@@ -27,4 +27,14 @@ public interface TeamConstant {
      */
     Integer MAX_DESCRIPTION_LENGTH = 512;
 
+    /**
+     * 入队密码长度最大限制
+     */
+    Integer MAX_PASSWORD_LENGTH = 32;
+
+    /**
+     * 所属队伍数量最大限制
+     */
+    Integer MAX_HAS_TEAM_NUM = 5;
+
 }
