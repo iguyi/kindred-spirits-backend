@@ -106,7 +106,6 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
 
     @Override
     public List<List<TagVo>> getTagGroup() {
-        // todo 缓存更新
         QueryWrapper<Tag> tagQueryWrapper = new QueryWrapper<>();
         tagQueryWrapper.select("id", "tagName", "isParent", "parentId", "weights");
         List<Tag> tagList = this.list(tagQueryWrapper);
