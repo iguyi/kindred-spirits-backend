@@ -75,13 +75,19 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> implements Te
     @Resource
     private ProjectProperties projectProperties;
 
+    /**
+     * Team 的 Lock Key 模板, 最后一个占位符将来填入用户 id
+     */
+    private static final String TEAM_LOCK_KEY =
+            String.format(RedisConstant.LOCK_KEY, "team-service", "create-join-team", "%s");
+
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public long addTeam(Team team, User loginUser) {
         // 请求参数是否为空
         if (team == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数错误");
         }
+
         // 是否登录
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NO_AUTH, "未登录");
@@ -90,27 +96,32 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> implements Te
         if (userId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "登录用户参数错误");
         }
+
         //  队伍人数校验
         int maxNum = Optional.ofNullable(team.getMaxNum()).orElse(0);
         if (maxNum < TeamConstant.MINX_NUMBER_PEOPLE || maxNum > TeamConstant.MAX_NUMBER_PEOPLE) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍人数不符合要求!");
         }
+
         //  队伍标题长度验证
         String name = team.getName();
         if (StringUtils.isBlank(name) || name.length() > TeamConstant.MAX_TEAM_NAME_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍标题不符合要求!");
         }
+
         //  队伍描述验证
         String description = team.getDescription();
         if (StringUtils.isNotBlank(description) && description.length() > TeamConstant.MAX_DESCRIPTION_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍描述不符合要求!");
         }
+
         //  是否公开，不传默认 0（公开）
         int status = Optional.ofNullable(team.getStatus()).orElse(0);
         TeamStatusEnum statusEnum = TeamStatusEnum.getEnumByValue(status);
         if (statusEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍状态不符合要求!");
         }
+
         //  是否是加密的队伍
         String password = team.getPassword();
         if (TeamStatusEnum.SECRET.equals(statusEnum)) {
@@ -119,24 +130,52 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> implements Te
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码设置错误!");
             }
         }
+
         //  超时时间 > 当前时间
         Date expireTime = team.getExpireTime();
         if (new Date().after(expireTime)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "超时时间设置错误!");
         }
-        //  校验用户以加入/创建的队伍不超过 5 个
-        // todo 同步
-        QueryWrapper<UserTeam> teamQueryWrapper = new QueryWrapper<>();
-        teamQueryWrapper.eq("userId", userId);
-        long hasTeamNum = userTeamService.count(teamQueryWrapper);
-        if (hasTeamNum >= TeamConstant.MAX_HAS_TEAM_NUM) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "所属队伍不能大于 5 个!");
+
+        // 同步
+        String lockKey = String.format(TEAM_LOCK_KEY, userId);
+        final int waitTime = 0;
+        final long leaseTime = 30L;
+        boolean result = LockUtil.opsRedissonLockRetries(lockKey, waitTime, leaseTime, TimeUnit.SECONDS, redissonClient,
+                () -> {
+                    //  校验用户以【加入/创建】的队伍不超过 5 个
+                    QueryWrapper<UserTeam> teamQueryWrapper = new QueryWrapper<>();
+                    teamQueryWrapper.eq("userId", userId);
+                    long hasTeamNum = userTeamService.count(teamQueryWrapper);
+                    if (hasTeamNum >= TeamConstant.MAX_HAS_TEAM_NUM) {
+                        throw new BusinessException(ErrorCode.PARAMS_ERROR, "所属队伍不能大于 5 个!");
+                    }
+
+                    // 创建队伍
+                    return createTeam(team, userId);
+                });
+
+        if (!result) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍创建失败!");
         }
+        return 1;
+    }
+
+    /**
+     * 创建队伍
+     *
+     * @param team   - 被创建队伍的信息
+     * @param userId - 创建人 id
+     * @return 是否创建成功
+     */
+    @Transactional(rollbackFor = Exception.class)
+    protected boolean createTeam(Team team, Long userId) {
         //  插入队伍信息到队伍表
         team.setId(null);
         team.setUserId(userId);
         team.setLeaderId(userId);
         team.setAvatarUrl(projectProperties.getDefaultTeamAvatarPath());
+
         // 生成入队邀请码
         String newTeamLink = IdUtil.simpleUUID();
         team.setTeamLink(newTeamLink);
@@ -145,6 +184,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> implements Te
         if (!saveResult || teamId == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍创建失败!");
         }
+
         //  插入数据到 用户-队伍关系表
         UserTeam userTeam = new UserTeam();
         userTeam.setUserId(userId);
@@ -157,10 +197,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> implements Te
 
         // 创建会话未读消息记录
         saveResult = createUnreadMessageLog(userId, String.format(SESSION_NAME_TEMPLATE, userId, teamId));
-        if (!saveResult) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍创建失败!");
-        }
-        return 1;
+        return saveResult;
     }
 
     @Override
@@ -304,7 +341,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> implements Te
         }
 
         // 获取锁对象: 不同用户对有不同的 lock key, 保证不会阻塞其他用户对的请求
-        final String lockKey = String.format(RedisConstant.LOCK_KEY, "team-service", "join-team", loginUserId);
+        final String lockKey = String.format(TEAM_LOCK_KEY, loginUserId);
         Boolean result = LockUtil.opsRedissonLockRetries(lockKey, 0, 30L, TimeUnit.SECONDS, redissonClient,
                 () -> createUserTeamRelational(teamJoinRequest, loginUserId, teamId));
 
